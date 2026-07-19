@@ -1,0 +1,156 @@
+<h2>Dashboard móvil — resumido</h2>
+<p class="subtitle">Solo lo esencial para el primer vistazo. Sin scrollbar visible (se desplaza con el dedo). Lo demás vive en sus módulos.</p>
+
+<style>
+  .wrap{display:grid;grid-template-columns:1fr 1fr;gap:34px;justify-items:center;}
+  .phone{width:314px;border:10px solid #0f172a;border-radius:40px;overflow:hidden;box-shadow:0 20px 50px #0004;}
+  .scr{height:640px;display:flex;flex-direction:column;font-family:system-ui;}
+  .body{flex:1;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;}
+  .body::-webkit-scrollbar{display:none;width:0;height:0;}
+  .ic{width:18px;height:18px;stroke-width:2;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;flex:none;}
+  .ic-s{width:14px;height:14px;stroke-width:2;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;flex:none;}
+
+  .tb{padding:15px 16px 4px;display:flex;align-items:center;gap:9px;}
+  .branch{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:6px 10px;border-radius:20px;}
+  .bell{position:relative;padding:7px;border-radius:11px;display:flex;margin-left:auto;}
+  .badge{position:absolute;top:2px;right:2px;width:15px;height:15px;border-radius:50%;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;color:#fff;background:#ef4444;border:2px solid var(--ring);}
+  .av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;}
+  .greet{padding:8px 16px 10px;}
+  .greet .hi{font-size:12px;opacity:.65;}
+  .greet .hn{font-size:20px;font-weight:800;letter-spacing:-.4px;}
+
+  .hero{margin:0 16px 14px;border-radius:18px;padding:16px;color:#fff;background:linear-gradient(135deg,#0e7490,#0891b2 60%,#14b8a6);position:relative;overflow:hidden;}
+  .hero .lbl{font-size:11px;opacity:.9;display:flex;align-items:center;gap:6px;}
+  .hero .per{margin-left:auto;font-size:10px;background:#ffffff26;padding:2px 8px;border-radius:20px;font-weight:600;}
+  .hero .amt{font-size:29px;font-weight:800;letter-spacing:-.5px;margin-top:6px;}
+  .hero .trend{display:inline-flex;align-items:center;gap:4px;background:#ffffff2e;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;margin-top:8px;}
+  .spark{position:absolute;right:14px;bottom:14px;display:flex;align-items:flex-end;gap:3px;height:34px;}
+  .spark i{width:6px;border-radius:3px;background:#ffffff55;}
+
+  .kg{display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:0 16px;}
+  .kc{border-radius:14px;padding:13px;border:1px solid var(--bd);}
+  .kh{display:flex;align-items:center;gap:8px;}
+  .kico{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:none;}
+  .kt{font-size:10.5px;font-weight:600;opacity:.7;}
+  .kv{font-size:20px;font-weight:800;margin-top:9px;letter-spacing:-.3px;}
+  .ktr{font-size:10px;font-weight:700;margin-top:1px;}
+
+  .sect{padding:16px 16px 0;}
+  .ct{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .cttl{font-size:13px;font-weight:700;}
+  .cta{font-size:11px;font-weight:600;color:#0e9aab;}
+  .card{border:1px solid var(--bd);border-radius:14px;overflow:hidden;}
+  .al{display:flex;align-items:center;gap:10px;padding:11px 13px;border-top:1px solid var(--bd);}
+  .al:first-of-type{border-top:none;}
+  .alic{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:none;}
+  .aln{font-size:12px;font-weight:600;}
+  .als{font-size:10px;opacity:.55;}
+  .ala{margin-left:auto;font-size:11.5px;font-weight:700;}
+
+  .bn{display:flex;align-items:flex-end;padding:8px 8px 12px;border-top:1px solid var(--bd);background:var(--nav);}
+  .bn div{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:600;opacity:.55;}
+  .bn div.on{opacity:1;}
+  .fab{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0e7490,#14b8a6);display:flex;align-items:center;justify-content:center;margin-top:-22px;box-shadow:0 8px 20px #0e749077;flex:none;}
+  .fabic{width:27px;height:27px;stroke:#fff;stroke-width:3;fill:none;}
+</style>
+
+<div class="wrap">
+
+  <!-- LIGHT -->
+  <div>
+  <div class="phone"><div class="scr" style="--ring:#fff;--bd:#e8edf2;--nav:#fff;background:#f1f5f9;color:#0f172a;">
+    <div class="body">
+      <div class="tb">
+        <div class="branch" style="background:#fff;border:1px solid #e2e8f0;color:#334155;"><svg class="ic-s" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0116 0z"/><circle cx="12" cy="10" r="3"/></svg>Todas <svg class="ic-s" viewBox="0 0 24 24" style="width:11px"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="bell" style="background:#fff;border:1px solid #e2e8f0;color:#334155;"><svg class="ic" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/></svg><span class="badge">3</span></div>
+        <div class="av" style="background:#0e7490;">FD</div>
+      </div>
+      <div class="greet"><div class="hi">Buenos días 👋</div><div class="hn">Fabrizio</div></div>
+
+      <div class="hero">
+        <div style="display:flex;align-items:center;"><div class="lbl"><svg class="ic-s" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Utilidad del mes</div><span class="per">Este mes ▾</span></div>
+        <div class="amt">$8.420</div>
+        <span class="trend"><svg class="ic-s" viewBox="0 0 24 24" style="width:13px"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg> +18% · margen 24%</span>
+        <div class="spark"><i style="height:40%"></i><i style="height:55%"></i><i style="height:35%"></i><i style="height:70%"></i><i style="height:60%"></i><i style="height:92%"></i></div>
+      </div>
+
+      <div class="kg">
+        <div class="kc" style="background:#fff;"><div class="kh"><div class="kico" style="background:#ccfbf1;color:#0f766e;"><svg class="ic-s" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div><div class="kt">Ventas del mes</div></div><div class="kv">$34.8k</div><div class="ktr" style="color:#0f766e;">▲ 14%</div></div>
+        <div class="kc" style="background:#fff;"><div class="kh"><div class="kico" style="background:#dbeafe;color:#1d4ed8;"><svg class="ic-s" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="10" cy="7" r="4"/></svg></div><div class="kt">Total clientes</div></div><div class="kv">342</div><div class="ktr" style="color:#1d4ed8;">▲ 13 nuevos</div></div>
+        <div class="kc" style="background:#fff;"><div class="kh"><div class="kico" style="background:#fef3c7;color:#b45309;"><svg class="ic-s" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div class="kt">Por cobrar</div></div><div class="kv">$1.9k</div><div class="ktr" style="color:#b45309;">4 clientes</div></div>
+        <div class="kc" style="background:#fff;"><div class="kh"><div class="kico" style="background:#fee2e2;color:#dc2626;"><svg class="ic-s" viewBox="0 0 24 24"><path d="M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></div><div class="kt">Bajo stock</div></div><div class="kv">7</div><div class="ktr" style="color:#dc2626;">comprar</div></div>
+      </div>
+
+      <div class="sect" style="padding-bottom:14px;">
+        <div class="ct"><div class="cttl">Requieren atención</div><div class="cta">Ver todo</div></div>
+        <div class="card" style="background:#fff;">
+          <div class="al"><div class="alic" style="background:#fef2f2;color:#dc2626"><svg class="ic-s" viewBox="0 0 24 24"><path d="M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4"/></svg></div><div><div class="aln">Amoxicilina 500mg</div><div class="als">Stock 2 · mín. 10</div></div><div class="ala" style="color:#dc2626">Comprar</div></div>
+          <div class="al"><div class="alic" style="background:#fffbeb;color:#b45309"><svg class="ic-s" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><div class="aln">Factura #1038 vencida</div><div class="als">Farmacia Sur · +5 días</div></div><div class="ala" style="color:#b45309">$640</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bn">
+      <div class="on" style="color:#0e7490;"><svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Inicio</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.5 3h2l2.7 13.4a2 2 0 002 1.6h9.7a2 2 0 002-1.6L23 6H6"/></svg>Vender</div>
+      <div class="fab"><svg class="fabic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5"/></svg>Inventario</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Más</div>
+    </div>
+  </div></div>
+  <p class="subtitle" style="text-align:center;font-size:12px;margin-top:8px;">Claro</p>
+  </div>
+
+  <!-- DARK -->
+  <div>
+  <div class="phone"><div class="scr" style="--ring:#0f172a;--bd:#26334a;--nav:#0d1526;background:#0b1220;color:#e2e8f0;">
+    <div class="body">
+      <div class="tb">
+        <div class="branch" style="background:#1e293b;border:1px solid #334155;color:#cbd5e1;"><svg class="ic-s" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0116 0z"/><circle cx="12" cy="10" r="3"/></svg>Todas <svg class="ic-s" viewBox="0 0 24 24" style="width:11px"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="bell" style="background:#1e293b;border:1px solid #334155;color:#cbd5e1;"><svg class="ic" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/></svg><span class="badge">3</span></div>
+        <div class="av" style="background:#14b8a6;">FD</div>
+      </div>
+      <div class="greet"><div class="hi">Buenos días 👋</div><div class="hn">Fabrizio</div></div>
+
+      <div class="hero">
+        <div style="display:flex;align-items:center;"><div class="lbl"><svg class="ic-s" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Utilidad del mes</div><span class="per">Este mes ▾</span></div>
+        <div class="amt">$8.420</div>
+        <span class="trend"><svg class="ic-s" viewBox="0 0 24 24" style="width:13px"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg> +18% · margen 24%</span>
+        <div class="spark"><i style="height:40%"></i><i style="height:55%"></i><i style="height:35%"></i><i style="height:70%"></i><i style="height:60%"></i><i style="height:92%"></i></div>
+      </div>
+
+      <div class="kg">
+        <div class="kc" style="background:#111c30;"><div class="kh"><div class="kico" style="background:#134e4a;color:#5eead4;"><svg class="ic-s" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div><div class="kt">Ventas del mes</div></div><div class="kv">$34.8k</div><div class="ktr" style="color:#5eead4;">▲ 14%</div></div>
+        <div class="kc" style="background:#111c30;"><div class="kh"><div class="kico" style="background:#1e3a5f;color:#7dd3fc;"><svg class="ic-s" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="10" cy="7" r="4"/></svg></div><div class="kt">Total clientes</div></div><div class="kv">342</div><div class="ktr" style="color:#7dd3fc;">▲ 13 nuevos</div></div>
+        <div class="kc" style="background:#111c30;"><div class="kh"><div class="kico" style="background:#422006;color:#fbbf24;"><svg class="ic-s" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div class="kt">Por cobrar</div></div><div class="kv">$1.9k</div><div class="ktr" style="color:#fbbf24;">4 clientes</div></div>
+        <div class="kc" style="background:#111c30;"><div class="kh"><div class="kico" style="background:#450a0a;color:#f87171;"><svg class="ic-s" viewBox="0 0 24 24"><path d="M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></div><div class="kt">Bajo stock</div></div><div class="kv">7</div><div class="ktr" style="color:#f87171;">comprar</div></div>
+      </div>
+
+      <div class="sect" style="padding-bottom:14px;">
+        <div class="ct"><div class="cttl">Requieren atención</div><div class="cta">Ver todo</div></div>
+        <div class="card" style="background:#111c30;">
+          <div class="al"><div class="alic" style="background:#450a0a;color:#f87171"><svg class="ic-s" viewBox="0 0 24 24"><path d="M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4"/></svg></div><div><div class="aln">Amoxicilina 500mg</div><div class="als">Stock 2 · mín. 10</div></div><div class="ala" style="color:#f87171">Comprar</div></div>
+          <div class="al"><div class="alic" style="background:#422006;color:#fbbf24"><svg class="ic-s" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><div class="aln">Factura #1038 vencida</div><div class="als">Farmacia Sur · +5 días</div></div><div class="ala" style="color:#fbbf24">$640</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bn">
+      <div class="on" style="color:#2dd4bf;"><svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Inicio</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.5 3h2l2.7 13.4a2 2 0 002 1.6h9.7a2 2 0 002-1.6L23 6H6"/></svg>Vender</div>
+      <div class="fab"><svg class="fabic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5"/></svg>Inventario</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Más</div>
+    </div>
+  </div></div>
+  <p class="subtitle" style="text-align:center;font-size:12px;margin-top:8px;">Oscuro</p>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:20px;">Ahora el móvil muestra solo: <b>Utilidad del mes</b> (hero) · 4 KPIs de vistazo (<b>Ventas del mes, Total clientes, Por cobrar, Bajo stock</b>) · <b>Requieren atención</b>. El donut de inventario, top productos y clientes por tipo se ven al entrar a cada módulo, no saturan el inicio. Scrollbar oculto. ¿Así mejor?</p>
+
+<div class="options" style="margin-top:8px;">
+  <div class="option" data-choice="ok" onclick="toggleSelect(this)"><div class="letter">✓</div><div class="content"><h3>Sí, mucho mejor</h3><p>Móvil resumido, limpio, sin scrollbar.</p></div></div>
+  <div class="option" data-choice="tweak" onclick="toggleSelect(this)"><div class="letter">~</div><div class="content"><h3>Ajusta los KPIs del móvil</h3><p>Dime qué 4 KPIs quieres ver de vistazo, o si el hero debe ser Ventas en vez de Utilidad.</p></div></div>
+</div>

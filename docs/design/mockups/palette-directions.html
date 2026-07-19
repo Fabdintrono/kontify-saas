@@ -1,0 +1,209 @@
+<h2>Dirección visual de Kontify</h2>
+<p class="subtitle">3 paletas, cada una en claro + oscuro con un mini-preview de dashboard. Limpio y profesional, superando a Fina/Cuadra. Elige la que mejor represente la marca.</p>
+
+<style>
+  .dir{margin-bottom:30px;border:1px solid #8883;border-radius:16px;overflow:hidden;cursor:pointer;transition:.15s;}
+  .dir:hover{transform:translateY(-2px);box-shadow:0 10px 30px #0003;}
+  .dir-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;}
+  .dir-head h3{margin:0;}
+  .swatches{display:flex;gap:6px;}
+  .sw{width:26px;height:26px;border-radius:6px;border:1px solid #0002;}
+  .previews{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+  .prev{padding:18px;}
+  .mini{border-radius:10px;overflow:hidden;font:500 11px system-ui;box-shadow:0 4px 14px #0002;}
+  .mini-top{display:flex;align-items:center;gap:8px;padding:9px 12px;}
+  .mini-dot{width:9px;height:9px;border-radius:50%;}
+  .mini-body{display:flex;}
+  .mini-side{width:38%;padding:10px;display:flex;flex-direction:column;gap:6px;}
+  .mini-main{flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;}
+  .kpi{border-radius:7px;padding:8px 10px;}
+  .kpi b{display:block;font-size:15px;}
+  .bar{height:7px;border-radius:4px;}
+  .navitem{padding:5px 8px;border-radius:6px;font-size:9px;}
+  .tag{font:600 9px system-ui;letter-spacing:1px;text-transform:uppercase;opacity:.7;}
+</style>
+
+<!-- DIRECTION A: Teal / Slate -->
+<div class="dir" data-choice="teal" onclick="toggleSelect(this)">
+  <div class="dir-head">
+    <div><h3>A · Teal & Slate</h3><span class="tag">confianza + frescura · limpio</span></div>
+    <div class="swatches">
+      <div class="sw" style="background:#0e7490"></div>
+      <div class="sw" style="background:#2dd4bf"></div>
+      <div class="sw" style="background:#f1f5f9"></div>
+      <div class="sw" style="background:#0f172a"></div>
+      <div class="sw" style="background:#22c55e"></div>
+      <div class="sw" style="background:#ef4444"></div>
+    </div>
+  </div>
+  <div class="previews">
+    <div class="prev" style="background:#e2e8f0;">
+      <div class="mini" style="background:#ffffff;color:#0f172a;">
+        <div class="mini-top" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+          <div class="mini-dot" style="background:#0e7490;"></div><b>Kontify</b><span style="margin-left:auto;opacity:.5;">claro</span>
+        </div>
+        <div class="mini-body">
+          <div class="mini-side" style="background:#f1f5f9;">
+            <div class="navitem" style="background:#0e7490;color:#fff;">Inventario</div>
+            <div class="navitem" style="color:#475569;">Ventas</div>
+            <div class="navitem" style="color:#475569;">Finanzas</div>
+          </div>
+          <div class="mini-main">
+            <div style="display:flex;gap:6px;">
+              <div class="kpi" style="background:#ccfbf1;color:#0f766e;flex:1;">Ventas<b>$12.4k</b></div>
+              <div class="kpi" style="background:#f1f5f9;color:#0f172a;flex:1;">Stock<b>842</b></div>
+            </div>
+            <div class="bar" style="background:#2dd4bf;width:80%;"></div>
+            <div class="bar" style="background:#e2e8f0;width:55%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="prev" style="background:#020617;">
+      <div class="mini" style="background:#0f172a;color:#e2e8f0;">
+        <div class="mini-top" style="background:#1e293b;border-bottom:1px solid #334155;">
+          <div class="mini-dot" style="background:#2dd4bf;"></div><b>Kontify</b><span style="margin-left:auto;opacity:.5;">oscuro</span>
+        </div>
+        <div class="mini-body">
+          <div class="mini-side" style="background:#1e293b;">
+            <div class="navitem" style="background:#0e7490;color:#fff;">Inventario</div>
+            <div class="navitem" style="color:#94a3b8;">Ventas</div>
+            <div class="navitem" style="color:#94a3b8;">Finanzas</div>
+          </div>
+          <div class="mini-main">
+            <div style="display:flex;gap:6px;">
+              <div class="kpi" style="background:#134e4a;color:#5eead4;flex:1;">Ventas<b>$12.4k</b></div>
+              <div class="kpi" style="background:#1e293b;color:#e2e8f0;flex:1;">Stock<b>842</b></div>
+            </div>
+            <div class="bar" style="background:#2dd4bf;width:80%;"></div>
+            <div class="bar" style="background:#334155;width:55%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DIRECTION B: Indigo / Violet -->
+<div class="dir" data-choice="indigo" onclick="toggleSelect(this)">
+  <div class="dir-head">
+    <div><h3>B · Indigo & Violet</h3><span class="tag">premium + tech · tipo Linear/Stripe</span></div>
+    <div class="swatches">
+      <div class="sw" style="background:#4f46e5"></div>
+      <div class="sw" style="background:#a78bfa"></div>
+      <div class="sw" style="background:#f5f5fb"></div>
+      <div class="sw" style="background:#0b1020"></div>
+      <div class="sw" style="background:#22c55e"></div>
+      <div class="sw" style="background:#f43f5e"></div>
+    </div>
+  </div>
+  <div class="previews">
+    <div class="prev" style="background:#e5e7f2;">
+      <div class="mini" style="background:#ffffff;color:#1e1b2e;">
+        <div class="mini-top" style="background:#faf9ff;border-bottom:1px solid #ece9f7;">
+          <div class="mini-dot" style="background:#4f46e5;"></div><b>Kontify</b><span style="margin-left:auto;opacity:.5;">claro</span>
+        </div>
+        <div class="mini-body">
+          <div class="mini-side" style="background:#f5f4fc;">
+            <div class="navitem" style="background:#4f46e5;color:#fff;">Inventario</div>
+            <div class="navitem" style="color:#524d6b;">Ventas</div>
+            <div class="navitem" style="color:#524d6b;">Finanzas</div>
+          </div>
+          <div class="mini-main">
+            <div style="display:flex;gap:6px;">
+              <div class="kpi" style="background:#ede9fe;color:#5b21b6;flex:1;">Ventas<b>$12.4k</b></div>
+              <div class="kpi" style="background:#f4f4f7;color:#1e1b2e;flex:1;">Stock<b>842</b></div>
+            </div>
+            <div class="bar" style="background:#a78bfa;width:80%;"></div>
+            <div class="bar" style="background:#ece9f7;width:55%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="prev" style="background:#05060f;">
+      <div class="mini" style="background:#0b1020;color:#e4e2f0;">
+        <div class="mini-top" style="background:#161a2e;border-bottom:1px solid #262a44;">
+          <div class="mini-dot" style="background:#a78bfa;"></div><b>Kontify</b><span style="margin-left:auto;opacity:.5;">oscuro</span>
+        </div>
+        <div class="mini-body">
+          <div class="mini-side" style="background:#161a2e;">
+            <div class="navitem" style="background:#4f46e5;color:#fff;">Inventario</div>
+            <div class="navitem" style="color:#9c98b8;">Ventas</div>
+            <div class="navitem" style="color:#9c98b8;">Finanzas</div>
+          </div>
+          <div class="mini-main">
+            <div style="display:flex;gap:6px;">
+              <div class="kpi" style="background:#312e5c;color:#c4b5fd;flex:1;">Ventas<b>$12.4k</b></div>
+              <div class="kpi" style="background:#161a2e;color:#e4e2f0;flex:1;">Stock<b>842</b></div>
+            </div>
+            <div class="bar" style="background:#a78bfa;width:80%;"></div>
+            <div class="bar" style="background:#262a44;width:55%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DIRECTION C: Emerald / Graphite -->
+<div class="dir" data-choice="emerald" onclick="toggleSelect(this)">
+  <div class="dir-head">
+    <div><h3>C · Emerald & Graphite</h3><span class="tag">finanzas + crecimiento · "cuentas en verde"</span></div>
+    <div class="swatches">
+      <div class="sw" style="background:#059669"></div>
+      <div class="sw" style="background:#34d399"></div>
+      <div class="sw" style="background:#f4f6f5"></div>
+      <div class="sw" style="background:#0c1512"></div>
+      <div class="sw" style="background:#0ea5e9"></div>
+      <div class="sw" style="background:#f97316"></div>
+    </div>
+  </div>
+  <div class="previews">
+    <div class="prev" style="background:#e3e8e6;">
+      <div class="mini" style="background:#ffffff;color:#0c1512;">
+        <div class="mini-top" style="background:#f7faf9;border-bottom:1px solid #e6ebe9;">
+          <div class="mini-dot" style="background:#059669;"></div><b>Kontify</b><span style="margin-left:auto;opacity:.5;">claro</span>
+        </div>
+        <div class="mini-body">
+          <div class="mini-side" style="background:#f1f5f3;">
+            <div class="navitem" style="background:#059669;color:#fff;">Inventario</div>
+            <div class="navitem" style="color:#47554f;">Ventas</div>
+            <div class="navitem" style="color:#47554f;">Finanzas</div>
+          </div>
+          <div class="mini-main">
+            <div style="display:flex;gap:6px;">
+              <div class="kpi" style="background:#d1fae5;color:#065f46;flex:1;">Ventas<b>$12.4k</b></div>
+              <div class="kpi" style="background:#f1f5f3;color:#0c1512;flex:1;">Stock<b>842</b></div>
+            </div>
+            <div class="bar" style="background:#34d399;width:80%;"></div>
+            <div class="bar" style="background:#e6ebe9;width:55%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="prev" style="background:#040806;">
+      <div class="mini" style="background:#0c1512;color:#dce7e2;">
+        <div class="mini-top" style="background:#14211c;border-bottom:1px solid #22332c;">
+          <div class="mini-dot" style="background:#34d399;"></div><b>Kontify</b><span style="margin-left:auto;opacity:.5;">oscuro</span>
+        </div>
+        <div class="mini-body">
+          <div class="mini-side" style="background:#14211c;">
+            <div class="navitem" style="background:#059669;color:#fff;">Inventario</div>
+            <div class="navitem" style="color:#8ba79b;">Ventas</div>
+            <div class="navitem" style="color:#8ba79b;">Finanzas</div>
+          </div>
+          <div class="mini-main">
+            <div style="display:flex;gap:6px;">
+              <div class="kpi" style="background:#064e3b;color:#6ee7b7;flex:1;">Ventas<b>$12.4k</b></div>
+              <div class="kpi" style="background:#14211c;color:#dce7e2;flex:1;">Stock<b>842</b></div>
+            </div>
+            <div class="bar" style="background:#34d399;width:80%;"></div>
+            <div class="bar" style="background:#22332c;width:55%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle">Mi recomendación: <b>A · Teal & Slate</b> — se ve profesional y fresco, se diferencia del azul genérico de todos los ERP, y funciona bellísimo en claro y oscuro. Pero elige la que sientas más "Kontify".</p>

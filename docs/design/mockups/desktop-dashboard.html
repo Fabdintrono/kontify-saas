@@ -1,0 +1,226 @@
+<h2>Dashboard enriquecido — KPIs de primera impresión</h2>
+<p class="subtitle">Más señales clave (ventas, utilidad, clientes, valor de inventario, estado de stock, tipos de cliente, top productos, alertas). Estilo supply-chain tipo Zaiko, adaptado a Kontify.</p>
+
+<style>
+  .di{width:19px;height:19px;stroke-width:2;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;flex:none;}
+  .di-s{width:15px;height:15px;stroke-width:2;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;flex:none;}
+  .di-xs{width:13px;height:13px;stroke-width:2;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;flex:none;}
+  .app{height:660px;background:#f6f8fb;display:flex;position:relative;font-family:system-ui;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 16px 44px #0002;}
+
+  .t1{width:66px;background:#0f172a;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:5px;flex:none;}
+  .t1logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#0e7490,#14b8a6);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;margin-bottom:8px;}
+  .t1i{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#64748b;cursor:pointer;}
+  .t1i.on{background:linear-gradient(135deg,#0e7490,#14b8a6);color:#fff;}
+  .t1sp{flex:1;}
+  .t1av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#0e7490,#14b8a6);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;margin-top:6px;}
+
+  .colmain{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+  .btop{height:56px;background:#fff;border-bottom:1px solid #eef2f6;display:flex;align-items:center;padding:0 18px;gap:12px;flex:none;}
+  .tgl{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#475569;cursor:pointer;flex:none;}
+  .srch{flex:1;max-width:300px;background:#f1f5f9;border:1px solid #eef2f6;border-radius:9px;padding:7px 11px;display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:12px;}
+  .chip{background:#f1f5f9;border:1px solid #eef2f6;border-radius:9px;padding:6px 10px;font-size:11.5px;color:#475569;display:flex;align-items:center;gap:6px;}
+  .tico{width:34px;height:34px;border-radius:9px;border:1px solid #eef2f6;display:flex;align-items:center;justify-content:center;color:#475569;position:relative;}
+  .tbadge{position:absolute;top:-3px;right:-3px;width:15px;height:15px;border-radius:50%;background:#ef4444;color:#fff;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;}
+
+  .canvas{flex:1;padding:18px 20px;overflow-y:auto;}
+  .grow{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .gtitle{font-size:20px;font-weight:800;color:#0f172a;letter-spacing:-.4px;}
+  .gsub{font-size:12px;color:#64748b;}
+  .segp{display:flex;background:#eef2f6;border-radius:9px;padding:3px;gap:2px;}
+  .segp span{font-size:11.5px;font-weight:600;color:#64748b;padding:5px 11px;border-radius:7px;cursor:pointer;}
+  .segp span.on{background:#fff;color:#0f172a;box-shadow:0 1px 3px #0001;}
+
+  /* KPI primary */
+  .krow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;}
+  .kc{background:#fff;border:1px solid #eef2f6;border-radius:14px;padding:14px;position:relative;overflow:hidden;}
+  .khead{display:flex;align-items:center;gap:8px;}
+  .kico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:none;}
+  .kt{font-size:11px;font-weight:600;color:#64748b;}
+  .kv{font-size:23px;font-weight:800;color:#0f172a;margin-top:10px;letter-spacing:-.5px;}
+  .ktrend{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;margin-top:3px;}
+  .up{color:#0f766e;} .down{color:#dc2626;} .warn{color:#b45309;} .mut{color:#64748b;}
+  .spark{position:absolute;right:12px;bottom:12px;display:flex;align-items:flex-end;gap:2px;height:26px;opacity:.85;}
+  .spark i{width:4px;border-radius:2px;}
+
+  /* KPI secondary strip */
+  .krow2{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
+  .kc2{background:#fff;border:1px solid #eef2f6;border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:11px;}
+  .kc2 .ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none;}
+  .kc2 .l{font-size:10.5px;font-weight:600;color:#64748b;}
+  .kc2 .v{font-size:16px;font-weight:800;color:#0f172a;margin-top:1px;}
+
+  /* widgets */
+  .wrow{display:grid;grid-template-columns:1.8fr 1fr;gap:12px;margin-bottom:12px;}
+  .wrow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .panel{background:#fff;border:1px solid #eef2f6;border-radius:14px;padding:15px;}
+  .ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .pht{font-size:13px;font-weight:700;color:#0f172a;}
+  .pha{font-size:11px;font-weight:600;color:#0e9aab;cursor:pointer;}
+  .chart{display:flex;align-items:flex-end;gap:12px;height:120px;}
+  .chart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .chart .bar{width:62%;border-radius:5px 5px 0 0;background:linear-gradient(#2dd4bf,#0e7490);}
+  .chart .lb{font-size:9.5px;color:#94a3b8;font-weight:600;}
+
+  /* donut */
+  .donutwrap{display:flex;align-items:center;gap:16px;}
+  .donut{width:110px;height:110px;border-radius:50%;flex:none;background:conic-gradient(#0e7490 0 68%,#f59e0b 68% 86%,#ef4444 86% 100%);display:flex;align-items:center;justify-content:center;}
+  .donut .hole{width:74px;height:74px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .donut .hv{font-size:18px;font-weight:800;color:#0f172a;}
+  .donut .hl{font-size:9px;color:#94a3b8;font-weight:600;}
+  .leg{display:flex;flex-direction:column;gap:9px;}
+  .leg div{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;font-weight:600;}
+  .dot{width:10px;height:10px;border-radius:3px;flex:none;}
+
+  /* lists */
+  .lrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #f4f6f9;font-size:12px;}
+  .lrow:first-of-type{border-top:none;}
+  .lnum{width:20px;height:20px;border-radius:6px;background:#f1f5f9;color:#64748b;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex:none;}
+  .ln{font-weight:600;color:#0f172a;}
+  .lprog{height:5px;background:#eef2f6;border-radius:3px;margin-top:4px;overflow:hidden;}
+  .lprog i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#2dd4bf,#0e7490);}
+  .lq{margin-left:auto;font-weight:700;color:#0f172a;font-size:12px;}
+
+  /* client types */
+  .ct{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #f4f6f9;}
+  .ct:first-of-type{border-top:none;}
+  .ctd{width:11px;height:11px;border-radius:4px;flex:none;}
+  .ctn{font-size:12.5px;font-weight:600;color:#0f172a;}
+  .ctc{margin-left:auto;text-align:right;}
+  .ctc b{font-size:14px;font-weight:800;color:#0f172a;}
+  .ctc span{font-size:10px;color:#94a3b8;font-weight:600;}
+
+  .alert{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #f4f6f9;}
+  .alert:first-of-type{border-top:none;}
+  .aic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:none;}
+  .an{font-size:12px;font-weight:600;color:#0f172a;}
+  .as{font-size:10px;color:#94a3b8;}
+  .aa{margin-left:auto;font-size:11px;font-weight:700;}
+
+  .fab{position:absolute;bottom:20px;right:22px;height:50px;border-radius:25px;background:linear-gradient(135deg,#0e7490,#14b8a6);color:#fff;display:flex;align-items:center;gap:8px;padding:0 19px 0 15px;font-weight:700;font-size:13.5px;box-shadow:0 10px 26px #0e749077;z-index:6;}
+  .fabic{width:24px;height:24px;stroke:#fff;stroke-width:2.5;fill:none;}
+</style>
+
+<div class="app">
+  <div class="t1">
+    <div class="t1logo">K</div>
+    <div class="t1i on"><svg class="di" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></div>
+    <div class="t1i"><svg class="di" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="10" cy="7" r="4"/></svg></div>
+    <div class="t1i"><svg class="di" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5"/></svg></div>
+    <div class="t1i"><svg class="di" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div>
+    <div class="t1i"><svg class="di" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+    <div class="t1sp"></div>
+    <div class="t1av">FD</div>
+  </div>
+
+  <div class="colmain">
+    <div class="btop">
+      <div class="tgl"><svg class="di" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg></div>
+      <div class="srch"><svg class="di-s" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg> Buscar…</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+        <div class="chip"><svg class="di-s" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0116 0z"/><circle cx="12" cy="10" r="3"/></svg> Todas las sucursales <svg class="di-s" viewBox="0 0 24 24" style="width:12px"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="tico"><svg class="di" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/></svg><span class="tbadge">3</span></div>
+        <div class="t1av" style="width:32px;height:32px;">FD</div>
+      </div>
+    </div>
+
+    <div class="canvas">
+      <div class="grow">
+        <div><div class="gsub">Buenos días 👋</div><div class="gtitle">Fabrizio</div></div>
+        <div class="segp"><span>Hoy</span><span>Semana</span><span class="on">Mes</span><span>Año</span></div>
+      </div>
+
+      <!-- PRIMARY KPIs -->
+      <div class="krow">
+        <div class="kc">
+          <div class="khead"><div class="kico" style="background:#ccfbf1;color:#0f766e;"><svg class="di-s" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div><div class="kt">Ventas del mes</div></div>
+          <div class="kv">$34.8k</div><div class="ktrend up">▲ 14% vs mes anterior</div>
+          <div class="spark"><i style="height:40%;background:#2dd4bf"></i><i style="height:60%;background:#2dd4bf"></i><i style="height:50%;background:#2dd4bf"></i><i style="height:80%;background:#0e7490"></i></div>
+        </div>
+        <div class="kc">
+          <div class="khead"><div class="kico" style="background:#d1fae5;color:#059669;"><svg class="di-s" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div class="kt">Utilidad del mes</div></div>
+          <div class="kv">$8.420</div><div class="ktrend up">▲ 18% · margen 24%</div>
+          <div class="spark"><i style="height:50%;background:#6ee7b7"></i><i style="height:45%;background:#6ee7b7"></i><i style="height:70%;background:#34d399"></i><i style="height:90%;background:#059669"></i></div>
+        </div>
+        <div class="kc">
+          <div class="khead"><div class="kico" style="background:#dbeafe;color:#1d4ed8;"><svg class="di-s" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="10" cy="7" r="4"/></svg></div><div class="kt">Total de clientes</div></div>
+          <div class="kv">342</div><div class="ktrend up">▲ 13 nuevos este mes</div>
+          <div class="spark"><i style="height:55%;background:#93c5fd"></i><i style="height:62%;background:#93c5fd"></i><i style="height:75%;background:#60a5fa"></i><i style="height:88%;background:#1d4ed8"></i></div>
+        </div>
+        <div class="kc">
+          <div class="khead"><div class="kico" style="background:#ede9fe;color:#6d28d9;"><svg class="di-s" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5"/></svg></div><div class="kt">Valor de inventario</div></div>
+          <div class="kv">$96.2k</div><div class="ktrend mut">1.284 productos · rotación 2.4x</div>
+        </div>
+      </div>
+
+      <!-- SECONDARY KPIs -->
+      <div class="krow2">
+        <div class="kc2"><div class="ic" style="background:#fef3c7;color:#b45309;"><svg class="di-s" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div><div class="l">Por cobrar</div><div class="v">$1.9k</div></div></div>
+        <div class="kc2"><div class="ic" style="background:#e0e7ff;color:#4338ca;"><svg class="di-s" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></div><div><div class="l">Por pagar</div><div class="v">$820</div></div></div>
+        <div class="kc2"><div class="ic" style="background:#cffafe;color:#0e7490;"><svg class="di-s" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div><div class="l">Ticket promedio</div><div class="v">$42</div></div></div>
+        <div class="kc2"><div class="ic" style="background:#fee2e2;color:#dc2626;"><svg class="di-s" viewBox="0 0 24 24"><path d="M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></div><div><div class="l">Bajo stock / agotados</div><div class="v">7 · 2</div></div></div>
+      </div>
+
+      <!-- CHART + DONUT -->
+      <div class="wrow">
+        <div class="panel">
+          <div class="ph"><div class="pht">Ventas de la semana</div><div class="pha">Ver reporte</div></div>
+          <div class="chart">
+            <div class="col"><div class="bar" style="height:45px"></div><div class="lb">Lun</div></div>
+            <div class="col"><div class="bar" style="height:70px"></div><div class="lb">Mar</div></div>
+            <div class="col"><div class="bar" style="height:55px"></div><div class="lb">Mié</div></div>
+            <div class="col"><div class="bar" style="height:98px"></div><div class="lb">Jue</div></div>
+            <div class="col"><div class="bar" style="height:82px"></div><div class="lb">Vie</div></div>
+            <div class="col"><div class="bar" style="height:115px"></div><div class="lb">Sáb</div></div>
+            <div class="col"><div class="bar" style="height:60px"></div><div class="lb">Dom</div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div class="pht">Estado del inventario</div></div>
+          <div class="donutwrap">
+            <div class="donut"><div class="hole"><div class="hv">1.284</div><div class="hl">SKUs</div></div></div>
+            <div class="leg">
+              <div><span class="dot" style="background:#0e7490"></span> En stock <b style="margin-left:auto;color:#0f172a">1.093</b></div>
+              <div><span class="dot" style="background:#f59e0b"></span> Bajo stock <b style="margin-left:auto;color:#0f172a">7</b></div>
+              <div><span class="dot" style="background:#ef4444"></span> Agotados <b style="margin-left:auto;color:#0f172a">2</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOP PRODUCTS + CLIENT TYPES + ALERTS -->
+      <div class="wrow3">
+        <div class="panel">
+          <div class="ph"><div class="pht">Top productos</div><div class="pha">Ver todo</div></div>
+          <div class="lrow"><div class="lnum">1</div><div style="flex:1"><div class="ln">Amoxicilina 500mg</div><div class="lprog"><i style="width:90%"></i></div></div><div class="lq">312</div></div>
+          <div class="lrow"><div class="lnum">2</div><div style="flex:1"><div class="ln">Guantes látex M</div><div class="lprog"><i style="width:72%"></i></div></div><div class="lq">248</div></div>
+          <div class="lrow"><div class="lnum">3</div><div style="flex:1"><div class="ln">Alcohol 70% 1L</div><div class="lprog"><i style="width:58%"></i></div></div><div class="lq">190</div></div>
+          <div class="lrow"><div class="lnum">4</div><div style="flex:1"><div class="ln">Jeringa 5ml</div><div class="lprog"><i style="width:40%"></i></div></div><div class="lq">134</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="ph"><div class="pht">Clientes por tipo</div><div class="pha">Gestionar</div></div>
+          <div class="ct"><span class="ctd" style="background:#0e7490"></span><span class="ctn">Minorista</span><div class="ctc"><b>210</b> <span>61%</span></div></div>
+          <div class="ct"><span class="ctd" style="background:#6d28d9"></span><span class="ctn">Mayorista</span><div class="ctc"><b>68</b> <span>20%</span></div></div>
+          <div class="ct"><span class="ctd" style="background:#f59e0b"></span><span class="ctn">Frecuentes</span><div class="ctc"><b>51</b> <span>15%</span></div></div>
+          <div class="ct"><span class="ctd" style="background:#22c55e"></span><span class="ctn">Nuevos (mes)</span><div class="ctc"><b>13</b> <span>4%</span></div></div>
+        </div>
+
+        <div class="panel">
+          <div class="ph"><div class="pht">Requieren atención</div></div>
+          <div class="alert"><div class="aic" style="background:#fef2f2;color:#dc2626"><svg class="di-xs" viewBox="0 0 24 24"><path d="M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></div><div><div class="an">Amoxicilina 500mg</div><div class="as">Stock 2 · mín. 10</div></div><div class="aa" style="color:#dc2626">Comprar</div></div>
+          <div class="alert"><div class="aic" style="background:#fffbeb;color:#b45309"><svg class="di-xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><div class="an">Factura #1038 vencida</div><div class="as">Farmacia Sur · +5 días</div></div><div class="aa" style="color:#b45309">$640</div></div>
+          <div class="alert"><div class="aic" style="background:#eff6ff;color:#1d4ed8"><svg class="di-xs" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></div><div><div class="an">Pago a proveedor</div><div class="as">Distribuidora JR · mañana</div></div><div class="aa" style="color:#1d4ed8">$380</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fab"><svg class="fabic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Vender</div>
+</div>
+
+<p class="subtitle" style="margin-top:20px;"><b>Nuevo:</b> Ventas del mes · Utilidad+margen · <b>Total de clientes</b> (+nuevos) · <b>Valor de inventario</b>+rotación · fila secundaria (Por cobrar/pagar, Ticket promedio, Bajo stock/agotados) · <b>Estado del inventario</b> (donut) · Top productos · <b>Clientes por tipo</b> (Minorista/Mayorista/Frecuentes/Nuevos, configurable) · Requieren atención. El selector Hoy/Semana/Mes/Año recalcula todo, y el selector de sucursal permite ver una sede o consolidado.</p>
+
+<div class="options" style="margin-top:8px;">
+  <div class="option" data-choice="ok" onclick="toggleSelect(this)"><div class="letter">✓</div><div class="content"><h3>Me encanta, así</h3><p>Set completo de KPIs + widgets para primera impresión.</p></div></div>
+  <div class="option" data-choice="tweak" onclick="toggleSelect(this)"><div class="letter">~</div><div class="content"><h3>Quita/añade algún KPI</h3><p>Dime cuáles priorizar o qué otro dato incluir (ej. ventas por método de pago, por vendedor, por sucursal).</p></div></div>
+</div>

@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Home, LayoutDashboard, Bell, Activity, Users, UserPlus, Package, FileText,
   ClipboardList, BarChart3, Boxes, TrendingUp, Wallet, ArrowUpCircle, ArrowDownCircle,
-  Percent, Landmark, Receipt, Settings, Building2, ShieldCheck, SlidersHorizontal,
+  Percent, Landmark, Receipt, Settings, Building2, ShieldCheck, SlidersHorizontal, Tags,
 } from "lucide-react";
 import { canAccess, type Role, type Resource } from "@/lib/auth/roles";
 
@@ -41,6 +41,7 @@ export const NAV: NavSection[] = [
 // en Preferencias), pero Sucursales/Usuarios se gatean a owner/admin con resource "billing".
 export const CONFIG_SECTION: NavSection = {
   id: "config", label: "Configuración", icon: Settings, resource: "operaciones", children: [
+    { label: "Tipos de cliente", href: "/configuracion/tipos-de-cliente", icon: Tags, resource: "billing" },
     { label: "Sucursales", href: "/configuracion/sucursales", icon: Building2, resource: "billing" },
     { label: "Usuarios y roles", href: "/configuracion/usuarios", icon: ShieldCheck, resource: "billing" },
     { label: "Preferencias", href: "/configuracion/preferencias", icon: SlidersHorizontal },

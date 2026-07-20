@@ -22,10 +22,12 @@ export function TopBar({ user, branches, onToggle }: {
         <PanelLeft className="h-5 w-5" strokeWidth={2} />
       </button>
 
-      <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 text-[var(--text-soft)]">
-        <Search className="h-4 w-4" strokeWidth={2} />
-        <input placeholder="Buscar…" className="w-full bg-transparent text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-soft)]" />
+      <div className="flex h-9 w-full max-w-[330px] items-center gap-2 rounded-[9px] border border-[var(--border)] bg-[var(--bg)] px-[11px] text-[var(--text-soft)]">
+        <Search className="h-[15px] w-[15px]" strokeWidth={2} />
+        <input placeholder="Buscar productos, clientes, facturas…" className="w-full bg-transparent text-[12.5px] text-[var(--text)] outline-none placeholder:text-[var(--text-soft)]" />
       </div>
+
+      <div className="flex-1" />
 
       <DropdownMenu trigger={
         <button className="flex h-9 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 text-sm text-[var(--text)]">

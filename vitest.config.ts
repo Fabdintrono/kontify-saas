@@ -1,11 +1,13 @@
 import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 
 export default defineConfig({
+  plugins: [react()],
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
-  // Tests de integración contra Supabase local: sin paralelismo entre archivos
-  // para no golpear GoTrue concurrentemente (createUser flakea bajo carga).
+  // Entorno por defecto: node (tests de integración contra Supabase). Los tests de
+  // componente/tema declaran jsdom por-archivo con `// @vitest-environment jsdom`.
   test: { environment: "node", testTimeout: 20000, fileParallelism: false },
 });

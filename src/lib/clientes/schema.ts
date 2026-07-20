@@ -12,7 +12,7 @@ const optEmail =
 
 const optTypeId =
   z.preprocess((v) => (v === "" || v === "null" || v === undefined ? null : v),
-    z.string().uuid().nullable());
+    z.string().uuid().nullable().optional());
 
 export const clientCreateSchema = z.object({
   kind: z.enum(CLIENT_KINDS, { message: "Tipo inválido" }),

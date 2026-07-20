@@ -4,6 +4,7 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { AttentionList } from "@/components/dashboard/attention-list";
 import { PeriodSelector } from "@/components/dashboard/period-selector";
+import { clientsKpi, clientsByType } from "@/lib/clientes/queries";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -12,6 +13,11 @@ export default async function Dashboard() {
     ? await supabase.from("profiles").select("full_name").eq("id", user.id).single()
     : { data: null };
   const firstName = ((profile?.full_name ?? "") as string).split(" ")[0] || "";
+
+  const [kpi, byType] = await Promise.all([clientsKpi(supabase), clientsByType(supabase)]);
+  const totalClientes = kpi.total > 0
+    ? { value: String(kpi.total), sub: `${kpi.newThisMonth} nuevos este mes` }
+    : {};
 
   return (
     <div className="space-y-5 p-6">
@@ -26,7 +32,7 @@ export default async function Dashboard() {
       <div className="grid grid-cols-2 gap-3 lg:hidden">
         <div className="col-span-2"><KpiCard icon={TrendingUp} label="Utilidad del mes" /></div>
         <KpiCard icon={DollarSign} label="Ventas del mes" />
-        <KpiCard icon={Users} label="Total de clientes" />
+        <KpiCard icon={Users} label="Total de clientes" value={totalClientes.value} sub={totalClientes.sub} />
         <KpiCard icon={ArrowDownCircle} label="Por cobrar" />
         <KpiCard icon={AlertTriangle} label="Bajo stock" />
       </div>
@@ -35,7 +41,7 @@ export default async function Dashboard() {
       <div className="hidden grid-cols-4 gap-3 lg:grid">
         <KpiCard icon={DollarSign} label="Ventas del mes" />
         <KpiCard icon={TrendingUp} label="Utilidad del mes" />
-        <KpiCard icon={Users} label="Total de clientes" />
+        <KpiCard icon={Users} label="Total de clientes" value={totalClientes.value} sub={totalClientes.sub} />
         <KpiCard icon={Boxes} label="Valor de inventario" />
         <KpiCard icon={ArrowDownCircle} label="Por cobrar" />
         <KpiCard icon={ArrowUpCircle} label="Por pagar" />
@@ -47,6 +53,25 @@ export default async function Dashboard() {
       <div className="hidden gap-4 lg:grid lg:grid-cols-3">
         <div className="lg:col-span-2"><ChartCard title="Ventas de la semana" icon={BarChart3} empty emptyHint="Aún no hay ventas registradas." /></div>
         <ChartCard title="Estado del inventario" icon={PieChart} empty emptyHint="Aún no hay productos en inventario." />
+      </div>
+
+      {/* Escritorio: Clientes por tipo */}
+      <div className="hidden lg:block">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+          <p className="mb-3 text-sm font-bold text-[var(--text)]">Clientes por tipo</p>
+          {byType.length === 0 ? (
+            <p className="py-6 text-center text-sm text-[var(--text-soft)]">Aún sin clientes registrados.</p>
+          ) : (
+            <ul className="space-y-2">
+              {byType.map((t) => (
+                <li key={t.typeId ?? "none"} className="flex items-center justify-between text-sm">
+                  <span className="text-[var(--text)]">{t.name}</span>
+                  <span className="font-semibold text-[var(--text)]">{t.count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       <AttentionList items={[]} />

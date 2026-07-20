@@ -23,8 +23,8 @@ describe("navForRole", () => {
 });
 
 describe("configForRole", () => {
-  it("owner ve las 3 opciones de Configuración", () => {
-    expect(configForRole("owner")!.children).toHaveLength(3);
+  it("owner ve las 4 opciones de Configuración", () => {
+    expect(configForRole("owner")!.children).toHaveLength(4);
   });
   it("cajero solo ve Preferencias dentro de Configuración", () => {
     expect(configForRole("cajero")!.children.map((c) => c.label)).toEqual(["Preferencias"]);

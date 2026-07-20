@@ -8,7 +8,9 @@ import { PeriodSelector } from "@/components/dashboard/period-selector";
 export default async function Dashboard() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user!.id).single();
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("full_name").eq("id", user.id).single()
+    : { data: null };
   const firstName = ((profile?.full_name ?? "") as string).split(" ")[0] || "";
 
   return (

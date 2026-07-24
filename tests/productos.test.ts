@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { newUserClient } from "./setup";
 import { createProduct, archiveProduct, createTaxRate, updateTaxRate } from "@/lib/productos/mutations";
+import type { ProductInput } from "@/lib/productos/schema";
 import { listProducts, listCategories, listTaxRates, productsKpi, productsByCategory } from "@/lib/productos/queries";
 
 async function makeTenant(name: string) {
@@ -19,7 +20,7 @@ async function addMember(owner: Awaited<ReturnType<typeof makeTenant>>, role: st
   return u;
 }
 
-const base = (over: Partial<any> = {}) =>
+const base = (over: Partial<ProductInput> = {}): ProductInput =>
   ({ kind: "good", name: "Producto", unit: "unidad", price: 10, sku: undefined,
      description: undefined, categoryId: null, cost: undefined, taxRateId: null, ...over });
 

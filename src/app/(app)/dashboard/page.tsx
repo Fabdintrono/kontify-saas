@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import { DollarSign, TrendingUp, Users, Boxes, ArrowDownCircle, ArrowUpCircle, Receipt, AlertTriangle, BarChart3, PieChart } from "lucide-react";
+import { DollarSign, TrendingUp, Users, Boxes, ArrowDownCircle, ArrowUpCircle, Receipt, AlertTriangle, BarChart3, PieChart, Package } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { AttentionList } from "@/components/dashboard/attention-list";
 import { PeriodSelector } from "@/components/dashboard/period-selector";
 import { clientsKpi, clientsByType } from "@/lib/clientes/queries";
+import { productsKpi, productsByCategory } from "@/lib/productos/queries";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -14,7 +15,10 @@ export default async function Dashboard() {
     : { data: null };
   const firstName = ((profile?.full_name ?? "") as string).split(" ")[0] || "";
 
-  const [kpi, byType] = await Promise.all([clientsKpi(supabase), clientsByType(supabase)]);
+  const [kpi, byType, prodKpi, byCategory] = await Promise.all([
+    clientsKpi(supabase), clientsByType(supabase), productsKpi(supabase), productsByCategory(supabase),
+  ]);
+  const totalProductos = prodKpi.total > 0 ? { value: String(prodKpi.total) } : {};
   const totalClientes = kpi.total > 0
     ? { value: String(kpi.total), sub: `${kpi.newThisMonth} nuevos este mes` }
     : {};
@@ -35,6 +39,7 @@ export default async function Dashboard() {
         <KpiCard icon={Users} label="Total de clientes" value={totalClientes.value} sub={totalClientes.sub} />
         <KpiCard icon={ArrowDownCircle} label="Por cobrar" />
         <KpiCard icon={AlertTriangle} label="Bajo stock" />
+        <KpiCard icon={Package} label="Productos" value={totalProductos.value} />
       </div>
 
       {/* Escritorio: 4 KPIs primarios + 4 secundarios */}
@@ -55,8 +60,8 @@ export default async function Dashboard() {
         <ChartCard title="Estado del inventario" icon={PieChart} empty emptyHint="Aún no hay productos en inventario." />
       </div>
 
-      {/* Escritorio: Clientes por tipo */}
-      <div className="hidden lg:block">
+      {/* Escritorio: Clientes por tipo + Productos por categoría */}
+      <div className="hidden gap-4 lg:grid lg:grid-cols-2">
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <p className="mb-3 text-sm font-bold text-[var(--text)]">Clientes por tipo</p>
           {byType.length === 0 ? (
@@ -67,6 +72,24 @@ export default async function Dashboard() {
                 <li key={t.typeId ?? "none"} className="flex items-center justify-between text-sm">
                   <span className="text-[var(--text)]">{t.name}</span>
                   <span className="font-semibold text-[var(--text)]">{t.count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-bold text-[var(--text)]">Productos por categoría</p>
+            {prodKpi.total > 0 && <span className="text-sm font-semibold text-[var(--text-soft)]">{prodKpi.total} en total</span>}
+          </div>
+          {byCategory.length === 0 ? (
+            <p className="py-6 text-center text-sm text-[var(--text-soft)]">Aún sin productos registrados.</p>
+          ) : (
+            <ul className="space-y-2">
+              {byCategory.map((c) => (
+                <li key={c.categoryId ?? "none"} className="flex items-center justify-between text-sm">
+                  <span className="text-[var(--text)]">{c.name}</span>
+                  <span className="font-semibold text-[var(--text)]">{c.count}</span>
                 </li>
               ))}
             </ul>

@@ -55,8 +55,8 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
         {field("Tipo", p.kind === "service" ? "Servicio" : "Bien")}
         {field("SKU / código", p.sku)}
         {field("Precio", formatMoney(p.price, currency))}
-        {field("Costo", p.cost != null ? formatMoney(p.cost, currency) : null)}
-        {field("Margen", margin != null ? formatMoney(margin, currency) : null)}
+        {canManageProducts(role) && field("Costo", p.cost != null ? formatMoney(p.cost, currency) : null)}
+        {canManageProducts(role) && field("Margen", margin != null ? formatMoney(margin, currency) : null)}
         {field("Impuesto", p.tax_rates ? `${p.tax_rates.name} (${Number(p.tax_rates.rate)}%)` : null)}
         {field("Unidad", p.unit)}
         <div className="sm:col-span-2">{field("Descripción", p.description)}</div>

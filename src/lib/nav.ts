@@ -21,6 +21,7 @@ export const NAV: NavSection[] = [
   ]},
   { id: "operaciones", label: "Operaciones", icon: Package, resource: "operaciones", children: [
     { label: "Productos", href: "/operaciones/productos", icon: Package },
+    { label: "Inventario", href: "/operaciones/inventario", icon: Boxes },
     { label: "Facturación", href: "/operaciones/facturacion", icon: FileText },
     { label: "Presupuestos", href: "/operaciones/presupuestos", icon: ClipboardList },
   ]},

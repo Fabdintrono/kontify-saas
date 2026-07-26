@@ -62,12 +62,13 @@ export async function emitSale(sb: SupabaseClient, id: string, payment: EmitInpu
   const { data: num, error: numErr } = await sb.rpc("next_sale_number");
   if (numErr) throw numErr;
   const paid = payment.paymentType === "contado" ? Number(sale.total) : 0;
-  const { error } = await sb.from("sales").update({
+  const { data, error } = await sb.from("sales").update({
     number: num, status: "issued", issued_at: new Date().toISOString(),
     paid_amount: paid, payment_method: payment.paymentType === "contado" ? (payment.paymentMethod ?? null) : null,
     updated_at: new Date().toISOString(),
-  }).eq("id", id).eq("status", "draft");
+  }).eq("id", id).eq("status", "draft").select("id");
   if (error) throw error;
+  if (!data || data.length === 0) throw new Error("La venta ya no es un borrador");
 }
 
 export async function voidSale(sb: SupabaseClient, id: string): Promise<void> {

@@ -109,4 +109,19 @@ describe("ventas — RLS", () => {
       .insert({ tenant_id: a.tenantId, branch_id: main, status: "draft", currency: "USD" });
     expect(error).not.toBeNull();
   });
+
+  it("un vendedor no puede insertar una venta en otra sucursal (RLS de escritura scopeada)", async () => {
+    const a = await makeTenant("wscope");
+    const main = await mainBranch(a);
+    const { data: otra } = await a.client.from("branches").insert({ tenant_id: a.tenantId, name: "Sur" }).select("id").single();
+    const vendedor = await addMember(a, "vendedor", main);
+    // en su propia sucursal: permitido
+    const ok = await vendedor.client.from("sales")
+      .insert({ tenant_id: a.tenantId, branch_id: main, status: "draft", currency: "USD" });
+    expect(ok.error).toBeNull();
+    // en otra sucursal: RLS niega
+    const bad = await vendedor.client.from("sales")
+      .insert({ tenant_id: a.tenantId, branch_id: otra!.id, status: "draft", currency: "USD" });
+    expect(bad.error).not.toBeNull();
+  });
 });

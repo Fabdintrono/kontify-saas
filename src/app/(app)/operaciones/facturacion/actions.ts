@@ -22,10 +22,15 @@ async function ctx() {
   const sb = await serverSupabase();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) redirect("/login");
-  const { data: mem } = await sb.from("memberships").select("role").eq("user_id", user.id).single();
+  const { data: mem } = await sb.from("memberships").select("role, branch_id").eq("user_id", user.id).single();
   const { data: tenantId } = await sb.rpc("current_tenant_id");
-  return { sb, userId: user.id, role: (mem?.role ?? "vendedor") as Role, tenantId: tenantId as string };
+  return {
+    sb, userId: user.id, role: (mem?.role ?? "vendedor") as Role, tenantId: tenantId as string,
+    branchId: (mem?.branch_id ?? null) as string | null,
+  };
 }
+
+const BACK_OFFICE: Role[] = ["owner", "admin", "administrativo"];
 
 function commonFields(fd: FormData) {
   let items: unknown = [];
@@ -41,7 +46,7 @@ function commonFields(fd: FormData) {
 
 // Acción única con intent (save | emit) para el builder; compatible con useActionState.
 export async function submitSaleAction(_prev: FormState, fd: FormData): Promise<FormState> {
-  const { sb, userId, role, tenantId } = await ctx();
+  const { sb, userId, role, tenantId, branchId } = await ctx();
   if (!canSell(role)) return { ok: false, error: "Sin permiso" };
   const intent = String(fd.get("intent") ?? "save");
   const id = String(fd.get("id") ?? "");
@@ -49,6 +54,10 @@ export async function submitSaleAction(_prev: FormState, fd: FormData): Promise<
   const schema = intent === "emit" ? saleEmitSchema : saleSaveSchema;
   const parsed = schema.safeParse(commonFields(fd));
   if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
+
+  // Los operativos solo operan en su sucursal: ignora el branchId recibido y fuérzalo al suyo.
+  // (RLS es la barrera dura; esto evita un rechazo silencioso y da la sucursal correcta.)
+  if (!BACK_OFFICE.includes(role) && branchId) parsed.data.branchId = branchId;
 
   let saleId = id;
   try {

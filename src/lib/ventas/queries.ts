@@ -23,8 +23,7 @@ export async function listSales(sb: SupabaseClient, opts: {
     { count: "exact" },
   );
   if (STATUS_MAP[status]) q = q.eq("status", STATUS_MAP[status]);
-  // núcleo: sin abonos parciales → pendiente = emitida con paid_amount 0. (Cobros cambiará esto a balance>0.)
-  if (payment === "pendientes") q = q.eq("status", "issued").eq("paid_amount", 0);
+  if (payment === "pendientes") q = q.eq("status", "issued").gt("balance", 0);
   const s = sanitize(search);
   if (s) {
     if (/^\d+$/.test(s)) {

@@ -6,7 +6,7 @@ type Category = { id: string; name: string };
 type TaxRate = { id: string; name: string; isDefault: boolean };
 type Values = {
   id?: string; kind?: "good" | "service"; name?: string; sku?: string; description?: string;
-  unit?: string; categoryId?: string | null; price?: string; cost?: string; taxRateId?: string | null;
+  unit?: string; categoryId?: string | null; price?: string; cost?: string; taxRateId?: string | null; minStock?: string;
 };
 
 const initial: FormState = { ok: false };
@@ -66,6 +66,13 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
           <label className={labelCls}>Costo</label>
           <input name="cost" type="number" step="0.01" min="0" defaultValue={values.cost ?? ""} className={inputCls} />
           {err("cost") && <p className="mt-1 text-xs text-[#dc2626]">{err("cost")}</p>}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Stock mínimo</label>
+          <input name="minStock" type="number" step="0.01" min="0" defaultValue={values.minStock ?? "0"} className={inputCls} />
+          {err("minStock") && <p className="mt-1 text-xs text-[#dc2626]">{err("minStock")}</p>}
         </div>
       </div>
       <div>

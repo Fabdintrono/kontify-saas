@@ -22,7 +22,7 @@ async function addMember(owner: Awaited<ReturnType<typeof makeTenant>>, role: st
 
 const base = (over: Partial<ProductInput> = {}): ProductInput =>
   ({ kind: "good", name: "Producto", unit: "unidad", price: 10, sku: undefined,
-     description: undefined, categoryId: null, cost: undefined, taxRateId: null, ...over });
+     description: undefined, categoryId: null, cost: undefined, taxRateId: null, minStock: 0, ...over });
 
 describe("productos — seed y CRUD", () => {
   it("un tenant nuevo trae categoría General y tasas IVA 16% (default) + Exento 0%", async () => {

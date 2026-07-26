@@ -32,6 +32,7 @@ export const productCreateSchema = z.object({
   price: reqNum,
   cost: optNum,
   taxRateId: optId,
+  minStock: reqNum,
 });
 export type ProductInput = z.infer<typeof productCreateSchema>;
 

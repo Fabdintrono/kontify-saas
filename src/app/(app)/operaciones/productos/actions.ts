@@ -25,7 +25,7 @@ function zodErrors(err: z.ZodError): Record<string, string> {
 const productFields = (fd: FormData) => ({
   kind: fd.get("kind"), name: fd.get("name"), sku: fd.get("sku"), description: fd.get("description"),
   unit: fd.get("unit"), categoryId: fd.get("categoryId"), price: fd.get("price"),
-  cost: fd.get("cost"), taxRateId: fd.get("taxRateId"),
+  cost: fd.get("cost"), taxRateId: fd.get("taxRateId"), minStock: fd.get("minStock"),
 });
 
 async function ctx() {

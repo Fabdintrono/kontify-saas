@@ -48,7 +48,8 @@ describe("inventario — integración con ventas", () => {
     const a = await makeTenant("sale"); const b = await mainBranch(a); const p = await makeProduct(a);
     await registerAdjustment(a.client, a.tenantId, a.id, { productId: p, branchId: b, direction: "in", quantity: 10 });
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", saleOf(b, p, 4));
-    await emitSale(a.client, id, { paymentType: "contado", paymentMethod: "efectivo" });
+    // crédito: la venta queda sin cobros → es anulable (el contado bloquearía void por su pago)
+    await emitSale(a.client, id, { paymentType: "credito" });
     expect(await qtyOf(a, p, b)).toBe(6);
     await voidSale(a.client, id);
     expect(await qtyOf(a, p, b)).toBe(10); // repuesto

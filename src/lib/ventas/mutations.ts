@@ -88,11 +88,6 @@ export async function emitSale(sb: SupabaseClient, id: string, payment: EmitInpu
 }
 
 export async function voidSale(sb: SupabaseClient, id: string): Promise<void> {
-  // Auto-anular cobros del contado (el pago se revierte junto con la venta).
-  const { data: sale } = await sb.from("sales").select("payment_method").eq("id", id).maybeSingle();
-  if (sale?.payment_method) {
-    await sb.from("payments").update({ voided: true }).eq("sale_id", id).eq("voided", false);
-  }
   const { count } = await sb.from("payments").select("id", { count: "exact", head: true })
     .eq("sale_id", id).eq("voided", false);
   if (count && count > 0) throw new Error("Anula primero los cobros de esta venta");

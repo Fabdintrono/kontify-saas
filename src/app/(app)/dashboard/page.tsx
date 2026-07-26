@@ -5,7 +5,9 @@ import { ChartCard } from "@/components/dashboard/chart-card";
 import { AttentionList } from "@/components/dashboard/attention-list";
 import { PeriodSelector } from "@/components/dashboard/period-selector";
 import { clientsKpi, clientsByType } from "@/lib/clientes/queries";
-import { productsKpi, productsByCategory } from "@/lib/productos/queries";
+import { productsKpi, productsByCategory, getTenantCurrency } from "@/lib/productos/queries";
+import { salesKpi, receivablesTotal } from "@/lib/ventas/queries";
+import { formatMoney } from "@/lib/format";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -15,9 +17,13 @@ export default async function Dashboard() {
     : { data: null };
   const firstName = ((profile?.full_name ?? "") as string).split(" ")[0] || "";
 
-  const [kpi, byType, prodKpi, byCategory] = await Promise.all([
+  const [kpi, byType, prodKpi, byCategory, sKpi, recv, currency] = await Promise.all([
     clientsKpi(supabase), clientsByType(supabase), productsKpi(supabase), productsByCategory(supabase),
+    salesKpi(supabase), receivablesTotal(supabase), getTenantCurrency(supabase),
   ]);
+  const ventasMes = sKpi.monthTotal > 0 ? { value: formatMoney(sKpi.monthTotal, currency) } : {};
+  const ticket = sKpi.avgTicket > 0 ? { value: formatMoney(sKpi.avgTicket, currency) } : {};
+  const porCobrar = recv.total > 0 ? { value: formatMoney(recv.total, currency) } : {};
   const totalProductos = prodKpi.total > 0 ? { value: String(prodKpi.total) } : {};
   const totalClientes = kpi.total > 0
     ? { value: String(kpi.total), sub: `${kpi.newThisMonth} nuevos este mes` }
@@ -35,22 +41,22 @@ export default async function Dashboard() {
       {/* Móvil: hero Utilidad + 4 KPIs */}
       <div className="grid grid-cols-2 gap-3 lg:hidden">
         <div className="col-span-2"><KpiCard icon={TrendingUp} label="Utilidad del mes" /></div>
-        <KpiCard icon={DollarSign} label="Ventas del mes" />
+        <KpiCard icon={DollarSign} label="Ventas del mes" value={ventasMes.value} />
         <KpiCard icon={Users} label="Total de clientes" value={totalClientes.value} sub={totalClientes.sub} />
-        <KpiCard icon={ArrowDownCircle} label="Por cobrar" />
+        <KpiCard icon={ArrowDownCircle} label="Por cobrar" value={porCobrar.value} />
         <KpiCard icon={AlertTriangle} label="Bajo stock" />
         <KpiCard icon={Package} label="Productos" value={totalProductos.value} />
       </div>
 
       {/* Escritorio: 4 KPIs primarios + 4 secundarios */}
       <div className="hidden grid-cols-4 gap-3 lg:grid">
-        <KpiCard icon={DollarSign} label="Ventas del mes" />
+        <KpiCard icon={DollarSign} label="Ventas del mes" value={ventasMes.value} />
         <KpiCard icon={TrendingUp} label="Utilidad del mes" />
         <KpiCard icon={Users} label="Total de clientes" value={totalClientes.value} sub={totalClientes.sub} />
         <KpiCard icon={Boxes} label="Valor de inventario" />
-        <KpiCard icon={ArrowDownCircle} label="Por cobrar" />
+        <KpiCard icon={ArrowDownCircle} label="Por cobrar" value={porCobrar.value} />
         <KpiCard icon={ArrowUpCircle} label="Por pagar" />
-        <KpiCard icon={Receipt} label="Ticket promedio" />
+        <KpiCard icon={Receipt} label="Ticket promedio" value={ticket.value} />
         <KpiCard icon={AlertTriangle} label="Bajo stock / agotados" />
       </div>
 

@@ -25,7 +25,7 @@ export function MobileBottomNav({ user }: { user: ShellUser }) {
       <nav className="fixed inset-x-0 bottom-0 z-40 flex items-end border-t border-[var(--border)] bg-[var(--surface)] px-2 lg:hidden">
         <Item href="/dashboard" icon={Home} label="Inicio" />
         <Item href="/operaciones/facturacion" icon={ShoppingCart} label="Vender" />
-        <button aria-label="Vender" onClick={() => router.push("/operaciones/facturacion")}
+        <button aria-label="Vender" onClick={() => router.push("/operaciones/facturacion/nueva")}
           className="-mt-5 grid h-[46px] w-[46px] flex-none place-items-center bg-gradient-to-br from-[#0e7490] to-[#14b8a6] text-white shadow-lg"
           style={{ borderRadius: 22 }}>
           <Plus className="h-6 w-6" strokeWidth={2.5} />

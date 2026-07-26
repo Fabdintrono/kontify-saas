@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PaymentInput } from "@/lib/cobros/schema";
+import { round2 } from "@/lib/ventas/totals";
 
 export async function registerPayment(
   sb: SupabaseClient, tenantId: string, userId: string, input: PaymentInput,
@@ -9,10 +10,14 @@ export async function registerPayment(
   if (readErr) throw readErr;
   if (!sale || sale.status !== "issued") throw new Error("Solo se cobran ventas emitidas");
   const balance = Number(sale.balance);
-  if (input.amount > balance + 1e-9) throw new Error("El abono supera el saldo pendiente");
+  // Redondea a 2 decimales (la columna es numeric(14,2)) antes de validar/guardar,
+  // para que el saldo quede consistente con lo realmente almacenado.
+  const amount = round2(input.amount);
+  if (amount <= 0) throw new Error("El monto debe ser mayor a 0");
+  if (amount > balance + 1e-9) throw new Error("El abono supera el saldo pendiente");
 
   const { data, error } = await sb.from("payments").insert({
-    tenant_id: tenantId, sale_id: input.saleId, amount: input.amount,
+    tenant_id: tenantId, sale_id: input.saleId, amount,
     method: input.method ?? null, reference: input.reference ?? null,
     paid_at: input.paidAt ?? new Date().toISOString().slice(0, 10),
     notes: input.notes ?? null, created_by: userId,

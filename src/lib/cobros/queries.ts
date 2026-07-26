@@ -74,6 +74,7 @@ export async function listPayments(sb: SupabaseClient, saleId: string): Promise<
   return data.map((p: any) => ({ id: p.id, amount: Number(p.amount), method: p.method, reference: p.reference, paidAt: p.paid_at, voided: p.voided }));
 }
 
+// Total por cobrar + porción vencida. La consumirá el dashboard ("Requieren atención") en un plan posterior.
 export async function receivablesKpi(sb: SupabaseClient): Promise<{ total: number; overdue: number }> {
   try {
     const { data, error } = await sb.from("sales").select("balance, due_date").eq("status", "issued").gt("balance", 0);

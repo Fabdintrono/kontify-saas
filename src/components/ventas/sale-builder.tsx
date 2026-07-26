@@ -134,6 +134,10 @@ export function SaleBuilder({ clients, products, branches, role, userBranchId, c
             <div><label className={labelCls}>Método de pago (opcional)</label>
               <input name="paymentMethod" className={inputCls} placeholder="Efectivo, transferencia…" /></div>
           )}
+          {paymentType === "credito" && (
+            <div><label className={labelCls}>Fecha de vencimiento (opcional)</label>
+              <input name="dueDate" type="date" className={inputCls} /></div>
+          )}
           <button name="intent" value="emit" disabled={pending}
             className="w-full rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
             {pending ? "Emitiendo…" : "Confirmar emisión"}

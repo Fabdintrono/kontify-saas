@@ -54,24 +54,39 @@ export async function deleteDraft(sb: SupabaseClient, id: string): Promise<void>
 }
 
 export async function emitSale(sb: SupabaseClient, id: string, payment: EmitInput): Promise<void> {
-  const { data: sale, error: readErr } = await sb.from("sales").select("id, status, total").eq("id", id).maybeSingle();
+  const { data: sale, error: readErr } = await sb.from("sales")
+    .select("id, status, total, tenant_id, created_by").eq("id", id).maybeSingle();
   if (readErr) throw readErr;
   if (!sale || sale.status !== "draft") throw new Error("Solo se emiten borradores");
   const { count } = await sb.from("sale_items").select("id", { count: "exact", head: true }).eq("sale_id", id);
   if (!count) throw new Error("La venta no tiene líneas");
   const { data: num, error: numErr } = await sb.rpc("next_sale_number");
   if (numErr) throw numErr;
-  const paid = payment.paymentType === "contado" ? Number(sale.total) : 0;
+
   const { data, error } = await sb.from("sales").update({
     number: num, status: "issued", issued_at: new Date().toISOString(),
-    paid_amount: paid, payment_method: payment.paymentType === "contado" ? (payment.paymentMethod ?? null) : null,
+    payment_method: payment.paymentType === "contado" ? (payment.paymentMethod ?? null) : null,
+    due_date: payment.paymentType === "credito" ? (payment.dueDate ?? null) : null,
     updated_at: new Date().toISOString(),
   }).eq("id", id).eq("status", "draft").select("id");
   if (error) throw error;
   if (!data || data.length === 0) throw new Error("La venta ya no es un borrador");
+
+  // El contado se registra como un cobro por el total → el trigger fija paid_amount.
+  if (payment.paymentType === "contado") {
+    const { error: payErr } = await sb.from("payments").insert({
+      tenant_id: sale.tenant_id, sale_id: id, amount: Number(sale.total),
+      method: payment.paymentMethod ?? null, paid_at: new Date().toISOString().slice(0, 10),
+      created_by: sale.created_by,
+    });
+    if (payErr) throw payErr;
+  }
 }
 
 export async function voidSale(sb: SupabaseClient, id: string): Promise<void> {
+  const { count } = await sb.from("payments").select("id", { count: "exact", head: true })
+    .eq("sale_id", id).eq("voided", false);
+  if (count && count > 0) throw new Error("Anula primero los cobros de esta venta");
   const { data, error } = await sb.from("sales").update({ status: "void", updated_at: new Date().toISOString() })
     .eq("id", id).eq("status", "issued").select("id");
   if (error) throw error;

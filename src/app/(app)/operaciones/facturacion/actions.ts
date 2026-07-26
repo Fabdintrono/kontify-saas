@@ -66,7 +66,7 @@ export async function submitSaleAction(_prev: FormState, fd: FormData): Promise<
     else saleId = await m.createDraft(sb, tenantId, userId, currency, parsed.data);
 
     if (intent === "emit") {
-      const pay = emitSchema.safeParse({ paymentType: fd.get("paymentType"), paymentMethod: fd.get("paymentMethod") });
+      const pay = emitSchema.safeParse({ paymentType: fd.get("paymentType"), paymentMethod: fd.get("paymentMethod"), dueDate: fd.get("dueDate") });
       if (!pay.success) return { ok: false, fieldErrors: zodErrors(pay.error) };
       await m.emitSale(sb, saleId, pay.data);
     }

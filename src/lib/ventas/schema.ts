@@ -34,5 +34,7 @@ export const saleEmitSchema = saleSaveSchema.extend({
 export const emitSchema = z.object({
   paymentType: z.enum(["contado", "credito"], { message: "Tipo de pago inválido" }),
   paymentMethod: optStr(40),
+  dueDate: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida").optional()),
 });
 export type EmitInput = z.infer<typeof emitSchema>;

@@ -1,0 +1,78 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SaleSaveInput, EmitInput } from "@/lib/ventas/schema";
+import { computeSaleTotals } from "@/lib/ventas/totals";
+
+function headerTotals(input: SaleSaveInput) {
+  const t = computeSaleTotals(
+    input.items.map((i) => ({ quantity: i.quantity, unitPrice: i.unitPrice, discountPct: i.discountPct, taxRate: i.taxRate })),
+    input.globalDiscountPct,
+  );
+  return { subtotal: t.subtotal, discount_total: t.discountTotal, tax_total: t.taxTotal, total: t.total };
+}
+
+async function replaceItems(sb: SupabaseClient, saleId: string, tenantId: string, input: SaleSaveInput) {
+  const { error: delErr } = await sb.from("sale_items").delete().eq("sale_id", saleId);
+  if (delErr) throw delErr;
+  if (input.items.length === 0) return;
+  const rows = input.items.map((i, idx) => ({
+    tenant_id: tenantId, sale_id: saleId, product_id: i.productId ?? null,
+    description: i.description, quantity: i.quantity, unit_price: i.unitPrice,
+    discount_pct: i.discountPct, tax_rate: i.taxRate, position: idx,
+  }));
+  const { error } = await sb.from("sale_items").insert(rows);
+  if (error) throw error;
+}
+
+export async function createDraft(
+  sb: SupabaseClient, tenantId: string, userId: string, currency: string, input: SaleSaveInput,
+): Promise<string> {
+  const { data, error } = await sb.from("sales").insert({
+    tenant_id: tenantId, created_by: userId, branch_id: input.branchId, client_id: input.clientId ?? null,
+    status: "draft", currency, global_discount_pct: input.globalDiscountPct, notes: input.notes ?? null,
+    ...headerTotals(input),
+  }).select("id").single();
+  if (error) throw error;
+  await replaceItems(sb, data.id, tenantId, input);
+  return data.id as string;
+}
+
+export async function updateDraft(sb: SupabaseClient, id: string, tenantId: string, input: SaleSaveInput): Promise<void> {
+  const { data, error } = await sb.from("sales").update({
+    branch_id: input.branchId, client_id: input.clientId ?? null,
+    global_discount_pct: input.globalDiscountPct, notes: input.notes ?? null,
+    ...headerTotals(input), updated_at: new Date().toISOString(),
+  }).eq("id", id).eq("status", "draft").select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error("La venta no es un borrador editable");
+  await replaceItems(sb, id, tenantId, input);
+}
+
+export async function deleteDraft(sb: SupabaseClient, id: string): Promise<void> {
+  const { data, error } = await sb.from("sales").delete().eq("id", id).eq("status", "draft").select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error("Solo se pueden borrar borradores");
+}
+
+export async function emitSale(sb: SupabaseClient, id: string, payment: EmitInput): Promise<void> {
+  const { data: sale, error: readErr } = await sb.from("sales").select("id, status, total").eq("id", id).maybeSingle();
+  if (readErr) throw readErr;
+  if (!sale || sale.status !== "draft") throw new Error("Solo se emiten borradores");
+  const { count } = await sb.from("sale_items").select("id", { count: "exact", head: true }).eq("sale_id", id);
+  if (!count) throw new Error("La venta no tiene líneas");
+  const { data: num, error: numErr } = await sb.rpc("next_sale_number");
+  if (numErr) throw numErr;
+  const paid = payment.paymentType === "contado" ? Number(sale.total) : 0;
+  const { error } = await sb.from("sales").update({
+    number: num, status: "issued", issued_at: new Date().toISOString(),
+    paid_amount: paid, payment_method: payment.paymentType === "contado" ? (payment.paymentMethod ?? null) : null,
+    updated_at: new Date().toISOString(),
+  }).eq("id", id).eq("status", "draft");
+  if (error) throw error;
+}
+
+export async function voidSale(sb: SupabaseClient, id: string): Promise<void> {
+  const { data, error } = await sb.from("sales").update({ status: "void", updated_at: new Date().toISOString() })
+    .eq("id", id).eq("status", "issued").select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error("Solo se anulan ventas emitidas");
+}

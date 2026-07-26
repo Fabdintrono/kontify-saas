@@ -114,6 +114,11 @@ Lenguaje visual Plan 2. Reusa `formatMoney`, `getTenantCurrency`, `EmptyState`, 
 - **Regresión:** los tests de ventas/cobros/inventario/presupuestos siguen verdes tras el cambio de `replaceItems` (ahora escribe `unit_cost`) + `npm run build` limpio.
 - **E2E manual:** con ventas emitidas, entrar a `/reportes/ventas`: resumen con utilidad y margen; cambiar presets y rango; filtro de sucursal; ventas por día; top productos / vendedor / cliente. Dashboard: "Utilidad del mes" (solo rol con costo), "Ventas de la semana" con barras, "Top productos". Role-gating: `/reportes/ventas` redirige a vendedor/cajero/almacén; el KPI de utilidad les sale vacío.
 
+## Limitaciones conocidas (deuda documentada)
+
+- **Zona horaria:** los rangos y el agrupado por día operan en **UTC** (`issued_at` es `timestamptz` guardado con `toISOString()`; el filtro compara contra fechas desnudas y `byDay` usa la fecha UTC). Para un tenant en UTC−4 (ej. VE), una venta nocturna puede caer en el día siguiente. Es coherente con el resto de la app (mismo criterio en `monthStartISO` del Plan 6). Normalizar a la zona del tenant requiere una preferencia de zona horaria por empresa — fuera de alcance de este plan.
+- **"Ingreso" en Top productos** es ingreso bruto de línea (`qty × precio × (1−desc_línea)`), sin descuento global ni impuesto; no cuadra con el KPI "Ingresos" (que usa `sales.total`). Son dos métricas distintas a propósito (ingreso por producto vs total facturado).
+
 ## Fuera de alcance (planes posteriores)
 
 Export a Excel/CSV/PDF; costeo promedio móvil (se usa el snapshot); gráficos con librería (Recharts u otra); reportes de inventario avanzados (rotación, kardex, valorización histórica); comparativas período vs período; agregación en SQL/vistas/RPC para grandes volúmenes; reportes de compras/gastos (otros módulos de Finanzas); poblar `unit_cost` retroactivamente en ventas históricas.

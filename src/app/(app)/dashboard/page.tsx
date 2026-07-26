@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { DollarSign, TrendingUp, Users, Boxes, ArrowDownCircle, ArrowUpCircle, Receipt, AlertTriangle, BarChart3, Package } from "lucide-react";
+import { DollarSign, TrendingUp, Users, Boxes, ArrowDownCircle, ArrowUpCircle, Receipt, AlertTriangle, Package } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/kpi-card";
-import { ChartCard } from "@/components/dashboard/chart-card";
 import { AttentionList } from "@/components/dashboard/attention-list";
 import { PeriodSelector } from "@/components/dashboard/period-selector";
 import { clientsKpi, clientsByType } from "@/lib/clientes/queries";
@@ -11,6 +10,8 @@ import { stockKpi, inventoryStatusBreakdown } from "@/lib/inventario/queries";
 import { canManageProducts } from "@/lib/productos/permissions";
 import type { Role } from "@/lib/auth/roles";
 import { formatMoney } from "@/lib/format";
+import { utilityThisMonth, salesByDayThisWeek, topProductsThisMonth } from "@/lib/reportes/queries";
+import { BarChart } from "@/components/reportes/bar-chart";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -27,6 +28,11 @@ export default async function Dashboard() {
     salesKpi(supabase), receivablesTotal(supabase), getTenantCurrency(supabase),
   ]);
   const [invKpi, invBreakdown] = await Promise.all([stockKpi(supabase), inventoryStatusBreakdown(supabase)]);
+  const [util, weekDays, topProds] = await Promise.all([
+    utilityThisMonth(supabase), salesByDayThisWeek(supabase), topProductsThisMonth(supabase, 5),
+  ]);
+  const utilidadMes = canManageProducts(role) && sKpi.monthTotal > 0 ? { value: formatMoney(util.utility, currency) } : {};
+  const weekBars = weekDays.map((d) => ({ label: new Date(`${d.date}T00:00:00`).toLocaleDateString("es-VE", { weekday: "short" }), value: d.revenue }));
   const valorInventario = canManageProducts(role) && invKpi.value > 0 ? { value: formatMoney(invKpi.value, currency) } : {};
   const bajoStock = (invKpi.lowCount + invKpi.outCount) > 0 ? { value: String(invKpi.lowCount + invKpi.outCount) } : {};
   const ventasMes = sKpi.monthTotal > 0 ? { value: formatMoney(sKpi.monthTotal, currency) } : {};
@@ -48,7 +54,7 @@ export default async function Dashboard() {
 
       {/* Móvil: hero Utilidad + 4 KPIs */}
       <div className="grid grid-cols-2 gap-3 lg:hidden">
-        <div className="col-span-2"><KpiCard icon={TrendingUp} label="Utilidad del mes" /></div>
+        <div className="col-span-2"><KpiCard icon={TrendingUp} label="Utilidad del mes" value={utilidadMes.value} /></div>
         <KpiCard icon={DollarSign} label="Ventas del mes" value={ventasMes.value} />
         <KpiCard icon={Users} label="Total de clientes" value={totalClientes.value} sub={totalClientes.sub} />
         <KpiCard icon={ArrowDownCircle} label="Por cobrar" value={porCobrar.value} />
@@ -59,7 +65,7 @@ export default async function Dashboard() {
       {/* Escritorio: 4 KPIs primarios + 4 secundarios */}
       <div className="hidden grid-cols-4 gap-3 lg:grid">
         <KpiCard icon={DollarSign} label="Ventas del mes" value={ventasMes.value} />
-        <KpiCard icon={TrendingUp} label="Utilidad del mes" />
+        <KpiCard icon={TrendingUp} label="Utilidad del mes" value={utilidadMes.value} />
         <KpiCard icon={Users} label="Total de clientes" value={totalClientes.value} sub={totalClientes.sub} />
         <KpiCard icon={Boxes} label="Valor de inventario" value={valorInventario.value} />
         <KpiCard icon={ArrowDownCircle} label="Por cobrar" value={porCobrar.value} />
@@ -70,7 +76,10 @@ export default async function Dashboard() {
 
       {/* Escritorio: gráficos */}
       <div className="hidden gap-4 lg:grid lg:grid-cols-3">
-        <div className="lg:col-span-2"><ChartCard title="Ventas de la semana" icon={BarChart3} empty emptyHint="Aún no hay ventas registradas." /></div>
+        <div className="lg:col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+          <p className="mb-3 text-sm font-bold text-[var(--text)]">Ventas de la semana</p>
+          <BarChart data={weekBars} currency={currency} />
+        </div>
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <p className="mb-3 text-sm font-bold text-[var(--text)]">Estado del inventario</p>
           {invBreakdown.inStock + invBreakdown.low + invBreakdown.out === 0 ? (
@@ -86,7 +95,7 @@ export default async function Dashboard() {
       </div>
 
       {/* Escritorio: Clientes por tipo + Productos por categoría */}
-      <div className="hidden gap-4 lg:grid lg:grid-cols-2">
+      <div className="hidden gap-4 lg:grid lg:grid-cols-3">
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <p className="mb-3 text-sm font-bold text-[var(--text)]">Clientes por tipo</p>
           {byType.length === 0 ? (
@@ -115,6 +124,21 @@ export default async function Dashboard() {
                 <li key={c.categoryId ?? "none"} className="flex items-center justify-between text-sm">
                   <span className="text-[var(--text)]">{c.name}</span>
                   <span className="font-semibold text-[var(--text)]">{c.count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+          <p className="mb-3 text-sm font-bold text-[var(--text)]">Top productos</p>
+          {topProds.length === 0 ? (
+            <p className="py-6 text-center text-sm text-[var(--text-soft)]">Aún sin ventas registradas.</p>
+          ) : (
+            <ul className="space-y-2">
+              {topProds.map((p) => (
+                <li key={p.productId ?? p.name} className="flex items-center justify-between text-sm">
+                  <span className="truncate text-[var(--text)]">{p.name}</span>
+                  <span className="font-semibold text-[var(--text)]">{formatMoney(p.revenue, currency)}</span>
                 </li>
               ))}
             </ul>

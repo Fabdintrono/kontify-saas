@@ -15,10 +15,18 @@ async function replaceItems(sb: SupabaseClient, saleId: string, tenantId: string
   const { error: delErr } = await sb.from("sale_items").delete().eq("sale_id", saleId);
   if (delErr) throw delErr;
   if (input.items.length === 0) return;
+  // Snapshot de costo: resuelve products.cost server-side (el cliente nunca envía el costo).
+  const productIds = [...new Set(input.items.map((i) => i.productId).filter(Boolean))] as string[];
+  const costMap = new Map<string, number | null>();
+  if (productIds.length) {
+    const { data: prods } = await sb.from("products").select("id, cost").in("id", productIds);
+    for (const p of prods ?? []) costMap.set(p.id as string, p.cost != null ? Number(p.cost) : null);
+  }
   const rows = input.items.map((i, idx) => ({
     tenant_id: tenantId, sale_id: saleId, product_id: i.productId ?? null,
     description: i.description, quantity: i.quantity, unit_price: i.unitPrice,
     discount_pct: i.discountPct, tax_rate: i.taxRate, position: idx,
+    unit_cost: i.productId ? (costMap.get(i.productId) ?? null) : null,
   }));
   const { error } = await sb.from("sale_items").insert(rows);
   if (error) throw error;

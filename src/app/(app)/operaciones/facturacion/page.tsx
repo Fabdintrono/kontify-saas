@@ -40,7 +40,7 @@ export default async function FacturacionPage({ searchParams }: {
 
       {list.rows.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
-          <EmptyState icon={FileText} title="Aún no hay ventas" hint="Crea la primera con "Nueva venta"." />
+          <EmptyState icon={FileText} title="Aún no hay ventas" hint={"Crea la primera con “Nueva venta”."} />
         </div>
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 lg:p-4">

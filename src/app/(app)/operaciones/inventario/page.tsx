@@ -22,9 +22,11 @@ export default async function InventarioPage({ searchParams }: {
   // operativos: siempre su sucursal; back-office: la elegida (o consolidada)
   const branchId = isBackOffice ? (sp.branch || null) : (mem?.branch_id ?? null);
 
-  const [rows, { data: branches }] = await Promise.all([
+  const [rows, { data: branches }, { data: allProducts }] = await Promise.all([
     listStock(sb, { search: sp.q ?? "", status, branchId }),
     sb.from("branches").select("id, name").order("is_main", { ascending: false }),
+    // lista completa de productos 'good' activos para el ajuste (independiente de los filtros de la tabla)
+    sb.from("products").select("id, name").eq("kind", "good").eq("active", true).order("name"),
   ]);
 
   return (
@@ -32,7 +34,7 @@ export default async function InventarioPage({ searchParams }: {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Inventario</h1>
         {canManageStock(role) && (
-          <StockAdjustForm products={rows.map((r) => ({ id: r.productId, name: r.name }))}
+          <StockAdjustForm products={(allProducts ?? []) as any}
             branches={(branches ?? []) as any} userBranchId={mem?.branch_id ?? null} isBackOffice={isBackOffice} />
         )}
       </div>

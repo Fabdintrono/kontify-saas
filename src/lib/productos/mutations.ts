@@ -11,6 +11,7 @@ const productRow = (input: ProductInput) => ({
   cost: input.cost ?? null,
   tax_rate_id: input.taxRateId ?? null,
   unit: input.unit,
+  min_stock: input.minStock,
 });
 
 export async function createProduct(

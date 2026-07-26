@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SaleSaveInput, EmitInput } from "@/lib/ventas/schema";
 import { computeSaleTotals } from "@/lib/ventas/totals";
+import { applySaleStockOut, reverseSaleStock } from "@/lib/inventario/mutations";
 
 function headerTotals(input: SaleSaveInput) {
   const t = computeSaleTotals(
@@ -81,6 +82,9 @@ export async function emitSale(sb: SupabaseClient, id: string, payment: EmitInpu
     });
     if (payErr) throw payErr;
   }
+
+  // Descuenta stock de los ítems 'good' de la venta (permite negativo).
+  await applySaleStockOut(sb, id);
 }
 
 export async function voidSale(sb: SupabaseClient, id: string): Promise<void> {
@@ -91,4 +95,5 @@ export async function voidSale(sb: SupabaseClient, id: string): Promise<void> {
     .eq("id", id).eq("status", "issued").select("id");
   if (error) throw error;
   if (!data || data.length === 0) throw new Error("Solo se anulan ventas emitidas");
+  await reverseSaleStock(sb, id);
 }

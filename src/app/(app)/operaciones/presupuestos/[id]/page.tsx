@@ -6,6 +6,7 @@ import { getQuote } from "@/lib/presupuestos/queries";
 import { canSell } from "@/lib/ventas/permissions";
 import { deleteQuoteAction, setQuoteStatusAction, convertQuoteAction } from "@/app/(app)/operaciones/presupuestos/actions";
 import { QuoteDocument } from "@/components/presupuestos/quote-document";
+import { PendingButton } from "@/components/shared/pending-button";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function PresupuestoDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -53,7 +54,7 @@ export default async function PresupuestoDetallePage({ params }: { params: Promi
               </form>
               <form action={convertQuoteAction}>
                 <input type="hidden" name="id" value={quote.id} />
-                <button className={primary}>Convertir en venta</button>
+                <PendingButton className={primary} pendingLabel="Convirtiendo…">Convertir en venta</PendingButton>
               </form>
             </>
           )}

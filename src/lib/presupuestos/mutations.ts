@@ -85,6 +85,9 @@ export async function convertToSale(
   if (readErr) throw readErr;
   if (!q || !["sent", "accepted"].includes(q.status)) throw new Error("Solo se convierten presupuestos enviados o aceptados");
   if (q.converted_sale_id) throw new Error("El presupuesto ya fue convertido");
+  // Deuda conocida: la conversión única se garantiza con el guard `.is('converted_sale_id', null)` del UPDATE
+  // final; ante doble submit casi-simultáneo la venta borrador puede crearse dos veces (una queda huérfana,
+  // sin efecto contable). El botón se deshabilita al enviar (PendingButton) para evitar la causa práctica.
 
   const { data: items, error: iErr } = await sb.from("quote_items")
     .select("product_id, description, quantity, unit_price, discount_pct, tax_rate").eq("quote_id", id).order("position");

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil, Boxes } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct, getTenantCurrency } from "@/lib/productos/queries";
 import { canManageProducts, canArchiveProduct } from "@/lib/productos/permissions";
 import { archiveProductAction } from "@/app/(app)/operaciones/productos/actions";
-import { EmptyState } from "@/components/shared/empty-state";
+import { ProductStockPanel } from "@/components/inventario/product-stock-panel";
 import { CategoryBadge } from "@/components/productos/category-badge";
 import { formatMoney } from "@/lib/format";
 import type { Role } from "@/lib/auth/roles";
@@ -16,7 +16,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
   const [p, currency] = await Promise.all([getProduct(sb, id), getTenantCurrency(sb)]);
   if (!p) notFound();
   const { data: { user } } = await sb.auth.getUser();
-  const { data: mem } = await sb.from("memberships").select("role").eq("user_id", user!.id).single();
+  const { data: mem } = await sb.from("memberships").select("role, branch_id").eq("user_id", user!.id).single();
   const role = (mem?.role ?? "vendedor") as Role;
 
   const margin = p.cost != null && p.price != null ? Number(p.price) - Number(p.cost) : null;
@@ -62,9 +62,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
         <div className="sm:col-span-2">{field("Descripción", p.description)}</div>
       </div>
 
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
-        <EmptyState icon={Boxes} title="Existencias / Movimientos" hint="Llega con el módulo de Inventario." />
-      </div>
+      <ProductStockPanel productId={p.id} kind={p.kind} role={role} userBranchId={mem?.branch_id ?? null} />
     </div>
   );
 }

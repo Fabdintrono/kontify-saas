@@ -3,7 +3,7 @@ import { useState } from "react";
 
 export type LiteProduct = { id: string; name: string; price: number; unit: string; taxRate: number };
 
-export function ProductPicker({ products, onPick }: { products: LiteProduct[]; onPick: (p: LiteProduct) => void }) {
+export function ProductPicker({ products, onPick, inputId }: { products: LiteProduct[]; onPick: (p: LiteProduct) => void; inputId?: string }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const matches = query.trim()
@@ -13,7 +13,7 @@ export function ProductPicker({ products, onPick }: { products: LiteProduct[]; o
 
   return (
     <div className="relative">
-      <input className={inputCls} placeholder="Agregar producto…" value={query}
+      <input id={inputId} className={inputCls} placeholder="Agregar producto…" value={query}
         onFocus={() => setOpen(true)} onChange={(e) => setQuery(e.target.value)}
         onBlur={() => setTimeout(() => setOpen(false), 150)} />
       {open && matches.length > 0 && (

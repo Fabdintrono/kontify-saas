@@ -1,5 +1,7 @@
 import { formatMoney, formatDateOnly } from "@/lib/format";
 import { QuoteStatusBadge } from "./quote-status-badge";
+import { DocumentLines } from "@/components/shared/document-lines";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 type Item = { id: string; description: string; quantity: number; unit_price: number; discount_pct: number; tax_rate: number };
 type Quote = {
@@ -20,31 +22,11 @@ export function QuoteDocument({ quote, today }: { quote: Quote; today: string })
             <p className="text-sm text-[var(--text-soft)]">{quote.clients?.name ?? "Consumidor final"} · {quote.branches?.name ?? "—"}</p>
           </div>
           <div className="flex items-center gap-2">
-            {overdue && <span className="rounded-full bg-[#dc2626]/10 px-2 py-0.5 text-xs font-medium text-[#dc2626]">Vencido</span>}
+            {overdue && <StatusBadge tone="danger" icon="alert" label="Vencido" />}
             <QuoteStatusBadge status={quote.status} />
           </div>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[var(--border)] text-left text-xs text-[var(--text-soft)]">
-              <th className="py-1 font-medium">Descripción</th><th className="font-medium">Cant.</th>
-              <th className="font-medium">Precio</th><th className="font-medium">Desc%</th><th className="font-medium">IVA%</th>
-              <th className="text-right font-medium">Neto</th>
-            </tr>
-          </thead>
-          <tbody>
-            {quote.items.map((it, i) => (
-              <tr key={it.id} className="border-b border-[var(--border)]">
-                <td className="py-1.5 text-[var(--text)]">{it.description}</td>
-                <td className="text-[var(--text-soft)]">{Number(it.quantity)}</td>
-                <td className="text-[var(--text-soft)]">{formatMoney(Number(it.unit_price), c)}</td>
-                <td className="text-[var(--text-soft)]">{Number(it.discount_pct)}%</td>
-                <td className="text-[var(--text-soft)]">{Number(it.tax_rate)}%</td>
-                <td className="text-right text-[var(--text)]">{formatMoney(quote.computed.lines[i]?.neto ?? 0, c)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DocumentLines items={quote.items} netos={quote.computed.lines.map((l) => l.neto)} currency={c} />
         <div className="mt-3 ml-auto max-w-xs space-y-1 text-sm">
           <div className="flex justify-between"><span className="text-[var(--text-soft)]">Subtotal</span><span className="text-[var(--text)]">{formatMoney(quote.computed.subtotal, c)}</span></div>
           <div className="flex justify-between"><span className="text-[var(--text-soft)]">Descuentos</span><span className="text-[var(--text)]">{formatMoney(quote.computed.discountTotal, c)}</span></div>

@@ -2,6 +2,8 @@
 import { useActionState, useState } from "react";
 import { createClientTypeNamed, type FormState } from "@/app/(app)/clientes/actions";
 import { FieldLabel } from "@/components/shared/field-label";
+import { Button } from "@/components/ui/button";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 type ClientType = { id: string; name: string };
 type Values = {
@@ -11,7 +13,6 @@ type Values = {
 
 const initial: FormState = { ok: false };
 const inputCls = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
-const labelCls = "mb-1 block text-xs font-medium text-[var(--text-soft)]";
 
 export function ClientForm({ action, types, values = {}, submitLabel }: {
   action: (prev: FormState, fd: FormData) => Promise<FormState>;
@@ -47,21 +48,21 @@ export function ClientForm({ action, types, values = {}, submitLabel }: {
         </select>
       </div>
       <div>
-        <label className={labelCls}>Nombre / Razón social *</label>
-        <input name="name" defaultValue={values.name ?? ""} className={inputCls} />
-        {err("name") && <p className="mt-1 text-xs text-[#dc2626]">{err("name")}</p>}
+        <FieldLabel htmlFor="name">Nombre / Razón social *</FieldLabel>
+        <input id="name" name="name" defaultValue={values.name ?? ""} className={inputCls} />
+        {err("name") && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{err("name")}</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><FieldLabel htmlFor="docId" help="documentoId">Documento / ID</FieldLabel><input id="docId" name="docId" defaultValue={values.docId ?? ""} className={inputCls} /></div>
-        <div><label className={labelCls}>Teléfono</label><input name="phone" defaultValue={values.phone ?? ""} className={inputCls} /></div>
+        <div><FieldLabel htmlFor="phone">Teléfono</FieldLabel><input id="phone" name="phone" defaultValue={values.phone ?? ""} className={inputCls} /></div>
       </div>
       <div>
-        <label className={labelCls}>Email</label>
-        <input name="email" type="email" defaultValue={values.email ?? ""} className={inputCls} />
-        {err("email") && <p className="mt-1 text-xs text-[#dc2626]">{err("email")}</p>}
+        <FieldLabel htmlFor="email">Email</FieldLabel>
+        <input id="email" name="email" type="email" defaultValue={values.email ?? ""} className={inputCls} />
+        {err("email") && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{err("email")}</p>}
       </div>
-      <div><label className={labelCls}>Dirección</label><input name="address" defaultValue={values.address ?? ""} className={inputCls} /></div>
-      <div><label className={labelCls}>Persona de contacto</label><input name="contactName" defaultValue={values.contactName ?? ""} className={inputCls} /></div>
+      <div><FieldLabel htmlFor="address">Dirección</FieldLabel><input id="address" name="address" defaultValue={values.address ?? ""} className={inputCls} /></div>
+      <div><FieldLabel htmlFor="contactName">Persona de contacto</FieldLabel><input id="contactName" name="contactName" defaultValue={values.contactName ?? ""} className={inputCls} /></div>
       <div>
         <FieldLabel htmlFor="typeId" help="tipoCliente">Tipo de cliente</FieldLabel>
         <div className="flex gap-2">
@@ -75,20 +76,19 @@ export function ClientForm({ action, types, values = {}, submitLabel }: {
         {adding && (
           <div className="mt-2 flex items-center gap-2 rounded-lg border border-dashed border-[var(--border)] p-2">
             <input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="Nuevo tipo (ej. VIP)" className={inputCls} />
-            <button type="button" onClick={addType} disabled={creating || !newType.trim()}
-              className="flex-none rounded-[10px] bg-[#0e7490] px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">
+            <Button variant="primary" type="button" onClick={addType} disabled={creating || !newType.trim()} className="flex-none">
               {creating ? "…" : "Crear"}
-            </button>
+            </Button>
           </div>
         )}
-        {typeErr && <p className="mt-1 text-xs text-[#dc2626]">{typeErr}</p>}
+        {typeErr && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{typeErr}</p>}
       </div>
-      <div><label className={labelCls}>Notas</label><textarea name="notes" defaultValue={values.notes ?? ""} rows={3} className={inputCls} /></div>
+      <div><FieldLabel htmlFor="notes">Notas</FieldLabel><textarea id="notes" name="notes" defaultValue={values.notes ?? ""} rows={3} className={inputCls} /></div>
 
-      {state.error && <p className="text-sm text-[#dc2626]">{state.error}</p>}
-      <button disabled={pending} className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+      {state.error && <p className={`text-sm ${DANGER_TEXT}`}>{state.error}</p>}
+      <Button variant="primary" disabled={pending}>
         {pending ? "Guardando…" : submitLabel}
-      </button>
+      </Button>
     </form>
   );
 }

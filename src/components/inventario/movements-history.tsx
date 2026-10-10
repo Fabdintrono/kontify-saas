@@ -1,4 +1,5 @@
 import { formatDate } from "@/lib/format";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 type Movement = { id: string; type: string; qtyDelta: number; branchName: string | null; reason: string | null; createdAt: string };
 const LABEL: Record<string, string> = { adjustment: "Ajuste", sale: "Venta", sale_void: "Anulación venta" };
@@ -15,7 +16,7 @@ export function MovementsHistory({ movements, tz }: { movements: Movement[]; tz:
               {formatDate(m.createdAt, tz)}{m.branchName ? ` · ${m.branchName}` : ""}{m.reason ? ` · ${m.reason}` : ""}
             </span>
           </span>
-          <span className={`font-semibold ${m.qtyDelta < 0 ? "text-[#dc2626]" : "text-[#0f766e] dark:text-[#6ee7b7]"}`}>
+          <span className={`font-semibold ${m.qtyDelta < 0 ? DANGER_TEXT : "text-[#0f766e] dark:text-[#6ee7b7]"}`}>
             {m.qtyDelta > 0 ? "+" : ""}{m.qtyDelta}
           </span>
         </li>

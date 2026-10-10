@@ -8,6 +8,7 @@ import { deleteQuoteAction, setQuoteStatusAction, convertQuoteAction } from "@/a
 import { QuoteDocument } from "@/components/presupuestos/quote-document";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ActionButton } from "@/components/ui/action-button";
+import { buttonCls } from "@/components/ui/button";
 import { flashFor } from "@/lib/flash";
 import { getTenantSettings } from "@/lib/tenant";
 import { todayISO } from "@/lib/tz";
@@ -24,8 +25,9 @@ export default async function PresupuestoDetallePage({ params }: { params: Promi
   const allowed = canSell(role);
   const { timezone: tz } = await getTenantSettings(sb);
 
-  const btn = "rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[var(--text)]";
-  const primary = "rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white";
+  const btn = buttonCls("secondary");
+  const danger = buttonCls("danger");
+  const primary = buttonCls("primary");
 
   return (
     <div className="space-y-4 p-6">
@@ -34,12 +36,12 @@ export default async function PresupuestoDetallePage({ params }: { params: Promi
         <div className="flex flex-wrap items-center gap-2">
           {allowed && quote.status === "draft" && (
             <>
-              <Link href={`/operaciones/presupuestos/${quote.id}/editar`} className={`flex items-center gap-1.5 ${btn}`}>
-                <Pencil className="h-4 w-4" /> Editar
+              <Link href={`/operaciones/presupuestos/${quote.id}/editar`} className={btn}>
+                <Pencil className="h-4 w-4" aria-hidden="true" /> Editar
               </Link>
               <ConfirmDialog action={deleteQuoteAction} payload={{ id: quote.id }}
                 title="¿Eliminar este presupuesto?" description="Se borra el borrador. No afecta ventas ni stock."
-                confirmLabel="Eliminar" triggerClassName={`${btn} text-[#dc2626]`}>
+                confirmLabel="Eliminar" triggerClassName={danger}>
                 Eliminar
               </ConfirmDialog>
             </>
@@ -56,7 +58,7 @@ export default async function PresupuestoDetallePage({ params }: { params: Promi
                 title={`¿Marcar el presupuesto #${quote.number} como rechazado?`}
                 description="Queda cerrado y no podrá convertirse en venta."
                 confirmLabel="Marcar rechazado" successToast={flashFor("presupuesto-rechazado")}
-                triggerClassName={`${btn} text-[#dc2626]`}>
+                triggerClassName={danger}>
                 Marcar rechazado
               </ConfirmDialog>
               {/* Redirige con ?flash=: el aviso lo da el destino, aquí no hace falta successToast. */}

@@ -4,6 +4,7 @@ import { Store, Settings, FileText, BarChart3, Wallet, HelpCircle, LogOut } from
 import { Sheet } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
 import type { ShellUser } from "@/components/shell/types";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 const GROUPS = [
   { title: "Cuenta", items: [
@@ -52,7 +53,7 @@ export function MobileMoreSheet({ open, onOpenChange, user }: {
           </ul>
         </div>
       ))}
-      <button onClick={signOut} className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-semibold text-[#dc2626] hover:bg-[var(--bg)]">
+      <button onClick={signOut} className={`flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-semibold hover:bg-[var(--bg)] ${DANGER_TEXT}`}>
         <LogOut className="h-4 w-4" strokeWidth={2} /> Cerrar sesión
       </button>
     </Sheet>

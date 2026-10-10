@@ -7,6 +7,7 @@ import { SalesToolbar } from "@/components/ventas/sales-toolbar";
 import { SalesTable } from "@/components/ventas/sales-table";
 import { SaleRowCard } from "@/components/ventas/sale-row-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { buttonCls } from "@/components/ui/button";
 import { ModuleHeader } from "@/components/shared/module-header";
 import { ModuleGuide } from "@/components/shared/module-guide";
 import { GUIDES } from "@/lib/guides";
@@ -33,9 +34,8 @@ export default async function FacturacionPage({ searchParams }: {
   return (
     <div className="space-y-4 p-6">
       <ModuleHeader module="ventas" actions={canSell(role) ? (
-        <Link href="/operaciones/facturacion/nueva"
-          className="flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
-          <Plus className="h-4 w-4" strokeWidth={2.5} /> Nueva venta
+        <Link href="/operaciones/facturacion/nueva" className={buttonCls("primary")}>
+          <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" /> Nueva venta
         </Link>
       ) : undefined} />
 

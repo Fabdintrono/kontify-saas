@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CircleCheck, TriangleAlert, CircleAlert } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { AttentionItem } from "@/lib/dashboard/attention";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 export type { AttentionItem };
 
@@ -15,7 +16,7 @@ export function AttentionList({ items, canSeeReceivables }: { items: AttentionIt
         <ul className="space-y-2">
           {items.map((it, i) => {
             const Icon = it.tone === "danger" ? CircleAlert : TriangleAlert;
-            const color = it.tone === "danger" ? "text-[#dc2626]" : "text-[#b45309] dark:text-[#fbbf24]";
+            const color = it.tone === "danger" ? DANGER_TEXT : "text-[#b45309] dark:text-[#fbbf24]";
             return (
               <li key={i}>
                 <Link href={it.href} className="flex items-start gap-2 rounded-lg border border-[var(--border)] p-2.5 hover:bg-[var(--bg)]">

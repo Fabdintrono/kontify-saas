@@ -4,6 +4,8 @@ import { listTaxRates } from "@/lib/productos/queries";
 import { canManageTaxRates } from "@/lib/productos/permissions";
 import { createTaxRateFormAction, updateTaxRateAction } from "@/app/(app)/operaciones/productos/actions";
 import { ModuleHeader } from "@/components/shared/module-header";
+import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/ui/status-badge";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function TasasDeImpuestoPage() {
@@ -14,7 +16,7 @@ export default async function TasasDeImpuestoPage() {
   if (!canManageTaxRates(role)) redirect("/dashboard");
 
   const rates = await listTaxRates(sb, { includeInactive: true });
-  const inputCls = "h-9 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
+  const inputCls = "h-10 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
 
   return (
     <div className="max-w-2xl space-y-4 p-6">
@@ -26,7 +28,7 @@ export default async function TasasDeImpuestoPage() {
         <label className="flex items-center gap-1 text-sm text-[var(--text-soft)]">
           <input type="checkbox" name="isDefault" value="true" /> Predet.
         </label>
-        <button className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 text-sm font-semibold text-white">Añadir</button>
+        <Button variant="primary">Añadir</Button>
       </form>
 
       <ul className="divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
@@ -37,16 +39,16 @@ export default async function TasasDeImpuestoPage() {
               <input name="name" defaultValue={t.name} className={`${inputCls} flex-1`} />
               <input name="rate" type="number" step="0.01" min="0" max="100" defaultValue={t.rate} className={`${inputCls} w-24`} />
               {t.isDefault
-                ? <span className="rounded-full bg-[#0e7490]/10 px-2 py-0.5 text-xs font-medium text-[#0e7490] dark:text-[#5eead4]">Predet.</span>
+                ? <StatusBadge tone="info" label="Predet." />
                 : <button name="isDefault" value="true" className="rounded-[10px] border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--text-soft)]">Hacer predet.</button>}
-              <button className="rounded-[10px] border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--text)]">Guardar</button>
+              <Button variant="secondary">Guardar</Button>
             </form>
             <form action={updateTaxRateAction}>
               <input type="hidden" name="id" value={t.id} />
               <input type="hidden" name="active" value={t.active ? "false" : "true"} />
-              <button className="rounded-[10px] border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--text-soft)]">
+              <Button variant="secondary">
                 {t.active ? "Desactivar" : "Activar"}
-              </button>
+              </Button>
             </form>
           </li>
         ))}

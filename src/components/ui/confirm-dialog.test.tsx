@@ -88,6 +88,24 @@ describe("ConfirmDialog", () => {
     await waitFor(() => expect(screen.getByText("Venta #2 anulada")).toBeTruthy());
   });
 
+  // El degradado no da contraste con texto blanco (2,49:1 en su extremo claro): el botón de
+  // confirmar primario usa teal sólido, igual que el de peligro.
+  it("el confirmar primario es teal sólido, sin degradado", () => {
+    render(
+      <ToastProvider>
+        <ConfirmDialog action={vi.fn(async () => {})} payload={{ id: "abc" }}
+          title="¿Archivar a ACME?" description="Deja de aparecer en listas."
+          confirmLabel="Archivar" tone="primary" triggerClassName="btn">
+          Archivar
+        </ConfirmDialog>
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByText("Archivar"));
+    const cls = screen.getAllByRole("button", { name: "Archivar", hidden: true }).at(-1)!.className;
+    expect(cls).not.toMatch(/gradient/);
+    expect(cls).toMatch(/bg-\[#0e7490\]/);
+  });
+
   it("si la acción lanza avisa con un texto genérico (en producción el mensaje del servidor no llega)", async () => {
     setup(vi.fn(async () => { throw new Error("Server Components render error"); }));
     open();

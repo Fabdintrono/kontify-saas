@@ -1,26 +1,25 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Store, Bell, ChevronDown } from "lucide-react";
+import { Store, Bell } from "lucide-react";
 import { navForRole, configForRole } from "@/lib/nav";
 import { Rail } from "@/components/shell/rail";
 import { SubNav } from "@/components/shell/subnav";
 import { TopBar } from "@/components/shell/topbar";
 import { FabVender } from "@/components/shell/fab-vender";
 import { MobileBottomNav } from "@/components/shell/mobile-bottom-nav";
-import { DropdownMenu, DropdownItem, DropdownLabel } from "@/components/ui/dropdown-menu";
 import { Popover } from "@/components/ui/popover";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ToastProvider } from "@/components/ui/toast";
 import { FlashToast } from "@/components/shell/flash-toast";
-import type { ShellUser, ShellBranch } from "@/components/shell/types";
+import type { ShellUser } from "@/components/shell/types";
 
-export type { ShellUser, ShellBranch } from "@/components/shell/types";
+export type { ShellUser } from "@/components/shell/types";
 
 const COLLAPSE_KEY = "kontify-panel-collapsed";
 
-export function AppShell({ user, branches, children }: {
-  user: ShellUser; branches: ShellBranch[]; children: ReactNode;
+export function AppShell({ user, children }: {
+  user: ShellUser; children: ReactNode;
 }) {
   const sections = navForRole(user.role);
   const config = configForRole(user.role);
@@ -40,18 +39,14 @@ export function AppShell({ user, branches, children }: {
         <div className="hidden lg:block"><SubNav sections={sections} config={config} collapsed={collapsed} /></div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="hidden lg:block"><TopBar user={user} branches={branches} onToggle={toggle} /></div>
+          <div className="hidden lg:block"><TopBar user={user} onToggle={toggle} /></div>
 
           {/* Top bar móvil: selector de sucursal + campana (design-system §6, sin avatar) */}
           <div className="flex h-14 items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-4 lg:hidden">
-            <DropdownMenu align="start" trigger={
-              <button className="flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2.5 text-sm text-[var(--text)]">
-                <Store className="h-4 w-4" strokeWidth={2} /> Todas <ChevronDown className="h-3.5 w-3.5" />
-              </button>}>
-              <DropdownLabel>Sucursal</DropdownLabel>
-              <DropdownItem>Todas (consolidado)</DropdownItem>
-              {branches.map((b) => <DropdownItem key={b.id}>{b.name}</DropdownItem>)}
-            </DropdownMenu>
+            {/* Selector de sucursal: hoy todo es consolidado; vuelve cuando filtre (Fase D). */}
+            <span className="flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 text-sm text-[var(--text-soft)]">
+              <Store className="h-4 w-4" strokeWidth={2} aria-hidden="true" /> Todas
+            </span>
             <Popover trigger={
               <button aria-label="Notificaciones" className="grid h-9 w-9 place-items-center rounded-lg text-[var(--text-soft)] hover:bg-[var(--bg)]">
                 <Bell className="h-5 w-5" strokeWidth={2} />

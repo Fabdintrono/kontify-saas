@@ -1,5 +1,5 @@
 "use client";
-import { PanelLeft, Search, Store, Bell, ChevronDown, User, LogOut, Settings } from "lucide-react";
+import { PanelLeft, Store, Bell, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { DropdownMenu, DropdownItem, DropdownLabel, DropdownSeparator } from "@/components/ui/dropdown-menu";
@@ -8,8 +8,8 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { ShellUser } from "@/components/shell/types";
 
-export function TopBar({ user, branches, onToggle }: {
-  user: ShellUser; branches: { id: string; name: string }[]; onToggle: () => void;
+export function TopBar({ user, onToggle }: {
+  user: ShellUser; onToggle: () => void;
 }) {
   async function signOut() {
     await createClient().auth.signOut();
@@ -22,21 +22,13 @@ export function TopBar({ user, branches, onToggle }: {
         <PanelLeft className="h-5 w-5" strokeWidth={2} />
       </button>
 
-      <div className="flex h-9 w-full max-w-[330px] items-center gap-2 rounded-[9px] border border-[var(--border)] bg-[var(--bg)] px-[11px] text-[var(--text-soft)]">
-        <Search className="h-[15px] w-[15px]" strokeWidth={2} />
-        <input placeholder="Buscar productos, clientes, facturas…" className="w-full bg-transparent text-[12.5px] text-[var(--text)] outline-none placeholder:text-[var(--text-soft)]" />
-      </div>
-
+      {/* Buscador global: vuelve cuando busque de verdad (ver auditoría UX, B4). */}
       <div className="flex-1" />
 
-      <DropdownMenu trigger={
-        <button className="flex h-9 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 text-sm text-[var(--text)]">
-          <Store className="h-4 w-4" strokeWidth={2} /> Todas <ChevronDown className="h-3.5 w-3.5" />
-        </button>}>
-        <DropdownLabel>Sucursal</DropdownLabel>
-        <DropdownItem>Todas (consolidado)</DropdownItem>
-        {branches.map((b) => <DropdownItem key={b.id}>{b.name}</DropdownItem>)}
-      </DropdownMenu>
+      {/* Selector de sucursal: hoy todo es consolidado; vuelve cuando filtre (Fase D). */}
+      <span className="flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 text-sm text-[var(--text-soft)]">
+        <Store className="h-4 w-4" strokeWidth={2} aria-hidden="true" /> Todas
+      </span>
 
       <Popover trigger={
         <button aria-label="Notificaciones" className="relative grid h-9 w-9 place-items-center rounded-lg text-[var(--text-soft)] hover:bg-[var(--bg)]">

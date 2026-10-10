@@ -7,6 +7,7 @@ import { QuotesToolbar } from "@/components/presupuestos/quotes-toolbar";
 import { QuotesTable } from "@/components/presupuestos/quotes-table";
 import { QuoteRowCard } from "@/components/presupuestos/quote-row-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { buttonCls } from "@/components/ui/button";
 import { ModuleHeader } from "@/components/shared/module-header";
 import { ModuleGuide } from "@/components/shared/module-guide";
 import { GUIDES } from "@/lib/guides";
@@ -34,9 +35,8 @@ export default async function PresupuestosPage({ searchParams }: {
   return (
     <div className="space-y-4 p-6">
       <ModuleHeader module="presupuestos" actions={canSell(role) ? (
-        <Link href="/operaciones/presupuestos/nueva"
-          className="flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
-          <Plus className="h-4 w-4" strokeWidth={2.5} /> Nuevo presupuesto
+        <Link href="/operaciones/presupuestos/nueva" className={buttonCls("primary")}>
+          <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" /> Nuevo presupuesto
         </Link>
       ) : undefined} />
 

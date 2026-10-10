@@ -2,6 +2,7 @@
 import { useTransition } from "react";
 import { setDueDateAction } from "@/app/(app)/finanzas/cuentas-por-cobrar/actions";
 import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
 import { GENERIC_ERROR, isRedirectError } from "@/lib/action-result";
 import { flashFor } from "@/lib/flash";
 import { formatDateOnly } from "@/lib/format";
@@ -9,7 +10,7 @@ import { formatDateOnly } from "@/lib/format";
 export function DueDateField({ saleId, dueDate, canEdit }: { saleId: string; dueDate: string | null; canEdit: boolean }) {
   const [pending, start] = useTransition();
   const { toast } = useToast();
-  const inputCls = "h-9 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
+  const inputCls = "h-10 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
 
   function fail(description: string) {
     toast({ title: "No se pudo guardar el vencimiento", description, tone: "error" });
@@ -39,7 +40,7 @@ export function DueDateField({ saleId, dueDate, canEdit }: { saleId: string; due
       <input type="hidden" name="saleId" value={saleId} />
       <label htmlFor={`due-${saleId}`} className="text-sm text-[var(--text-soft)]">Vencimiento</label>
       <input id={`due-${saleId}`} type="date" name="dueDate" defaultValue={dueDate ?? ""} className={inputCls} />
-      <button disabled={pending} className="rounded-[10px] border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--text)] disabled:opacity-60">{pending ? "Guardando…" : "Guardar"}</button>
+      <Button variant="secondary" disabled={pending}>{pending ? "Guardando…" : "Guardar"}</Button>
     </form>
   );
 }

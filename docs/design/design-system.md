@@ -27,13 +27,14 @@ Ambos modos son obligatorios desde el día uno.
 | Superficie / cards | `#ffffff` | `#111c30` |
 | Borde | `#e8edf2` / `#eef2f6` | `#26334a` / `#334155` |
 | Texto principal | `#0f172a` (slate-900) | `#e2e8f0` |
-| Texto secundario | `#64748b` (slate-500) | `#94a3b8` |
+| Texto secundario | `#5b6b80` | `#94a3b8` |
 | Éxito / positivo | `#0f766e` / `#059669` | `#5eead4` / `#6ee7b7` |
 | Alerta / warning | `#b45309` / `#f59e0b` | `#fbbf24` |
 | Peligro / negativo | `#dc2626` / `#ef4444` | `#f87171` |
 | Info | `#1d4ed8` | `#7dd3fc` |
 
 - Gradiente de marca (hero, FAB, tiles activos): `linear-gradient(135deg, #0e7490, #14b8a6)`.
+- El **botón primario** usa teal sólido `#0e7490` (hover `#0c6178`): el texto blanco sobre el extremo claro del gradiente solo da 2,49:1. El gradiente queda para FAB, avatar, tiles del riel y elementos decorativos sin texto pequeño.
 - El riel nivel 1 (dual-tier) usa fondo slate-900 `#0f172a` en ambos modos.
 
 ## 3. Iconografía

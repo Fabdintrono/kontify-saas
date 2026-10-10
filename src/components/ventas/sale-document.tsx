@@ -2,6 +2,7 @@ import { formatMoney, formatDateOnly } from "@/lib/format";
 import { round2 } from "@/lib/ventas/totals";
 import type { PaymentStatus } from "@/lib/cobros/status";
 import { SaleStatusBadge } from "./status-badge";
+import { DocumentLines } from "@/components/shared/document-lines";
 
 type Item = { id: string; description: string; quantity: number; unit_price: number; discount_pct: number; tax_rate: number };
 type Sale = {
@@ -34,27 +35,7 @@ export function SaleDocument({ sale, paymentStatus }: { sale: Sale; paymentStatu
           </div>
           <SaleStatusBadge status={sale.status} paymentStatus={paymentStatus} />
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[var(--border)] text-left text-xs text-[var(--text-soft)]">
-              <th className="py-1 font-medium">Descripción</th><th className="font-medium">Cant.</th>
-              <th className="font-medium">Precio</th><th className="font-medium">Desc%</th><th className="font-medium">IVA%</th>
-              <th className="text-right font-medium">Neto</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sale.items.map((it, i) => (
-              <tr key={it.id} className="border-b border-[var(--border)]">
-                <td className="py-1.5 text-[var(--text)]">{it.description}</td>
-                <td className="text-[var(--text-soft)]">{Number(it.quantity)}</td>
-                <td className="text-[var(--text-soft)]">{formatMoney(Number(it.unit_price), c)}</td>
-                <td className="text-[var(--text-soft)]">{Number(it.discount_pct)}%</td>
-                <td className="text-[var(--text-soft)]">{Number(it.tax_rate)}%</td>
-                <td className="text-right text-[var(--text)]">{formatMoney(sale.computed.lines[i]?.neto ?? 0, c)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DocumentLines items={sale.items} netos={sale.computed.lines.map((l) => l.neto)} currency={c} />
         <div className="mt-3 ml-auto max-w-xs space-y-1 text-sm">
           <div className="flex justify-between"><span className="text-[var(--text-soft)]">Subtotal</span><span className="text-[var(--text)]">{formatMoney(sale.computed.subtotal, c)}</span></div>
           <div className="flex justify-between"><span className="text-[var(--text-soft)]">Descuentos</span><span className="text-[var(--text)]">{formatMoney(sale.computed.discountTotal, c)}</span></div>

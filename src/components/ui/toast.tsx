@@ -58,6 +58,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   // (assertive) y espera una pausa para un éxito (polite). Mezclarlos en una sola región obliga
   // a elegir un solo tono para todo. Las dos se renderizan siempre, aunque estén vacías: una
   // región que aparece junto con su contenido no se anuncia. Vacías miden 0 y no se ven.
+  // Dos regiones con aria-live explícito: Radix Dialog (hideOthers) exime [aria-live] del
+  // aria-hidden, así los avisos del propio diálogo siguen anunciándose.
   const region = "flex w-full flex-col items-center gap-2 lg:w-auto lg:items-end";
   return (
     <ToastCtx.Provider value={value}>

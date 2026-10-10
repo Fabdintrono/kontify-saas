@@ -7,6 +7,7 @@ import { clientCreateSchema, clientTypeCreateSchema, clientTypeUpdateSchema } fr
 import { canArchiveClient, canManageClientTypes } from "@/lib/clientes/permissions";
 import * as m from "@/lib/clientes/mutations";
 import { withFlash } from "@/lib/flash";
+import type { ActionResult } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -54,12 +55,14 @@ export async function updateClientAction(_prev: FormState, fd: FormData): Promis
   redirect(withFlash(`/clientes/${id}`, "cliente-guardado"));
 }
 
-export async function archiveClientAction(fd: FormData): Promise<void> {
+export async function archiveClientAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canArchiveClient(role)) return; // el botón no se muestra a vendedor; defensa extra
+  // El botón no se muestra a vendedor; si llega igual, que lo sepa en vez de creer que funcionó.
+  if (!canArchiveClient(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
   const active = fd.get("active") === "true";
-  await m.archiveClient(sb, id, active);
+  try { await m.archiveClient(sb, id, active); }
+  catch (e) { return { error: (e as Error).message }; }
   revalidatePath("/clientes");
   revalidatePath(`/clientes/${id}`);
 }

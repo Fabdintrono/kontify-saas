@@ -9,6 +9,7 @@ import { saleSaveSchema, saleEmitSchema, emitSchema } from "@/lib/ventas/schema"
 import { canSell, canVoidSale } from "@/lib/ventas/permissions";
 import * as m from "@/lib/ventas/mutations";
 import { withFlash } from "@/lib/flash";
+import type { ActionResult } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -82,21 +83,24 @@ export async function submitSaleAction(_prev: FormState, fd: FormData): Promise<
   redirect(withFlash(`${LIST}/${saleId}`, intent === "emit" ? "venta-emitida" : "venta-borrador", number));
 }
 
-export async function deleteDraftAction(fd: FormData): Promise<void> {
+export async function deleteDraftAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canSell(role)) return;
+  if (!canSell(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
-  await m.deleteDraft(sb, id);
+  try { await m.deleteDraft(sb, id); }
+  catch (e) { return { error: (e as Error).message }; }
   revalidatePath(LIST);
-  redirect(withFlash(LIST, "venta-borrador-eliminado"));
+  redirect(withFlash(LIST, "venta-borrador-eliminado")); // fuera del try: redirect lanza
 }
 
-export async function voidSaleAction(fd: FormData): Promise<void> {
+export async function voidSaleAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canVoidSale(role)) return; // botón oculto; defensa extra
+  // Botón oculto; si llega igual, que lo sepa en vez de creer que funcionó.
+  if (!canVoidSale(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
   const clientId = String(fd.get("clientId") ?? "");
-  await m.voidSale(sb, id);
+  try { await m.voidSale(sb, id); }
+  catch (e) { return { error: (e as Error).message }; }
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${id}`);
   revalidatePath("/dashboard");

@@ -10,6 +10,7 @@ import {
 import { canManageProducts, canArchiveProduct, canManageCategories, canManageTaxRates } from "@/lib/productos/permissions";
 import * as m from "@/lib/productos/mutations";
 import { withFlash } from "@/lib/flash";
+import type { ActionResult } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -62,12 +63,14 @@ export async function updateProductAction(_prev: FormState, fd: FormData): Promi
   redirect(withFlash(`${LIST}/${id}`, "producto-guardado"));
 }
 
-export async function archiveProductAction(fd: FormData): Promise<void> {
+export async function archiveProductAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canArchiveProduct(role)) return; // botón oculto para no-owner/admin; defensa extra
+  // Botón oculto para no-owner/admin; si llega igual, que lo sepa en vez de creer que funcionó.
+  if (!canArchiveProduct(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
   const active = fd.get("active") === "true";
-  await m.archiveProduct(sb, id, active);
+  try { await m.archiveProduct(sb, id, active); }
+  catch (e) { return { error: (e as Error).message }; }
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${id}`);
 }

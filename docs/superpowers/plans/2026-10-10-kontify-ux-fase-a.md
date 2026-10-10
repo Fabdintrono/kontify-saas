@@ -1231,7 +1231,30 @@ export function useSubmitIntent<T extends string>(pending: boolean) {
   };
 }
 ```
-Run el test → PASS (2).
+Run el test → PASS.
+
+**Ojo con el `redirect()`:** en Next 16 una Server Action que redirige **rechaza** la promesa en el
+cliente (`server-action-reducer.js`: `reject(createRedirectErrorForAction(...))`, digest
+`NEXT_REDIRECT;…`). Sin el guard de `isRedirectError`, «Eliminar borrador», «Eliminar presupuesto» y
+cualquier acción que caiga en el `redirect("/login")` de la sesión vencida dejan un toast de error
+permanente con el texto `NEXT_REDIRECT`. De ahí `src/lib/action-result.ts`:
+
+```ts
+/** Resultado de una Server Action de un clic: nada si salió bien, o un error legible en español. */
+export type ActionResult = void | { error: string };
+/** Una acción que redirige rechaza la promesa en el cliente (server-action-reducer.js): la navegación
+ *  ya está en marcha y el aviso lo da el ?flash= del destino. No es un error. */
+export function isRedirectError(e: unknown): boolean {
+  return typeof e === "object" && e !== null && "digest" in e
+    && typeof (e as { digest: unknown }).digest === "string"
+    && (e as { digest: string }).digest.startsWith("NEXT_REDIRECT");
+}
+```
+
+Y por eso las siete acciones devuelven `Promise<ActionResult>`: el permiso denegado deja de fingir
+éxito (`return { error: "No tienes permiso para esta acción." }`) y la mutación se envuelve en
+`try/catch` para que su mensaje de dominio en español («Anula primero los cobros de esta venta»)
+llegue al toast. El `redirect(withFlash(...))` va **fuera** del `try`.
 
 - [ ] **Step 3: Aplicar en `sale-builder.tsx`**
 
@@ -1602,8 +1625,12 @@ git commit -m "feat(ui): toasts de éxito tras guardar/emitir/abonar (provider p
 
 **Files:**
 - Create: `src/components/ui/confirm-dialog.tsx`, `src/components/ui/confirm-dialog.test.tsx`
+- Create: `src/components/ui/action-button.tsx`, `src/components/ui/action-button.test.tsx` (las acciones de un clic que no destruyen nada pero sí avisan: reactivar, marcar aceptado)
+- Create: `src/lib/action-result.ts` (`ActionResult` + `isRedirectError`)
 - Modify: `src/app/(app)/clientes/[id]/page.tsx`, `src/app/(app)/operaciones/productos/[id]/page.tsx`, `src/app/(app)/operaciones/presupuestos/[id]/page.tsx`, `src/app/(app)/operaciones/facturacion/[id]/page.tsx`, `src/components/cobros/payments-history.tsx`
-- Modify: `src/app/(app)/clientes/actions.ts`, `src/app/(app)/operaciones/productos/actions.ts` (devolver flash para el toast)
+- Modify las siete acciones de un clic para que devuelvan `ActionResult` (error en español en vez de lanzar o volver en silencio): `archiveClientAction` (`src/app/(app)/clientes/actions.ts`), `archiveProductAction` (`src/app/(app)/operaciones/productos/actions.ts`), `deleteDraftAction` y `voidSaleAction` (`src/app/(app)/operaciones/facturacion/actions.ts`), `deleteQuoteAction` y `setQuoteStatusAction` (`src/app/(app)/operaciones/presupuestos/actions.ts`), `voidPaymentAction` (`src/app/(app)/finanzas/cuentas-por-cobrar/actions.ts`)
+- Modify: `src/components/shell/app-shell.tsx` (`tabIndex={-1}` en `<main>`: destino de foco al cerrar un diálogo cuyo disparador ya no existe)
+- Modify: `src/components/ui/toast.tsx` — aquí se partió la pila en dos regiones vivas hermanas, `aria-live="polite"` para los éxitos y `aria-live="assertive"` para los errores (antes era una sola región y `role="alert"` por aviso). Radix Dialog (`hideOthers`) exime `[aria-live]` del `aria-hidden`, así los avisos que nacen dentro del diálogo siguen anunciándose.
 
 - [ ] **Step 1: Test jsdom (falla)**
 
@@ -1658,12 +1685,15 @@ import { useState, useTransition, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { TriangleAlert } from "lucide-react";
 import { useToast, type ToastInput } from "@/components/ui/toast";
+import { isRedirectError, type ActionResult } from "@/lib/action-result";
+
+const GENERIC_ERROR = "Vuelve a intentarlo; si persiste, avisa a soporte.";
 
 /** Confirmación antes de una acción irreversible. Reemplaza <form action={…}> + botón directo.
  *  - `action` es una Server Action (fd: FormData) => Promise<void>; `payload` son sus campos ocultos.
  *  - Nunca usar confirm() nativo: la PWA lo suprime en silencio. */
 export function ConfirmDialog({ action, payload, title, description, confirmLabel, tone = "danger", successToast, triggerClassName, children }: {
-  action: (fd: FormData) => Promise<void>; payload: Record<string, string>;
+  action: (fd: FormData) => Promise<ActionResult>; payload: Record<string, string>;
   title: string; description: string; confirmLabel: string; tone?: "danger" | "primary";
   successToast?: ToastInput; triggerClassName?: string; children: ReactNode;
 }) {
@@ -1675,10 +1705,20 @@ export function ConfirmDialog({ action, payload, title, description, confirmLabe
     const fd = new FormData();
     for (const [k, v] of Object.entries(payload)) fd.append(k, v);
     start(async () => {
-      await action(fd);
-      if (successToast) toast(successToast);
-      setOpen(false);
+      try {
+        const r = await action(fd);
+        if (r && "error" in r) { fail(r.error); return; }   // error de dominio: el diálogo queda abierto
+        if (successToast) toast(successToast);
+        setOpen(false);
+      } catch (e) {
+        if (isRedirectError(e)) return; // navegando: el destino muestra su propio aviso
+        fail(GENERIC_ERROR);            // NO usar (e as Error).message: en producción React lo reemplaza por un texto en inglés
+      }
     });
+  }
+
+  function fail(description: string) {
+    toast({ title: "No se pudo completar la acción", description, tone: "error" });
   }
 
   const confirmCls = tone === "danger"
@@ -1782,7 +1822,12 @@ Mismo cambio en `src/app/(app)/operaciones/productos/[id]/page.tsx` con `archive
   Marcar rechazado
 </ConfirmDialog>
 ```
-«Marcar aceptado» sigue como form directo pero gana toast: envolverlo igual que `DueDateField` (cliente con `useTransition`) o, más simple, dejarlo como está (sin toast) — **decisión: dejarlo como está**; el cambio de chip a «Aceptado» ya es feedback visible.
+«Marcar aceptado» también gana feedback — **decisión revisada:** pasa a `ActionButton`
+(`successToast={flashFor("presupuesto-aceptado")} pendingLabel="Guardando…"`), igual que los dos
+«Reactivar» de cliente y producto (`cliente-reactivado` / `producto-reactivado`). Son acciones de un
+clic que no destruyen nada: no merecen diálogo, pero sí un aviso y un estado de «ocupado».
+Los dos diálogos de archivar llevan `tone="primary"`, no `danger`: su propio texto dice que son
+reversibles.
 
 - [ ] **Step 7: Verificación manual en el navegador**
 

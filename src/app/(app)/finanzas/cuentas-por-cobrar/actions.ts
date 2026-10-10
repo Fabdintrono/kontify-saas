@@ -8,6 +8,7 @@ import { todayISO } from "@/lib/tz";
 import { paymentCreateSchema, dueDateSchema } from "@/lib/cobros/schema";
 import { canRegisterPayment, canVoidPayment, canEditDueDate } from "@/lib/cobros/permissions";
 import * as m from "@/lib/cobros/mutations";
+import type { ActionResult } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -56,12 +57,13 @@ export async function registerPaymentAction(_prev: FormState, fd: FormData): Pro
   return { ok: true };
 }
 
-export async function voidPaymentAction(fd: FormData): Promise<void> {
+export async function voidPaymentAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canVoidPayment(role)) return;
+  if (!canVoidPayment(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
   const saleId = String(fd.get("saleId") ?? "");
-  await m.voidPayment(sb, id);
+  try { await m.voidPayment(sb, id); }
+  catch (e) { return { error: (e as Error).message }; }
   await revalidateFor(sb, saleId);
 }
 

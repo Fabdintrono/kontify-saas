@@ -1,34 +1,43 @@
 "use client";
 import { useTransition, type ReactNode } from "react";
 import { useToast, type ToastInput } from "@/components/ui/toast";
+import { isRedirectError, type ActionResult } from "@/lib/action-result";
+
+const GENERIC_ERROR = "Vuelve a intentarlo; si persiste, avisa a soporte.";
 
 /** Acción de un clic que no necesita confirmación (reactivar, marcar aceptado) pero sí avisar
  *  de que pasó algo. Equivale a <form action={…}> + <PendingButton>, con toast al terminar.
  *  Usar ConfirmDialog cuando la acción sea destructiva o irreversible. */
-export function ActionButton({ action, payload, successToast, className, children }: {
-  action: (fd: FormData) => Promise<void>; payload: Record<string, string>;
-  successToast?: ToastInput; className?: string; children: ReactNode;
+export function ActionButton({ action, payload, successToast, pendingLabel = "…", className, children }: {
+  action: (fd: FormData) => Promise<ActionResult>; payload: Record<string, string>;
+  successToast?: ToastInput; pendingLabel?: string; className?: string; children: ReactNode;
 }) {
   const [pending, start] = useTransition();
   const { toast } = useToast();
+
+  function fail(description: string) {
+    toast({ title: "No se pudo completar la acción", description, tone: "error" });
+  }
 
   function run() {
     const fd = new FormData();
     for (const [k, v] of Object.entries(payload)) fd.append(k, v);
     start(async () => {
       try {
-        await action(fd);
+        const r = await action(fd);
+        if (r && "error" in r) { fail(r.error); return; }
+        if (successToast) toast(successToast);
       } catch (e) {
-        toast({ title: "No se pudo completar la acción", description: (e as Error).message, tone: "error" });
-        return;
+        if (isRedirectError(e)) return; // navegando: el destino muestra su propio aviso
+        // En producción React reemplaza el mensaje del servidor por un texto en inglés: no se usa.
+        fail(GENERIC_ERROR);
       }
-      if (successToast) toast(successToast);
     });
   }
 
   return (
-    <button type="button" onClick={run} disabled={pending} className={className}>
-      {pending ? "…" : children}
+    <button type="button" onClick={run} disabled={pending} aria-busy={pending} className={className}>
+      {pending ? pendingLabel : children}
     </button>
   );
 }

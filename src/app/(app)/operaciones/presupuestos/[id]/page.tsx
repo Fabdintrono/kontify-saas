@@ -49,7 +49,7 @@ export default async function PresupuestoDetallePage({ params }: { params: Promi
             <>
               {quote.status === "sent" && (
                 <ActionButton action={setQuoteStatusAction} payload={{ id: quote.id, status: "accepted" }}
-                  successToast={flashFor("presupuesto-aceptado")} className={btn}>
+                  successToast={flashFor("presupuesto-aceptado")} pendingLabel="Guardando…" className={btn}>
                   Marcar aceptado
                 </ActionButton>
               )}

@@ -61,7 +61,9 @@ export function AppShell({ user, branches, children }: {
             </Popover>
           </div>
 
-          <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">{children}</main>
+          {/* tabIndex={-1}: destino de foco cuando un diálogo se cierra y su disparador ya no existe
+              (p. ej. archivar, que reemplaza el botón por «Reactivar»). Ver ConfirmDialog. */}
+          <main tabIndex={-1} className="flex-1 overflow-y-auto pb-20 outline-none lg:pb-0">{children}</main>
         </div>
 
         <FabVender />

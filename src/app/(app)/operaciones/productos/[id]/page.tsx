@@ -48,12 +48,12 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
             <ConfirmDialog action={archiveProductAction} payload={{ id: p.id, active: "false" }}
               title={`¿Archivar ${p.name}?`}
               description="Deja de aparecer en el catálogo y al vender. Sus existencias y movimientos se conservan."
-              confirmLabel="Archivar" successToast={flashFor("producto-archivado")} triggerClassName={secondaryBtn}>
+              confirmLabel="Archivar" tone="primary" successToast={flashFor("producto-archivado")} triggerClassName={secondaryBtn}>
               Archivar
             </ConfirmDialog>
           ) : (
             <ActionButton action={archiveProductAction} payload={{ id: p.id, active: "true" }}
-              successToast={flashFor("producto-reactivado")} className={secondaryBtn}>
+              successToast={flashFor("producto-reactivado")} pendingLabel="Reactivando…" className={secondaryBtn}>
               Reactivar
             </ActionButton>
           ))}

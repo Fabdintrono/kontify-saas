@@ -48,12 +48,12 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             <ConfirmDialog action={archiveClientAction} payload={{ id: c.id, active: "false" }}
               title={`¿Archivar a ${c.name}?`}
               description="Deja de aparecer en listas y al vender. Su historial y sus ventas se conservan; puedes reactivarlo cuando quieras."
-              confirmLabel="Archivar" successToast={flashFor("cliente-archivado")} triggerClassName={secondaryBtn}>
+              confirmLabel="Archivar" tone="primary" successToast={flashFor("cliente-archivado")} triggerClassName={secondaryBtn}>
               Archivar
             </ConfirmDialog>
           ) : (
             <ActionButton action={archiveClientAction} payload={{ id: c.id, active: "true" }}
-              successToast={flashFor("cliente-reactivado")} className={secondaryBtn}>
+              successToast={flashFor("cliente-reactivado")} pendingLabel="Reactivando…" className={secondaryBtn}>
               Reactivar
             </ActionButton>
           ))}

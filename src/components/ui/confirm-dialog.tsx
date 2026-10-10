@@ -3,9 +3,7 @@ import { useRef, useState, useTransition, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { TriangleAlert } from "lucide-react";
 import { useToast, type ToastInput } from "@/components/ui/toast";
-import { isRedirectError, type ActionResult } from "@/lib/action-result";
-
-const GENERIC_ERROR = "Vuelve a intentarlo; si persiste, avisa a soporte.";
+import { GENERIC_ERROR, isRedirectError, type ActionResult } from "@/lib/action-result";
 
 /** Confirmación antes de una acción irreversible. Reemplaza <form action={…}> + botón directo.
  *  - `action` es una Server Action (fd: FormData) => Promise<ActionResult>; `payload` son sus campos ocultos.

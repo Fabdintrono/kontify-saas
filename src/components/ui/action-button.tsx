@@ -1,9 +1,7 @@
 "use client";
 import { useTransition, type ReactNode } from "react";
 import { useToast, type ToastInput } from "@/components/ui/toast";
-import { isRedirectError, type ActionResult } from "@/lib/action-result";
-
-const GENERIC_ERROR = "Vuelve a intentarlo; si persiste, avisa a soporte.";
+import { GENERIC_ERROR, isRedirectError, type ActionResult } from "@/lib/action-result";
 
 /** Acción de un clic que no necesita confirmación (reactivar, marcar aceptado) pero sí avisar
  *  de que pasó algo. Equivale a <form action={…}> + <PendingButton>, con toast al terminar.

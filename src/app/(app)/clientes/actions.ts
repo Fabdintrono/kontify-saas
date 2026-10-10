@@ -7,7 +7,7 @@ import { clientCreateSchema, clientTypeCreateSchema, clientTypeUpdateSchema } fr
 import { canArchiveClient, canManageClientTypes } from "@/lib/clientes/permissions";
 import * as m from "@/lib/clientes/mutations";
 import { withFlash } from "@/lib/flash";
-import type { ActionResult } from "@/lib/action-result";
+import { actionError, type ActionResult } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -62,7 +62,7 @@ export async function archiveClientAction(fd: FormData): Promise<ActionResult> {
   const id = String(fd.get("id") ?? "");
   const active = fd.get("active") === "true";
   try { await m.archiveClient(sb, id, active); }
-  catch (e) { return { error: (e as Error).message }; }
+  catch (e) { return actionError(e); }
   revalidatePath("/clientes");
   revalidatePath(`/clientes/${id}`);
 }

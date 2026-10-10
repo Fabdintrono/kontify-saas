@@ -9,7 +9,7 @@ import { saleSaveSchema, saleEmitSchema, emitSchema } from "@/lib/ventas/schema"
 import { canSell, canVoidSale } from "@/lib/ventas/permissions";
 import * as m from "@/lib/ventas/mutations";
 import { withFlash } from "@/lib/flash";
-import type { ActionResult } from "@/lib/action-result";
+import { actionError, type ActionResult } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -88,7 +88,7 @@ export async function deleteDraftAction(fd: FormData): Promise<ActionResult> {
   if (!canSell(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
   try { await m.deleteDraft(sb, id); }
-  catch (e) { return { error: (e as Error).message }; }
+  catch (e) { return actionError(e); }
   revalidatePath(LIST);
   redirect(withFlash(LIST, "venta-borrador-eliminado")); // fuera del try: redirect lanza
 }
@@ -100,7 +100,7 @@ export async function voidSaleAction(fd: FormData): Promise<ActionResult> {
   const id = String(fd.get("id") ?? "");
   const clientId = String(fd.get("clientId") ?? "");
   try { await m.voidSale(sb, id); }
-  catch (e) { return { error: (e as Error).message }; }
+  catch (e) { return actionError(e); }
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${id}`);
   revalidatePath("/dashboard");

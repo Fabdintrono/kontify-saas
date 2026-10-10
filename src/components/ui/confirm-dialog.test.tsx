@@ -67,6 +67,27 @@ describe("ConfirmDialog", () => {
     expect(screen.queryByText("Venta #2 anulada")).toBeNull();
   });
 
+  // Mientras la acción corre no se puede confirmar dos veces ni cerrar el diálogo por error.
+  it("mientras procesa: ambos botones inhabilitados y Escape no cierra", async () => {
+    let resolve!: () => void;
+    const action = vi.fn(() => new Promise<ActionResult>((r) => { resolve = () => r(undefined); }));
+    setup(action);
+    open();
+    fireEvent.click(confirmBtn());
+    await waitFor(() => expect(screen.getByText("Procesando…")).toBeTruthy());
+    const procesando = screen.getByText("Procesando…").closest("button")!;
+    expect(procesando.hasAttribute("disabled")).toBe(true);
+    expect(procesando.getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByText("Cancelar").closest("button")!.hasAttribute("disabled")).toBe(true);
+
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape", code: "Escape" });
+    expect(screen.getByText("¿Anular la venta #2?")).toBeTruthy();
+    expect(action).toHaveBeenCalledTimes(1);
+
+    resolve();
+    await waitFor(() => expect(screen.getByText("Venta #2 anulada")).toBeTruthy());
+  });
+
   it("si la acción lanza avisa con un texto genérico (en producción el mensaje del servidor no llega)", async () => {
     setup(vi.fn(async () => { throw new Error("Server Components render error"); }));
     open();

@@ -10,7 +10,7 @@ import {
 import { canManageProducts, canArchiveProduct, canManageCategories, canManageTaxRates } from "@/lib/productos/permissions";
 import * as m from "@/lib/productos/mutations";
 import { withFlash } from "@/lib/flash";
-import type { ActionResult } from "@/lib/action-result";
+import { actionError, type ActionResult } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -70,7 +70,7 @@ export async function archiveProductAction(fd: FormData): Promise<ActionResult> 
   const id = String(fd.get("id") ?? "");
   const active = fd.get("active") === "true";
   try { await m.archiveProduct(sb, id, active); }
-  catch (e) { return { error: (e as Error).message }; }
+  catch (e) { return actionError(e); }
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${id}`);
 }

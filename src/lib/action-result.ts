@@ -8,3 +8,13 @@ export function isRedirectError(e: unknown): boolean {
     && typeof (e as { digest: unknown }).digest === "string"
     && (e as { digest: string }).digest.startsWith("NEXT_REDIRECT");
 }
+
+/** Lo que se le dice al usuario cuando no tenemos un motivo concreto que mostrarle. */
+export const GENERIC_ERROR = "Vuelve a intentarlo; si persiste, avisa a soporte.";
+
+/** Solo se muestran los mensajes que escribimos nosotros. Los de Postgres/Supabase traen `code`
+ *  y vienen en inglés con nombres de tablas: esos se cambian por el texto genérico. */
+export function actionError(e: unknown): { error: string } {
+  const err = e as { message?: string; code?: string };
+  return { error: !err?.code && err?.message ? err.message : GENERIC_ERROR };
+}

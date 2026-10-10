@@ -6,7 +6,6 @@ import { getQuote } from "@/lib/presupuestos/queries";
 import { canSell } from "@/lib/ventas/permissions";
 import { deleteQuoteAction, setQuoteStatusAction, convertQuoteAction } from "@/app/(app)/operaciones/presupuestos/actions";
 import { QuoteDocument } from "@/components/presupuestos/quote-document";
-import { PendingButton } from "@/components/shared/pending-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ActionButton } from "@/components/ui/action-button";
 import { flashFor } from "@/lib/flash";
@@ -60,10 +59,11 @@ export default async function PresupuestoDetallePage({ params }: { params: Promi
                 triggerClassName={`${btn} text-[#dc2626]`}>
                 Marcar rechazado
               </ConfirmDialog>
-              <form action={convertQuoteAction}>
-                <input type="hidden" name="id" value={quote.id} />
-                <PendingButton className={primary} pendingLabel="Convirtiendo…">Convertir en venta</PendingButton>
-              </form>
+              {/* Redirige con ?flash=: el aviso lo da el destino, aquí no hace falta successToast. */}
+              <ActionButton action={convertQuoteAction} payload={{ id: quote.id }}
+                pendingLabel="Convirtiendo…" className={primary}>
+                Convertir en venta
+              </ActionButton>
             </>
           )}
           {quote.status === "converted" && quote.converted_sale_id && (

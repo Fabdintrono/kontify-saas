@@ -3,7 +3,8 @@ import type { SaleListRow } from "@/lib/ventas/queries";
 import { formatMoney } from "@/lib/format";
 import { SaleStatusBadge } from "./status-badge";
 
-export function SaleRowCard({ r }: { r: SaleListRow }) {
+// `tz` aún no se muestra: queda lista para la fecha que suma Task 7.
+export function SaleRowCard({ r, tz }: { r: SaleListRow; tz: string }) {
   return (
     <Link href={`/operaciones/facturacion/${r.id}`}
       className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 lg:hidden">

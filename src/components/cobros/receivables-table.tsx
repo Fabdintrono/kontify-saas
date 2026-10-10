@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReceivableClientRow } from "@/lib/cobros/queries";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatDateOnly } from "@/lib/format";
 
 export function ReceivablesTable({ rows, currency }: { rows: ReceivableClientRow[]; currency: string }) {
   return (
@@ -21,7 +21,7 @@ export function ReceivablesTable({ rows, currency }: { rows: ReceivableClientRow
             </td>
             <td className="text-[var(--text)]">{formatMoney(r.totalDue, currency)}</td>
             <td className={r.overdueAmount > 0 ? "text-[#dc2626]" : "text-[var(--text-soft)]"}>{r.overdueAmount > 0 ? formatMoney(r.overdueAmount, currency) : "—"}</td>
-            <td className="text-[var(--text-soft)]">{r.oldestDueDate ? new Date(r.oldestDueDate).toLocaleDateString("es-VE") : "—"}</td>
+            <td className="text-[var(--text-soft)]">{formatDateOnly(r.oldestDueDate)}</td>
           </tr>
         ))}
       </tbody>

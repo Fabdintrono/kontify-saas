@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getTenantCurrency } from "@/lib/productos/queries";
 import { listReceivablesByClient } from "@/lib/cobros/queries";
 import { canRegisterPayment } from "@/lib/cobros/permissions";
 import { formatMoney } from "@/lib/format";
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
 import { ReceivablesToolbar } from "@/components/cobros/receivables-toolbar";
 import { ReceivablesTable } from "@/components/cobros/receivables-table";
 import { ReceivableRowCard } from "@/components/cobros/receivable-row-card";
@@ -22,10 +23,8 @@ export default async function CuentasPorCobrarPage({ searchParams }: {
   if (!canRegisterPayment(role)) redirect("/dashboard");
 
   const filter = (sp.filter === "vencidos" ? "vencidos" : "todos") as "todos" | "vencidos";
-  const [rows, currency] = await Promise.all([
-    listReceivablesByClient(sb, { search: sp.q ?? "", filter }),
-    getTenantCurrency(sb),
-  ]);
+  const { currency, timezone: tz } = await getTenantSettings(sb);
+  const rows = await listReceivablesByClient(sb, { search: sp.q ?? "", filter, today: todayISO(tz) });
   const totalDue = rows.reduce((s, r) => s + r.totalDue, 0);
   const overdue = rows.reduce((s, r) => s + r.overdueAmount, 0);
 

@@ -7,8 +7,8 @@ import { canArchiveClient } from "@/lib/clientes/permissions";
 import { archiveClientAction } from "@/app/(app)/clientes/actions";
 import { TypeBadge } from "@/components/clientes/type-badge";
 import { salesByClient } from "@/lib/ventas/queries";
-import { formatMoney } from "@/lib/format";
-import { getTenantCurrency } from "@/lib/productos/queries";
+import { formatMoney, formatDate } from "@/lib/format";
+import { getTenantSettings } from "@/lib/tenant";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function ClienteDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,7 +20,8 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
   const { data: mem } = await sb.from("memberships").select("role").eq("user_id", user!.id).single();
   const role = (mem?.role ?? "vendedor") as Role;
 
-  const [history, currency] = await Promise.all([salesByClient(sb, c.id), getTenantCurrency(sb)]);
+  const [history, settings] = await Promise.all([salesByClient(sb, c.id), getTenantSettings(sb)]);
+  const { currency, timezone: tz } = settings;
 
   const field = (label: string, value: string | null) => (
     <div><p className="text-xs text-[var(--text-soft)]">{label}</p><p className="text-sm text-[var(--text)]">{value || "—"}</p></div>
@@ -74,7 +75,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
               {history.list.map((s) => (
                 <li key={s.id} className="flex items-center justify-between text-sm">
                   <Link href={`/operaciones/facturacion/${s.id}`} className="text-[var(--text)] hover:text-[#0e7490]">
-                    Venta #{s.number} · {s.issuedAt ? new Date(s.issuedAt).toLocaleDateString("es-VE") : "—"}
+                    Venta #{s.number} · {formatDate(s.issuedAt, tz)}
                   </Link>
                   <span className="font-medium text-[var(--text)]">{formatMoney(s.total, currency)}</span>
                 </li>

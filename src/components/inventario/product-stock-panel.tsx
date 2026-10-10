@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { canManageStock } from "@/lib/inventario/permissions";
 import { MovementsHistory } from "./movements-history";
 import { StockAdjustForm } from "./stock-adjust-form";
+import { getTenantSettings } from "@/lib/tenant";
 import type { Role } from "@/lib/auth/roles";
 
 export async function ProductStockPanel({ productId, kind, role, userBranchId }: {
@@ -17,10 +18,11 @@ export async function ProductStockPanel({ productId, kind, role, userBranchId }:
     );
   }
   const sb = await createClient();
-  const [stock, movements, { data: branches }] = await Promise.all([
+  const [stock, movements, { data: branches }, { timezone: tz }] = await Promise.all([
     getProductStock(sb, productId),
     listMovements(sb, productId, { limit: 10 }),
     sb.from("branches").select("id, name").order("is_main", { ascending: false }),
+    getTenantSettings(sb),
   ]);
   const isBackOffice = ["owner", "admin", "administrativo"].includes(role);
 
@@ -46,7 +48,7 @@ export async function ProductStockPanel({ productId, kind, role, userBranchId }:
       )}
       <div>
         <p className="mb-1 text-xs font-medium text-[var(--text-soft)]">Últimos movimientos</p>
-        <MovementsHistory movements={movements} />
+        <MovementsHistory movements={movements} tz={tz} />
       </div>
     </div>
   );

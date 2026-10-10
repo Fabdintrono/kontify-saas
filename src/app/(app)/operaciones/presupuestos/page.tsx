@@ -7,6 +7,8 @@ import { QuotesToolbar } from "@/components/presupuestos/quotes-toolbar";
 import { QuotesTable } from "@/components/presupuestos/quotes-table";
 import { QuoteRowCard } from "@/components/presupuestos/quote-row-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function PresupuestosPage({ searchParams }: {
@@ -20,6 +22,7 @@ export default async function PresupuestosPage({ searchParams }: {
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const status = (["borradores", "enviados", "aceptados", "rechazados", "convertidos", "todos"].includes(sp.status ?? "") ? sp.status : "todos") as QuoteStatusFilter;
 
+  const { timezone: tz } = await getTenantSettings(sb);
   const list = await listQuotes(sb, { search: sp.q ?? "", status, page });
   const pages = Math.max(1, Math.ceil(list.total / list.pageSize));
 
@@ -43,7 +46,7 @@ export default async function PresupuestosPage({ searchParams }: {
         </div>
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 lg:p-4">
-          <QuotesTable rows={list.rows} />
+          <QuotesTable rows={list.rows} tz={tz} today={todayISO(tz)} />
           <div className="space-y-2 lg:hidden">{list.rows.map((r) => <QuoteRowCard key={r.id} r={r} />)}</div>
         </div>
       )}

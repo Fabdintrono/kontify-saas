@@ -4,7 +4,8 @@ import { Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getSale } from "@/lib/ventas/queries";
 import { canVoidSale } from "@/lib/ventas/permissions";
-import { getTenantCurrency } from "@/lib/productos/queries";
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
 import { listPayments } from "@/lib/cobros/queries";
 import { canRegisterPayment, canVoidPayment, canEditDueDate } from "@/lib/cobros/permissions";
 import { deleteDraftAction, voidSaleAction } from "@/app/(app)/operaciones/facturacion/actions";
@@ -25,10 +26,11 @@ export default async function VentaDetallePage({ params }: { params: Promise<{ i
 
   const issued = sale.status === "issued";
   const balance = Number(sale.balance);
-  const [payments, currency] = await Promise.all([
+  const [payments, settings] = await Promise.all([
     issued ? listPayments(sb, id) : Promise.resolve([]),
-    getTenantCurrency(sb),
+    getTenantSettings(sb),
   ]);
+  const { currency, timezone: tz } = settings;
   const hasPayments = Number(sale.paid_amount) > 0;
 
   return (
@@ -68,7 +70,7 @@ export default async function VentaDetallePage({ params }: { params: Promise<{ i
           </div>
           <PaymentsHistory payments={payments} saleId={sale.id} currency={currency} canVoid={canVoidPayment(role)} />
           {balance > 0 && canRegisterPayment(role) && (
-            <PaymentForm saleId={sale.id} balance={balance} currency={currency} />
+            <PaymentForm saleId={sale.id} balance={balance} currency={currency} today={todayISO(tz)} />
           )}
         </div>
       )}

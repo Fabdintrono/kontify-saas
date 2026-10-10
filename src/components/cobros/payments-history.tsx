@@ -1,4 +1,4 @@
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatDateOnly } from "@/lib/format";
 import { voidPaymentAction } from "@/app/(app)/finanzas/cuentas-por-cobrar/actions";
 
 type Payment = { id: string; amount: number; method: string | null; reference: string | null; paidAt: string; voided: boolean };
@@ -14,7 +14,7 @@ export function PaymentsHistory({ payments, saleId, currency, canVoid }: {
           <span className="text-[var(--text)]">
             {formatMoney(p.amount, currency)}
             <span className="ml-2 text-xs text-[var(--text-soft)]">
-              {new Date(p.paidAt).toLocaleDateString("es-VE")}{p.method ? ` · ${p.method}` : ""}{p.reference ? ` · ${p.reference}` : ""}
+              {formatDateOnly(p.paidAt)}{p.method ? ` · ${p.method}` : ""}{p.reference ? ` · ${p.reference}` : ""}
             </span>
           </span>
           {canVoid && !p.voided && (

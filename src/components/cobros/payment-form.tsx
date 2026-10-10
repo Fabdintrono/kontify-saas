@@ -7,10 +7,9 @@ const initial: FormState = { ok: false };
 const inputCls = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
 const labelCls = "mb-1 block text-xs font-medium text-[var(--text-soft)]";
 
-export function PaymentForm({ saleId, balance, currency }: { saleId: string; balance: number; currency: string }) {
+export function PaymentForm({ saleId, balance, currency, today }: { saleId: string; balance: number; currency: string; today: string }) {
   const [state, formAction, pending] = useActionState(registerPaymentAction, initial);
   const [open, setOpen] = useState(false);
-  const today = new Date().toISOString().slice(0, 10);
   const err = (k: string) => state.fieldErrors?.[k];
 
   // Tras un abono exitoso, colapsa el panel; el revalidatePath ya refrescó saldo/historial.

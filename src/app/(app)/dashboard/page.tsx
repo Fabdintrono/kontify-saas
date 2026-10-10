@@ -4,13 +4,14 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { AttentionList } from "@/components/dashboard/attention-list";
 import { PeriodSelector } from "@/components/dashboard/period-selector";
 import { clientsKpi, clientsByType } from "@/lib/clientes/queries";
-import { productsKpi, productsByCategory, getTenantCurrency } from "@/lib/productos/queries";
+import { productsKpi, productsByCategory } from "@/lib/productos/queries";
 import { salesKpi, receivablesTotal } from "@/lib/ventas/queries";
 import { stockKpi, inventoryStatusBreakdown } from "@/lib/inventario/queries";
 import { canManageProducts } from "@/lib/productos/permissions";
 import type { Role } from "@/lib/auth/roles";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, weekdayShort } from "@/lib/format";
 import { utilityThisMonth, salesByDayThisWeek, topProductsThisMonth } from "@/lib/reportes/queries";
+import { getTenantSettings } from "@/lib/tenant";
 import { BarChart } from "@/components/reportes/bar-chart";
 
 export default async function Dashboard() {
@@ -23,16 +24,17 @@ export default async function Dashboard() {
   const { data: mem } = user ? await supabase.from("memberships").select("role").eq("user_id", user.id).single() : { data: null };
   const role = (mem?.role ?? "vendedor") as Role;
 
-  const [kpi, byType, prodKpi, byCategory, sKpi, recv, currency] = await Promise.all([
-    clientsKpi(supabase), clientsByType(supabase), productsKpi(supabase), productsByCategory(supabase),
-    salesKpi(supabase), receivablesTotal(supabase), getTenantCurrency(supabase),
+  const { currency, timezone: tz } = await getTenantSettings(supabase);
+  const [kpi, byType, prodKpi, byCategory, sKpi, recv] = await Promise.all([
+    clientsKpi(supabase, tz), clientsByType(supabase), productsKpi(supabase), productsByCategory(supabase),
+    salesKpi(supabase, tz), receivablesTotal(supabase),
   ]);
   const [invKpi, invBreakdown] = await Promise.all([stockKpi(supabase), inventoryStatusBreakdown(supabase)]);
   const [util, weekDays, topProds] = await Promise.all([
-    utilityThisMonth(supabase), salesByDayThisWeek(supabase), topProductsThisMonth(supabase, 5),
+    utilityThisMonth(supabase, tz), salesByDayThisWeek(supabase, tz), topProductsThisMonth(supabase, tz, 5),
   ]);
   const utilidadMes = canManageProducts(role) && sKpi.monthTotal > 0 ? { value: formatMoney(util.utility, currency) } : {};
-  const weekBars = weekDays.map((d) => ({ label: new Date(`${d.date}T00:00:00`).toLocaleDateString("es-VE", { weekday: "short" }), value: d.revenue }));
+  const weekBars = weekDays.map((d) => ({ label: weekdayShort(d.date), value: d.revenue }));
   const valorInventario = canManageProducts(role) && invKpi.value > 0 ? { value: formatMoney(invKpi.value, currency) } : {};
   const bajoStock = (invKpi.lowCount + invKpi.outCount) > 0 ? { value: String(invKpi.lowCount + invKpi.outCount) } : {};
   const ventasMes = sKpi.monthTotal > 0 ? { value: formatMoney(sKpi.monthTotal, currency) } : {};

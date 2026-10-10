@@ -45,7 +45,7 @@ export const GUIDES: Record<ModuleId, Guide> = {
     subtitle: "Tu catálogo: lo que vendes, a qué precio y con qué impuesto. Las existencias se manejan en Inventario.",
     steps: [
       "Crea el producto como bien (lleva stock) o servicio (no lleva).",
-      "Precio es lo que cobras; costo es lo que te cuesta y sirve para calcular la utilidad. El costo solo lo ven dueño y administradores.",
+      "Precio es lo que cobras; costo es lo que te cuesta y sirve para calcular la utilidad. Vendedores y cajeros no ven el costo.",
       "Categoría e impuesto se eligen de listas que puedes ampliar al vuelo.",
       "Stock mínimo: por debajo de ese número el inicio te avisa «bajo».",
     ],

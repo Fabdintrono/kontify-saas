@@ -122,7 +122,7 @@ export const GUIDES: Record<ModuleId, Guide> = {
     subtitle: "Tu catálogo: lo que vendes, a qué precio y con qué impuesto. Las existencias se manejan en Inventario.",
     steps: [
       "Crea el producto como bien (lleva stock) o servicio (no lleva).",
-      "Precio es lo que cobras; costo es lo que te cuesta y sirve para calcular la utilidad. El costo solo lo ven dueño y administradores.",
+      "Precio es lo que cobras; costo es lo que te cuesta y sirve para calcular la utilidad. Vendedores y cajeros no ven el costo.",
       "Categoría e impuesto se eligen de listas que puedes ampliar al vuelo.",
       "Stock mínimo: por debajo de ese número el inicio te avisa «bajo».",
     ],
@@ -545,7 +545,7 @@ export const FIELD_HELP = {
   tipoCliente: "Etiqueta para agrupar clientes (Mayorista, Minorista…). Se usa en filtros y en «Clientes por tipo».",
   sku: "Código corto y único del producto (p. ej. AGU-15). Sirve para buscar rápido. Opcional.",
   unidad: "Cómo se cuenta: unidad, caja, kg, litro… Es solo un texto que se muestra al vender.",
-  costo: "Lo que te cuesta a ti. Solo lo ven dueño y administradores y sirve para calcular la utilidad.",
+  costo: "Lo que te cuesta a ti. Vendedores y cajeros no lo ven; sirve para calcular la utilidad.",
   stockMinimo: "Por debajo de esta existencia el inicio te avisa «bajo». Déjalo en 0 si no quieres alertas.",
   impuesto: "Tasa que se aplica al vender este producto. Se puede cambiar línea por línea en la venta.",
   sucursal: "Sede donde se registra la operación. Afecta el stock que se descuenta y los reportes por sucursal.",

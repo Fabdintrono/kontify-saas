@@ -28,4 +28,19 @@ describe("getTenantSettings", () => {
     const t = await makeTenant("tz3");
     expect(await getTenantCurrency(t.client)).toBe("USD");
   });
+  it("una zona guardada con forma válida pero inexistente cae al default (la app valida con Intl)", async () => {
+    const t = await makeTenant("tz4");
+    const { error } = await t.client.from("tenants").update({ timezone: "Foo/Bar" }).eq("id", t.tenantId);
+    expect(error).toBeNull();
+    expect((await getTenantSettings(t.client)).timezone).toBe("America/Caracas");
+  });
+  it("la base rechaza una zona con forma inválida", async () => {
+    const t = await makeTenant("tz5");
+    const { error } = await t.client.from("tenants").update({ timezone: "Foo Bar" }).eq("id", t.tenantId);
+    expect(error).not.toBeNull();
+  });
+  it("usuario sin empresa → defaults, nunca lanza", async () => {
+    const u = await newUserClient();
+    expect(await getTenantSettings(u.client)).toEqual({ currency: "USD", timezone: "America/Caracas" });
+  });
 });

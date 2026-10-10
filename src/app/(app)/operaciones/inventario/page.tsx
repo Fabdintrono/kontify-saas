@@ -7,6 +7,9 @@ import { StockTable } from "@/components/inventario/stock-table";
 import { StockRowCard } from "@/components/inventario/stock-row-card";
 import { StockAdjustForm } from "@/components/inventario/stock-adjust-form";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ModuleHeader } from "@/components/shared/module-header";
+import { ModuleGuide } from "@/components/shared/module-guide";
+import { GUIDES } from "@/lib/guides";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function InventarioPage({ searchParams }: {
@@ -31,19 +34,18 @@ export default async function InventarioPage({ searchParams }: {
 
   return (
     <div className="space-y-4 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Inventario</h1>
-        {canManageStock(role) && (
-          <StockAdjustForm products={(allProducts ?? []) as any}
-            branches={(branches ?? []) as any} userBranchId={mem?.branch_id ?? null} isBackOffice={isBackOffice} />
-        )}
-      </div>
+      <ModuleHeader module="inventario" actions={canManageStock(role) ? (
+        <StockAdjustForm products={(allProducts ?? []) as any}
+          branches={(branches ?? []) as any} userBranchId={mem?.branch_id ?? null} isBackOffice={isBackOffice} />
+      ) : undefined} />
 
       <StockToolbar branches={(branches ?? []) as any} showBranch={isBackOffice} />
 
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
-          <EmptyState icon={Boxes} title="Aún no hay productos con stock" hint="Carga existencias con “Registrar movimiento”." />
+          <EmptyState icon={Boxes} title="Sin existencias registradas"
+            hint={canManageStock(role) ? "Carga la existencia inicial de cada producto con «Ajustar stock»." : "Pide a un administrador o a almacén que cargue las existencias."}
+            secondary={<ModuleGuide guide={GUIDES.inventario} />} />
         </div>
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 lg:p-4">

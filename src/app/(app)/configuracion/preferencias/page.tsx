@@ -1,9 +1,10 @@
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ModuleHeader } from "@/components/shared/module-header";
 
 export default function Preferencias() {
   return (
     <div className="p-6">
-      <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Preferencias</h1>
+      <ModuleHeader module="config_preferencias" />
       <div className="mt-4 max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
         <div className="flex items-center justify-between">
           <div>

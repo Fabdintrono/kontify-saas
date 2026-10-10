@@ -6,6 +6,9 @@ import { ClientsToolbar } from "@/components/clientes/clients-toolbar";
 import { ClientsTable } from "@/components/clientes/clients-table";
 import { ClientRowCard } from "@/components/clientes/client-row-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ModuleHeader } from "@/components/shared/module-header";
+import { ModuleGuide } from "@/components/shared/module-guide";
+import { GUIDES } from "@/lib/guides";
 
 export default async function ClientesPage({ searchParams }: {
   searchParams: Promise<{ q?: string; type?: string; status?: string; page?: string }>;
@@ -23,19 +26,20 @@ export default async function ClientesPage({ searchParams }: {
 
   return (
     <div className="space-y-4 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Clientes</h1>
+      <ModuleHeader module="clientes" actions={
         <Link href="/clientes/nuevo"
           className="flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
           <Plus className="h-4 w-4" strokeWidth={2.5} /> Nuevo cliente
-        </Link>
-      </div>
+        </Link>} />
 
       <ClientsToolbar types={types} />
 
       {list.rows.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
-          <EmptyState icon={Users} title="Aún no tienes clientes" hint="Crea el primero con “Nuevo cliente”." />
+          <EmptyState icon={Users} title="Aún no tienes clientes"
+            hint="También puedes vender a Consumidor final sin crear uno."
+            action={{ href: "/clientes/nuevo", label: "Nuevo cliente" }}
+            secondary={<ModuleGuide guide={GUIDES.clientes} />} />
         </div>
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 lg:p-4">

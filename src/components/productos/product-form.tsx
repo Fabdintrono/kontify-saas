@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useState } from "react";
 import { createCategoryNamed, type FormState } from "@/app/(app)/operaciones/productos/actions";
+import { FieldLabel } from "@/components/shared/field-label";
 
 type Category = { id: string; name: string };
 type TaxRate = { id: string; name: string; isDefault: boolean };
@@ -53,8 +54,8 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
         {err("name") && <p className="mt-1 text-xs text-[#dc2626]">{err("name")}</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelCls}>SKU / código</label><input name="sku" defaultValue={values.sku ?? ""} className={inputCls} /></div>
-        <div><label className={labelCls}>Unidad</label><input name="unit" defaultValue={values.unit ?? "unidad"} className={inputCls} /></div>
+        <div><FieldLabel htmlFor="sku" help="sku">SKU / código</FieldLabel><input id="sku" name="sku" defaultValue={values.sku ?? ""} className={inputCls} /></div>
+        <div><FieldLabel htmlFor="unit" help="unidad">Unidad</FieldLabel><input id="unit" name="unit" defaultValue={values.unit ?? "unidad"} className={inputCls} /></div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -63,21 +64,21 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
           {err("price") && <p className="mt-1 text-xs text-[#dc2626]">{err("price")}</p>}
         </div>
         <div>
-          <label className={labelCls}>Costo</label>
-          <input name="cost" type="number" step="0.01" min="0" defaultValue={values.cost ?? ""} className={inputCls} />
+          <FieldLabel htmlFor="cost" help="costo">Costo</FieldLabel>
+          <input id="cost" name="cost" type="number" step="0.01" min="0" defaultValue={values.cost ?? ""} className={inputCls} />
           {err("cost") && <p className="mt-1 text-xs text-[#dc2626]">{err("cost")}</p>}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelCls}>Stock mínimo</label>
-          <input name="minStock" type="number" step="0.01" min="0" defaultValue={values.minStock ?? "0"} className={inputCls} />
+          <FieldLabel htmlFor="minStock" help="stockMinimo">Stock mínimo</FieldLabel>
+          <input id="minStock" name="minStock" type="number" step="0.01" min="0" defaultValue={values.minStock ?? "0"} className={inputCls} />
           {err("minStock") && <p className="mt-1 text-xs text-[#dc2626]">{err("minStock")}</p>}
         </div>
       </div>
       <div>
-        <label className={labelCls}>Impuesto</label>
-        <select name="taxRateId" defaultValue={defaultTax} className={inputCls}>
+        <FieldLabel htmlFor="taxRateId" help="impuesto">Impuesto</FieldLabel>
+        <select id="taxRateId" name="taxRateId" defaultValue={defaultTax} className={inputCls}>
           <option value="">Sin impuesto</option>
           {taxRates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>

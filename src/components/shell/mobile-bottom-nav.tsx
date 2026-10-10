@@ -30,7 +30,7 @@ export function MobileBottomNav({ user }: { user: ShellUser }) {
           style={{ borderRadius: 22 }}>
           <Plus className="h-6 w-6" strokeWidth={2.5} />
         </button>
-        <Item href="/reportes/inventario" icon={Boxes} label="Inventario" />
+        <Item href="/operaciones/inventario" icon={Boxes} label="Inventario" />
         <button onClick={() => setMoreOpen(true)} className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium text-[var(--text-soft)]">
           <Menu className="h-5 w-5" strokeWidth={2} /> Más
         </button>

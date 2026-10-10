@@ -1,9 +1,14 @@
 import { redirect } from "next/navigation";
+import { Boxes } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getTenantCurrency } from "@/lib/productos/queries";
 import { inventoryValuation } from "@/lib/inventario/queries";
 import { canAccess, type Role } from "@/lib/auth/roles";
 import { formatMoney } from "@/lib/format";
+import { EmptyState } from "@/components/shared/empty-state";
+import { ModuleHeader } from "@/components/shared/module-header";
+import { ModuleGuide } from "@/components/shared/module-guide";
+import { GUIDES } from "@/lib/guides";
 
 export default async function ReporteInventarioPage() {
   const sb = await createClient();
@@ -16,13 +21,15 @@ export default async function ReporteInventarioPage() {
 
   return (
     <div className="space-y-4 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Valorización de inventario</h1>
-        <div className="text-sm text-[var(--text-soft)]">Total: <span className="font-semibold text-[var(--text)]">{formatMoney(val.total, currency)}</span></div>
-      </div>
+      <ModuleHeader module="reportes_inventario" actions={
+        <div className="text-sm text-[var(--text-soft)]">Total: <span className="font-semibold text-[var(--text)]">{formatMoney(val.total, currency)}</span></div>} />
 
       {val.rows.length === 0 ? (
-        <p className="text-sm text-[var(--text-soft)]">Sin existencias para valorizar.</p>
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
+          <EmptyState icon={Boxes} title="Carga existencias para ver el valor"
+            hint="El valor es existencia × costo de cada producto."
+            secondary={<ModuleGuide guide={GUIDES.reportes_inventario} />} />
+        </div>
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 lg:p-4">
           <table className="w-full text-sm">

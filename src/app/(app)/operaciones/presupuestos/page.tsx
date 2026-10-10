@@ -7,6 +7,9 @@ import { QuotesToolbar } from "@/components/presupuestos/quotes-toolbar";
 import { QuotesTable } from "@/components/presupuestos/quotes-table";
 import { QuoteRowCard } from "@/components/presupuestos/quote-row-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ModuleHeader } from "@/components/shared/module-header";
+import { ModuleGuide } from "@/components/shared/module-guide";
+import { GUIDES } from "@/lib/guides";
 import { getTenantSettings } from "@/lib/tenant";
 import { todayISO } from "@/lib/tz";
 import type { Role } from "@/lib/auth/roles";
@@ -30,21 +33,21 @@ export default async function PresupuestosPage({ searchParams }: {
 
   return (
     <div className="space-y-4 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Presupuestos</h1>
-        {canSell(role) && (
-          <Link href="/operaciones/presupuestos/nueva"
-            className="flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
-            <Plus className="h-4 w-4" strokeWidth={2.5} /> Nuevo presupuesto
-          </Link>
-        )}
-      </div>
+      <ModuleHeader module="presupuestos" actions={canSell(role) ? (
+        <Link href="/operaciones/presupuestos/nueva"
+          className="flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
+          <Plus className="h-4 w-4" strokeWidth={2.5} /> Nuevo presupuesto
+        </Link>
+      ) : undefined} />
 
       <QuotesToolbar />
 
       {list.rows.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
-          <EmptyState icon={ClipboardList} title="Aún no hay presupuestos" hint={"Crea el primero con “Nuevo presupuesto”."} />
+          <EmptyState icon={ClipboardList} title="Sin presupuestos"
+            hint="Cotiza sin tocar stock ni numeración de ventas."
+            action={canSell(role) ? { href: "/operaciones/presupuestos/nueva", label: "Nuevo presupuesto" } : undefined}
+            secondary={<ModuleGuide guide={GUIDES.presupuestos} />} />
         </div>
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 lg:p-4">

@@ -61,7 +61,7 @@ Patrón inspirado en Untitled UI (referencia Dribbble aprobada). **No** usar el 
 ### Agrupación (IA) del menú
 - **Inicio** → Dashboard, Notificaciones, Actividad
 - **Clientes** → Todos los clientes, Nuevo cliente
-- **Operaciones** → Productos, Facturación, Presupuestos
+- **Operaciones** → Productos, Inventario, Ventas (ruta /operaciones/facturacion), Presupuestos
 - **Reportes** → Inventario, Ventas
 - **Finanzas** → Cuentas por pagar, Cuentas por cobrar, Comisiones, Bancos, Gastos
 - **Configuración** → Sucursales, Usuarios y roles, Preferencias

@@ -7,6 +7,9 @@ import { ProductsToolbar } from "@/components/productos/products-toolbar";
 import { ProductsTable } from "@/components/productos/products-table";
 import { ProductRowCard } from "@/components/productos/product-row-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ModuleHeader } from "@/components/shared/module-header";
+import { ModuleGuide } from "@/components/shared/module-guide";
+import { GUIDES } from "@/lib/guides";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function ProductosPage({ searchParams }: {
@@ -30,21 +33,21 @@ export default async function ProductosPage({ searchParams }: {
 
   return (
     <div className="space-y-4 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Productos</h1>
-        {canManageProducts(role) && (
-          <Link href="/operaciones/productos/nuevo"
-            className="flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
-            <Plus className="h-4 w-4" strokeWidth={2.5} /> Nuevo producto
-          </Link>
-        )}
-      </div>
+      <ModuleHeader module="productos" actions={canManageProducts(role) ? (
+        <Link href="/operaciones/productos/nuevo"
+          className="flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
+          <Plus className="h-4 w-4" strokeWidth={2.5} /> Nuevo producto
+        </Link>
+      ) : undefined} />
 
       <ProductsToolbar categories={categories} />
 
       {list.rows.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
-          <EmptyState icon={Package} title="Aún no tienes productos" hint={"Crea el primero con “Nuevo producto”."} />
+          <EmptyState icon={Package} title="Tu catálogo está vacío"
+            hint="Crea bienes (con stock) o servicios (sin stock)."
+            action={canManageProducts(role) ? { href: "/operaciones/productos/nuevo", label: "Nuevo producto" } : undefined}
+            secondary={<ModuleGuide guide={GUIDES.productos} />} />
         </div>
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 lg:p-4">

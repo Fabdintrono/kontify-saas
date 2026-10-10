@@ -122,7 +122,7 @@ export const GUIDES: Record<ModuleId, Guide> = {
     subtitle: "Tu catálogo: lo que vendes, a qué precio y con qué impuesto. Las existencias se manejan en Inventario.",
     steps: [
       "Crea el producto como bien (lleva stock) o servicio (no lleva).",
-      "Precio es lo que cobras; costo es lo que te cuesta y sirve para calcular la utilidad. El costo solo lo ven dueño y administradores.",
+      "Precio es lo que cobras; costo es lo que te cuesta y sirve para calcular la utilidad. Vendedores y cajeros no ven el costo.",
       "Categoría e impuesto se eligen de listas que puedes ampliar al vuelo.",
       "Stock mínimo: por debajo de ese número el inicio te avisa «bajo».",
     ],
@@ -545,7 +545,7 @@ export const FIELD_HELP = {
   tipoCliente: "Etiqueta para agrupar clientes (Mayorista, Minorista…). Se usa en filtros y en «Clientes por tipo».",
   sku: "Código corto y único del producto (p. ej. AGU-15). Sirve para buscar rápido. Opcional.",
   unidad: "Cómo se cuenta: unidad, caja, kg, litro… Es solo un texto que se muestra al vender.",
-  costo: "Lo que te cuesta a ti. Solo lo ven dueño y administradores y sirve para calcular la utilidad.",
+  costo: "Lo que te cuesta a ti. Vendedores y cajeros no lo ven; sirve para calcular la utilidad.",
   stockMinimo: "Por debajo de esta existencia el inicio te avisa «bajo». Déjalo en 0 si no quieres alertas.",
   impuesto: "Tasa que se aplica al vender este producto. Se puede cambiar línea por línea en la venta.",
   sucursal: "Sede donde se registra la operación. Afecta el stock que se descuenta y los reportes por sucursal.",
@@ -637,7 +637,7 @@ export function FieldLabel({ htmlFor, help, children }: { htmlFor: string; help?
 
 `client-form.tsx`: `Tipo de registro` → `<FieldLabel htmlFor="kind" help="tipoRegistro">Tipo de registro</FieldLabel>` + `id="kind"` en el select; `Documento / ID` → `help="documentoId"`, `id="docId"`; `Tipo de cliente` → `help="tipoCliente"`, `id="typeId"`.
 `product-form.tsx`: `SKU / código` (`help="sku"`, `id="sku"`), `Unidad` (`unidad`, `id="unit"`), `Costo` (`costo`, `id="cost"`), `Stock mínimo` (`stockMinimo`, `id="minStock"`), `Impuesto` (`impuesto`, `id="taxRateId"`).
-`sale-builder.tsx`: `Sucursal` (`sucursal`, `id="branchId"` en el select), `Descuento global %` (`descuentoGlobal`, `id="globalDiscountPct"` en ese input; aquí la etiqueta está en una fila flex: usar `<FieldLabel …>` dentro del `<span>` izquierdo), `Método de pago (opcional)` (`metodoPago`, `id="paymentMethod"`), `Fecha de vencimiento (opcional)` (`vencimiento`, `id="dueDate"`).
+`sale-builder.tsx`: `Sucursal` (`sucursal`, `id="branchId"` en el select), `Descuento global %` (`descuentoGlobal`, `id="globalDiscountPct"` en ese input; aquí la etiqueta está en una fila flex con tipografía propia: usar `FieldHelp` directamente (fila inline), no `FieldLabel`), `Método de pago (opcional)` (`metodoPago`, `id="paymentMethod"`), `Fecha de vencimiento (opcional)` (`vencimiento`, `id="dueDate"`).
 `quote-builder.tsx`: `Sucursal` (`sucursal`, `id="branchId"`), `Válido hasta` (`validoHasta`, `id="validUntil"`).
 Las demás etiquetas se dejan como están (Fase C hará el `htmlFor` global).
 
@@ -728,6 +728,14 @@ describe("gettingStartedStatus", () => {
 Run: `npx vitest run tests/getting-started.test.ts` → FAIL (módulo inexistente). Si `registerAdjustment` tiene otra firma, copiar la de `tests/inventario.test.ts`.
 
 - [ ] **Step 3: Implementar `src/lib/dashboard/getting-started.ts`**
+
+> **Ajustado tras revisión:** cada ítem lleva `available: boolean`. «Invita a tu equipo» todavía no tiene
+> pantalla (`/configuracion/usuarios` es un placeholder, no hay flujo de invitación): va con
+> `label: "Invita a tu equipo (pronto)"` y `available: false`. El estado expone `complete` = todos los
+> ítems `available` están hechos (el de equipo no cuenta, si contara la tarjeta nunca se podría ocultar);
+> `done`/`total` siguen contando los cinco, para que el «4 de 5» sea honesto. También se exportan
+> `canSeeGettingStarted` / `canHideGettingStarted` (`owner` o `admin`): la tarjeta es para quien configura
+> la empresa, y la página la renderiza solo para ellos.
 
 ```ts
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -826,6 +834,11 @@ describe("GettingStarted", () => {
 
 - [ ] **Step 7: Implementar `src/components/dashboard/getting-started.tsx`**
 
+> **Ajustado tras revisión:** el componente usa `status.complete` (no lo recalcula). Un pendiente con
+> `available: false` se dibuja como `<div>` sin enlace (no se manda a nadie a una pantalla que no existe).
+> Accesibilidad: la barra lleva `aria-labelledby="primeros-pasos"` y `aria-valuetext="{done} de {total}"`,
+> y los hechos abren con `<span className="sr-only">Listo: </span>` (el tachado no se oye).
+
 ```tsx
 import Link from "next/link";
 import { CircleCheck, Circle, Rocket } from "lucide-react";
@@ -886,7 +899,7 @@ export function GettingStarted({ status, canHide, action }: {
 
 - [ ] **Step 8: Correr y verificar** — `npx vitest run src/components/dashboard/getting-started.test.tsx tests/getting-started.test.ts tests/flash.test.ts` → PASS.
 
-- [ ] **Step 9: Dashboard** — en `src/app/(app)/dashboard/page.tsx`: sumar `gettingStartedStatus(supabase)` al `Promise.all` de consultas, importar `GettingStarted` y `hideGettingStartedAction`, y renderizar **justo debajo del saludo y antes de los KPIs**: `<GettingStarted status={gs} canHide={["owner", "admin"].includes(role)} action={hideGettingStartedAction} />`.
+- [ ] **Step 9: Dashboard** — en `src/app/(app)/dashboard/page.tsx`: sumar `gettingStartedStatus(supabase)` al `Promise.all` de consultas, importar `GettingStarted` y `hideGettingStartedAction`, y renderizar **justo debajo del saludo y antes de los KPIs**: `{canSeeGettingStarted(role) && <GettingStarted status={gs} canHide={canHideGettingStarted(role)} action={hideGettingStartedAction} />}`.
 
 - [ ] **Step 10: Verificar + commit**
 

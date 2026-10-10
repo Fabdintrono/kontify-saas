@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Wallet } from "lucide-react";
+import { CircleCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { listReceivablesByClient } from "@/lib/cobros/queries";
 import { canRegisterPayment } from "@/lib/cobros/permissions";
@@ -10,6 +10,9 @@ import { ReceivablesToolbar } from "@/components/cobros/receivables-toolbar";
 import { ReceivablesTable } from "@/components/cobros/receivables-table";
 import { ReceivableRowCard } from "@/components/cobros/receivable-row-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ModuleHeader } from "@/components/shared/module-header";
+import { ModuleGuide } from "@/components/shared/module-guide";
+import { GUIDES } from "@/lib/guides";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function CuentasPorCobrarPage({ searchParams }: {
@@ -30,19 +33,19 @@ export default async function CuentasPorCobrarPage({ searchParams }: {
 
   return (
     <div className="space-y-4 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Cuentas por cobrar</h1>
+      <ModuleHeader module="cuentas_por_cobrar" actions={
         <div className="text-sm text-[var(--text-soft)]">
           Total: <span className="font-semibold text-[var(--text)]">{formatMoney(totalDue, currency)}</span>
           {overdue > 0 && <> · Vencido: <span className="font-semibold text-[#dc2626]">{formatMoney(overdue, currency)}</span></>}
-        </div>
-      </div>
+        </div>} />
 
       <ReceivablesToolbar />
 
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
-          <EmptyState icon={Wallet} title="Sin saldos pendientes" hint="Las ventas a crédito con saldo aparecen aquí." />
+          <EmptyState icon={CircleCheck} tone="ok" title="Nadie te debe"
+            hint="Las ventas a crédito con saldo aparecen aquí."
+            secondary={<ModuleGuide guide={GUIDES.cuentas_por_cobrar} />} />
         </div>
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 lg:p-4">

@@ -3,6 +3,7 @@ import { useActionState, useEffect, useState } from "react";
 import { registerAdjustmentAction, type FormState } from "@/app/(app)/operaciones/inventario/actions";
 import { useToast } from "@/components/ui/toast";
 import { flashFor } from "@/lib/flash";
+import { FieldLabel } from "@/components/shared/field-label";
 
 type LiteProduct = { id: string; name: string };
 type Branch = { id: string; name: string };
@@ -24,13 +25,13 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
   if (!open) return (
     <button type="button" onClick={() => setOpen(true)}
       className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
-      Registrar movimiento
+      Ajustar stock
     </button>
   );
 
   return (
-    <form action={formAction} className="max-w-md space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
-      <p className="text-sm font-bold text-[var(--text)]">Registrar movimiento</p>
+    <form action={formAction} className="w-full max-w-md space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+      <p className="text-sm font-bold text-[var(--text)]">Ajustar stock</p>
       {productId
         ? <input type="hidden" name="productId" value={productId} />
         : (
@@ -45,9 +46,9 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
         )}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelCls}>Sucursal</label>
+          <FieldLabel htmlFor="adjBranchId" help="sucursal">Sucursal</FieldLabel>
           {isBackOffice
-            ? <select name="branchId" className={inputCls} defaultValue={defaultBranch}>{branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
+            ? <select id="adjBranchId" name="branchId" className={inputCls} defaultValue={defaultBranch}>{branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
             : <input type="hidden" name="branchId" value={defaultBranch} />}
           {!isBackOffice && <p className="py-2 text-sm text-[var(--text)]">{branches.find((b) => b.id === defaultBranch)?.name ?? "—"}</p>}
         </div>

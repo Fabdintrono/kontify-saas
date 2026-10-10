@@ -14,7 +14,12 @@ import { utilityThisMonth, salesByDayThisWeek, topProductsThisMonth } from "@/li
 import { getTenantSettings } from "@/lib/tenant";
 import { todayISO } from "@/lib/tz";
 import { attentionItems } from "@/lib/dashboard/attention";
+import { gettingStartedStatus, canSeeGettingStarted, canHideGettingStarted } from "@/lib/dashboard/getting-started";
 import { BarChart } from "@/components/reportes/bar-chart";
+import { ModuleGuide } from "@/components/shared/module-guide";
+import { GUIDES } from "@/lib/guides";
+import { GettingStarted } from "@/components/dashboard/getting-started";
+import { hideGettingStartedAction } from "./actions";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -32,9 +37,11 @@ export default async function Dashboard() {
     salesKpi(supabase, tz), receivablesTotal(supabase),
   ]);
   const [invKpi, invBreakdown] = await Promise.all([stockKpi(supabase), inventoryStatusBreakdown(supabase)]);
-  const [util, weekDays, topProds, attention] = await Promise.all([
+  const [util, weekDays, topProds, attention, gs] = await Promise.all([
     utilityThisMonth(supabase, tz), salesByDayThisWeek(supabase, tz), topProductsThisMonth(supabase, tz, 5),
     attentionItems(supabase, todayISO(tz)),
+    // Solo dueño/admin ven «Primeros pasos»: para el resto no se consulta.
+    canSeeGettingStarted(role) ? gettingStartedStatus(supabase) : Promise.resolve(null),
   ]);
   const utilidadMes = canManageProducts(role) && sKpi.monthTotal > 0 ? { value: formatMoney(util.utility, currency) } : {};
   const weekBars = weekDays.map((d) => ({ label: weekdayShort(d.date), value: d.revenue }));
@@ -50,12 +57,17 @@ export default async function Dashboard() {
 
   return (
     <div className="space-y-5 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">
-          Hola{firstName ? `, ${firstName}` : ""} 👋
-        </h1>
-        {/* Selector de período: se reincorpora cuando los KPIs reaccionen a él (Fase B); hoy todo es "este mes". */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">
+            Hola{firstName ? `, ${firstName}` : ""} 👋
+          </h1>
+          <p className="mt-0.5 max-w-3xl text-sm text-[var(--text-soft)]">{GUIDES.dashboard.subtitle} <ModuleGuide guide={GUIDES.dashboard} className="ml-1 align-baseline" /></p>
+        </div>
+        {/* Selector de período: se reincorpora cuando los KPIs reaccionen a él (Fase C); hoy todo es "este mes". */}
       </div>
+
+      {gs && <GettingStarted status={gs} canHide={canHideGettingStarted(role)} action={hideGettingStartedAction} />}
 
       {/* Móvil: hero Utilidad + 4 KPIs */}
       <div className="grid grid-cols-2 gap-3 lg:hidden">

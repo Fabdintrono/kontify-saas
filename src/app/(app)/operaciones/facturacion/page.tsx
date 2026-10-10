@@ -7,6 +7,9 @@ import { SalesToolbar } from "@/components/ventas/sales-toolbar";
 import { SalesTable } from "@/components/ventas/sales-table";
 import { SaleRowCard } from "@/components/ventas/sale-row-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ModuleHeader } from "@/components/shared/module-header";
+import { ModuleGuide } from "@/components/shared/module-guide";
+import { GUIDES } from "@/lib/guides";
 import { getTenantSettings } from "@/lib/tenant";
 import { todayISO } from "@/lib/tz";
 import type { Role } from "@/lib/auth/roles";
@@ -29,21 +32,21 @@ export default async function FacturacionPage({ searchParams }: {
 
   return (
     <div className="space-y-4 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Facturación</h1>
-        {canSell(role) && (
-          <Link href="/operaciones/facturacion/nueva"
-            className="flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
-            <Plus className="h-4 w-4" strokeWidth={2.5} /> Nueva venta
-          </Link>
-        )}
-      </div>
+      <ModuleHeader module="ventas" actions={canSell(role) ? (
+        <Link href="/operaciones/facturacion/nueva"
+          className="flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
+          <Plus className="h-4 w-4" strokeWidth={2.5} /> Nueva venta
+        </Link>
+      ) : undefined} />
 
       <SalesToolbar />
 
       {list.rows.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
-          <EmptyState icon={FileText} title="Aún no hay ventas" hint={"Crea la primera con “Nueva venta”."} />
+          <EmptyState icon={FileText} title="Aún no hay ventas"
+            hint="La primera venta puede ser a Consumidor final."
+            action={canSell(role) ? { href: "/operaciones/facturacion/nueva", label: "Nueva venta" } : undefined}
+            secondary={<ModuleGuide guide={GUIDES.ventas} />} />
         </div>
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 lg:p-4">

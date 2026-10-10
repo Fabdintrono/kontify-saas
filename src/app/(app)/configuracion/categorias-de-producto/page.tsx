@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listCategories } from "@/lib/productos/queries";
 import { canManageCategories } from "@/lib/productos/permissions";
 import { createCategoryFormAction, updateCategoryAction } from "@/app/(app)/operaciones/productos/actions";
+import { ModuleHeader } from "@/components/shared/module-header";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function CategoriasDeProductoPage() {
@@ -17,7 +18,7 @@ export default async function CategoriasDeProductoPage() {
 
   return (
     <div className="max-w-lg space-y-4 p-6">
-      <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Categorías de producto</h1>
+      <ModuleHeader module="config_categorias" />
 
       <form action={createCategoryFormAction} className="flex gap-2">
         <input name="name" placeholder="Nueva categoría (ej. Repuestos)" className={`${inputCls} flex-1`} />
@@ -42,7 +43,6 @@ export default async function CategoriasDeProductoPage() {
           </li>
         ))}
       </ul>
-      <p className="text-xs text-[var(--text-soft)]">Las categorías inactivas no aparecen al crear productos, pero se conservan en los existentes.</p>
     </div>
   );
 }

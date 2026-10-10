@@ -24,13 +24,13 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
   if (!open) return (
     <button type="button" onClick={() => setOpen(true)}
       className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
-      Registrar movimiento
+      Ajustar stock
     </button>
   );
 
   return (
     <form action={formAction} className="max-w-md space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
-      <p className="text-sm font-bold text-[var(--text)]">Registrar movimiento</p>
+      <p className="text-sm font-bold text-[var(--text)]">Ajustar stock</p>
       {productId
         ? <input type="hidden" name="productId" value={productId} />
         : (

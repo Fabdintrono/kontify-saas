@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { TrendingUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { salesReport } from "@/lib/reportes/queries";
 import { monthRange } from "@/lib/reportes/ranges";
@@ -8,6 +9,8 @@ import { isDateISO, todayISO } from "@/lib/tz";
 import { formatMoney, formatDateOnly } from "@/lib/format";
 import { PeriodSelector } from "@/components/reportes/period-selector";
 import { BarChart } from "@/components/reportes/bar-chart";
+import { EmptyState } from "@/components/shared/empty-state";
+import { ModuleHeader } from "@/components/shared/module-header";
 
 export default async function ReporteVentasPage({ searchParams }: {
   searchParams: Promise<{ from?: string; to?: string; branch?: string }>;
@@ -35,7 +38,7 @@ export default async function ReporteVentasPage({ searchParams }: {
   const card = "rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4";
   return (
     <div className="space-y-4 p-6">
-      <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Reporte de ventas</h1>
+      <ModuleHeader module="reportes_ventas" />
       <PeriodSelector branches={(branches ?? []) as any} showBranch={isBackOffice} today={todayISO(tz)} from={from} to={to} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -49,7 +52,10 @@ export default async function ReporteVentasPage({ searchParams }: {
       )}
 
       {s.count === 0 ? (
-        <p className="text-sm text-[var(--text-soft)]">No hay ventas en el período seleccionado.</p>
+        <div className={card}>
+          <EmptyState icon={TrendingUp} title="Sin ventas en este período"
+            hint="Prueba otro período o quita el filtro de sucursal." />
+        </div>
       ) : (
         <>
           <div className={card}>

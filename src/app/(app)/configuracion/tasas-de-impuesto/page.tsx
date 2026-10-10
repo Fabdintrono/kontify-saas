@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listTaxRates } from "@/lib/productos/queries";
 import { canManageTaxRates } from "@/lib/productos/permissions";
 import { createTaxRateFormAction, updateTaxRateAction } from "@/app/(app)/operaciones/productos/actions";
+import { ModuleHeader } from "@/components/shared/module-header";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function TasasDeImpuestoPage() {
@@ -17,7 +18,7 @@ export default async function TasasDeImpuestoPage() {
 
   return (
     <div className="max-w-2xl space-y-4 p-6">
-      <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Tasas de impuesto</h1>
+      <ModuleHeader module="config_tasas" />
 
       <form action={createTaxRateFormAction} className="flex flex-wrap items-center gap-2">
         <input name="name" placeholder="Nombre (ej. IVA 16%)" className={`${inputCls} flex-1`} />
@@ -50,7 +51,6 @@ export default async function TasasDeImpuestoPage() {
           </li>
         ))}
       </ul>
-      <p className="text-xs text-[var(--text-soft)]">La tasa predeterminada se preselecciona al crear productos. Solo puede haber una.</p>
     </div>
   );
 }

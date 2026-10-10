@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listClientTypes } from "@/lib/clientes/queries";
 import { canManageClientTypes } from "@/lib/clientes/permissions";
 import { createClientTypeFormAction, updateClientTypeAction } from "@/app/(app)/clientes/actions";
+import { ModuleHeader } from "@/components/shared/module-header";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function TiposDeClientePage() {
@@ -17,7 +18,7 @@ export default async function TiposDeClientePage() {
 
   return (
     <div className="max-w-lg space-y-4 p-6">
-      <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Tipos de cliente</h1>
+      <ModuleHeader module="config_tipos_cliente" />
 
       <form action={createClientTypeFormAction} className="flex gap-2">
         <input name="name" placeholder="Nuevo tipo (ej. Mayorista)" className={`${inputCls} flex-1`} />
@@ -42,7 +43,6 @@ export default async function TiposDeClientePage() {
           </li>
         ))}
       </ul>
-      <p className="text-xs text-[var(--text-soft)]">Los tipos inactivos no aparecen al crear clientes, pero se conservan en los clientes existentes.</p>
     </div>
   );
 }

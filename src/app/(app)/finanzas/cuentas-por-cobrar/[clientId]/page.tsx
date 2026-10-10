@@ -7,6 +7,7 @@ import { formatMoney, formatDateOnly } from "@/lib/format";
 import { getTenantSettings } from "@/lib/tenant";
 import { todayISO } from "@/lib/tz";
 import { PaymentForm } from "@/components/cobros/payment-form";
+import { ModuleHeader } from "@/components/shared/module-header";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function EstadoDeCuentaPage({ params }: { params: Promise<{ clientId: string }> }) {
@@ -24,13 +25,11 @@ export default async function EstadoDeCuentaPage({ params }: { params: Promise<{
   return (
     <div className="space-y-4 p-6">
       <Link href="/finanzas/cuentas-por-cobrar" className="text-sm text-[var(--text-soft)] hover:text-[#0e7490]">← Cuentas por cobrar</Link>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">{data.clientName ?? "Cliente"}</h1>
+      <ModuleHeader module="cuentas_por_cobrar" title={data.clientName ?? "Cliente"} subtitle={null} actions={
         <div className="text-sm text-[var(--text-soft)]">
           Adeudado: <span className="font-semibold text-[var(--text)]">{formatMoney(data.totalDue, currency)}</span>
           {data.overdueAmount > 0 && <> · Vencido: <span className="font-semibold text-[#dc2626]">{formatMoney(data.overdueAmount, currency)}</span></>}
-        </div>
-      </div>
+        </div>} />
 
       {data.rows.length === 0 ? (
         <p className="text-sm text-[var(--text-soft)]">Sin saldos pendientes.</p>

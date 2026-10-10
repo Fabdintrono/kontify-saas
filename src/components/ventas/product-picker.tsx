@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { FIELD } from "@/components/ui/field";
 
 export type LiteProduct = { id: string; name: string; price: number; unit: string; taxRate: number };
 
@@ -9,7 +10,7 @@ export function ProductPicker({ products, onPick, inputId }: { products: LitePro
   const matches = query.trim()
     ? products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase())).slice(0, 8)
     : products.slice(0, 8);
-  const inputCls = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
+  const inputCls = FIELD;
 
   return (
     <div className="relative">

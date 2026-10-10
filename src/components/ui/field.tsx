@@ -19,6 +19,17 @@ export function fieldCls(hasError?: boolean, extra = ""): string {
   return `${FIELD} ${hasError ? FIELD_ERROR : ""} ${extra}`.trim();
 }
 
+/** Celda de una tabla editable: el constructor de líneas de una venta o un presupuesto.
+ *  Más apretada que un campo de formulario porque van varias por fila. */
+export const FIELD_CELL =
+  "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--text)] " +
+  "transition-colors duration-150 hover:border-[var(--text-soft)]/40";
+
+/** Campo de una sola línea con alto fijo, para cuando acompaña a un botón en la misma fila. */
+export const FIELD_H10 =
+  "h-10 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text)] " +
+  "transition-colors duration-150 hover:border-[var(--text-soft)]/40";
+
 /** Versión compacta de 36 px para barras de filtro, donde el campo acompaña y no manda. */
 export const FIELD_SM =
   "h-9 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 text-sm text-[var(--text)] " +

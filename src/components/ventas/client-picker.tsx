@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { FIELD } from "@/components/ui/field";
 
 export type LiteClient = { id: string; name: string };
 
@@ -12,7 +13,7 @@ export function ClientPicker({ clients, value, onChange, inputId }: {
   const matches = query.trim()
     ? clients.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())).slice(0, 8)
     : clients.slice(0, 8);
-  const inputCls = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
+  const inputCls = FIELD;
 
   return (
     <div className="relative">

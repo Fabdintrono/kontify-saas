@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FIELD } from "@/components/ui/field";
 
 export default function Registro() {
   const [form, setForm] = useState({ email: "", password: "", fullName: "", companyName: "", slug: "" });
@@ -20,7 +21,7 @@ export default function Registro() {
     if (r.ok) window.location.href = "/dashboard";
   }
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
-  const input = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
+  const input = FIELD;
 
   return (
     <form onSubmit={submit} className="space-y-3">

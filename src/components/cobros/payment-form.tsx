@@ -7,9 +7,10 @@ import { FieldLabel } from "@/components/shared/field-label";
 import { flashFor } from "@/lib/flash";
 import { formatMoney } from "@/lib/format";
 import { DANGER_TEXT } from "@/lib/ui-tokens";
+import { FIELD } from "@/components/ui/field";
 
 const initial: FormState = { ok: false };
-const inputCls = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
+const inputCls = FIELD;
 
 export function PaymentForm({ saleId, balance, currency, today }: { saleId: string; balance: number; currency: string; today: string }) {
   const [state, formAction, pending] = useActionState(registerPaymentAction, initial);

@@ -1,6 +1,6 @@
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-dvh lg:grid-cols-2">
       <div className="hidden flex-col justify-between bg-gradient-to-br from-[#0e7490] to-[#14b8a6] p-10 text-white lg:flex">
         <div className="flex items-center gap-2">
           <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/15 text-sm font-black">K</div>

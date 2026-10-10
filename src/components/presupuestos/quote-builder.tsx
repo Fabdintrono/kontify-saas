@@ -11,14 +11,15 @@ import { formatMoney } from "@/lib/format";
 import { ClientPicker, type LiteClient } from "@/components/ventas/client-picker";
 import { ProductPicker, type LiteProduct } from "@/components/ventas/product-picker";
 import { DANGER_TEXT, DANGER_TEXT_HOVER } from "@/lib/ui-tokens";
+import { FIELD, FIELD_CELL } from "@/components/ui/field";
 
 type Line = { productId: string | null; description: string; quantity: number; unitPrice: number; discountPct: number; taxRate: number };
 type Branch = { id: string; name: string; is_main: boolean };
 type Values = { id?: string; clientId?: string | null; branchId?: string; globalDiscountPct?: number; validUntil?: string; notes?: string; items?: Line[] };
 
 const initial: FormState = { ok: false };
-const inputCls = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
-const cell = "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
+const inputCls = FIELD;
+const cell = FIELD_CELL;
 // En el teléfono cada línea es una tarjeta y cada campo lleva su rótulo; en escritorio
 // el rótulo queda solo para lectores de pantalla y manda la tira de cabeceras.
 const lineLabel = "mb-1 block text-xs font-medium text-[var(--text-soft)] lg:sr-only";

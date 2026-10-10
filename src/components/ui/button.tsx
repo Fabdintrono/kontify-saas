@@ -6,7 +6,12 @@ const ICONS = { plus: Plus, pencil: Pencil, trash: Trash2 } as const;
 export type ButtonIcon = keyof typeof ICONS;
 
 /** Geometría común de todo botón: la comparte el rojo sólido del ConfirmDialog, que trae su propio color. */
-export const BUTTON_BASE = "inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] px-3 text-sm font-semibold transition-colors disabled:opacity-60";
+/** `active:scale-[0.98]`: el botón responde al dedo antes de que llegue la respuesta
+ *  del servidor. Es el acuse de recibo más barato que existe. */
+export const BUTTON_BASE =
+  "inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] px-3 text-sm font-semibold " +
+  "transition-[background-color,border-color,color,transform] duration-150 " +
+  "active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60";
 const VARIANT: Record<ButtonVariant, string> = {
   primary: "bg-[#0e7490] text-white hover:bg-[#0c6178]",
   secondary: "border border-[var(--border)] font-medium text-[var(--text)] hover:bg-[var(--bg)]",

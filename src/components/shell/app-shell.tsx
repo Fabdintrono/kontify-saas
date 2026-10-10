@@ -40,7 +40,7 @@ export function AppShell({ user, children }: {
       <Suspense fallback={null}><FlashToast /></Suspense>
       <CommandPalette role={user.role} open={buscador} onOpenChange={setBuscador} />
       <KeyboardShortcuts role={user.role} onOpenSearch={() => setBuscador(true)} />
-      <div className="flex h-screen overflow-hidden bg-[var(--bg)]">
+      <div className="flex h-dvh overflow-hidden bg-[var(--bg)]">
         {/* Escritorio: dual-tier */}
         <div className="hidden lg:flex"><Rail sections={sections} config={config} /></div>
         <div className="hidden lg:block"><SubNav sections={sections} config={config} collapsed={collapsed} /></div>

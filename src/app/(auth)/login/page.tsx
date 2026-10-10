@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { DANGER_TEXT } from "@/lib/ui-tokens";
+import { FIELD } from "@/components/ui/field";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -21,7 +22,7 @@ export default function Login() {
     window.location.href = "/dashboard";
   }
 
-  const input = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
+  const input = FIELD;
   return (
     <form onSubmit={submit} className="space-y-3">
       <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Entrar a Kontify</h1>

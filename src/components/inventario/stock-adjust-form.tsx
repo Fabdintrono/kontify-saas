@@ -7,12 +7,13 @@ import { flashFor } from "@/lib/flash";
 import { FieldLabel } from "@/components/shared/field-label";
 import { FieldHelp } from "@/components/shared/field-help";
 import { DANGER_TEXT } from "@/lib/ui-tokens";
+import { FIELD } from "@/components/ui/field";
 
 type LiteProduct = { id: string; name: string };
 type Branch = { id: string; name: string };
 
 const initial: FormState = { ok: false };
-const inputCls = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
+const inputCls = FIELD;
 
 export function StockAdjustForm({ products, productId, branches, userBranchId, isBackOffice }: {
   products?: LiteProduct[]; productId?: string; branches: Branch[]; userBranchId: string | null; isBackOffice: boolean;

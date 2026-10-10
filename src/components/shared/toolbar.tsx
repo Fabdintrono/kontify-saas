@@ -34,8 +34,7 @@ export function Toolbar({ pending, children }: { pending: boolean; children: Rea
   );
 }
 
-export const TOOLBAR_SELECT =
-  "h-9 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 text-sm text-[var(--text)] transition-colors focus:border-[#0e7490] focus:outline-none";
+export { FIELD_SM as TOOLBAR_SELECT } from "@/components/ui/field";
 
 /** Buscador con rebote de 300 ms: busca mientras se escribe, sin disparar una consulta
  *  por tecla. Enter sigue funcionando para quien lo espera. */
@@ -68,8 +67,10 @@ export function SearchField({ label, placeholder, value, onSearch }: {
   }
 
   const id = `buscar-${label.toLowerCase().replace(/\s+/g, "-")}`;
+  // El anillo de foco va en la caja, no en el `input`: el icono vive dentro, así que
+  // enfocar el campo debe iluminar todo el control y no solo el texto.
   return (
-    <div className="flex h-9 min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-[var(--text-soft)] transition-colors focus-within:border-[#0e7490]">
+    <div className="flex h-9 min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-[var(--text-soft)] transition-colors duration-150 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--focus)]">
       <Search className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden="true" />
       <label htmlFor={id} className="sr-only">{label}</label>
       <input id={id} type="search" value={text} placeholder={placeholder}

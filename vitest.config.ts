@@ -9,5 +9,9 @@ export default defineConfig({
   },
   // Entorno por defecto: node (tests de integración contra Supabase). Los tests de
   // componente/tema declaran jsdom por-archivo con `// @vitest-environment jsdom`.
-  test: { environment: "node", testTimeout: 20000, fileParallelism: false },
+  test: {
+    environment: "node", testTimeout: 20000, fileParallelism: false,
+    // `.claude/skills` trae sus propias pruebas: son de la skill, no del producto.
+    exclude: ["node_modules/**", "dist/**", ".next/**", ".claude/**"],
+  },
 });

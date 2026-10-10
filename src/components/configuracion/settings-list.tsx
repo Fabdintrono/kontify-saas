@@ -37,5 +37,4 @@ export function SettingsCreate({ action, children }: {
   );
 }
 
-export const SETTINGS_INPUT =
-  "h-10 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text)] outline-none transition-colors focus:border-[#0e7490]";
+export { FIELD_H10 as SETTINGS_INPUT } from "@/components/ui/field";

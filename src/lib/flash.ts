@@ -5,7 +5,8 @@ export type FlashKey =
   | "cliente-creado" | "cliente-guardado" | "cliente-archivado" | "cliente-reactivado"
   | "producto-creado" | "producto-guardado" | "producto-archivado" | "producto-reactivado"
   | "presupuesto-enviado" | "presupuesto-borrador" | "presupuesto-eliminado" | "presupuesto-aceptado" | "presupuesto-rechazado" | "presupuesto-convertido"
-  | "abono-registrado" | "abono-anulado" | "vencimiento-guardado" | "stock-ajustado";
+  | "abono-registrado" | "abono-anulado" | "vencimiento-guardado" | "stock-ajustado"
+  | "primeros-pasos-ocultos";
 
 const MESSAGES: Record<FlashKey, (arg: string | null) => { title: string; description?: string }> = {
   "venta-emitida": (n) => ({ title: `Venta${n ? ` #${n}` : ""} emitida`, description: "Se asignó el número y se descontó el stock." }),
@@ -30,6 +31,7 @@ const MESSAGES: Record<FlashKey, (arg: string | null) => { title: string; descri
   "abono-anulado": () => ({ title: "Abono anulado", description: "El saldo de la venta se restauró." }),
   "vencimiento-guardado": () => ({ title: "Vencimiento guardado" }),
   "stock-ajustado": () => ({ title: "Existencias actualizadas" }),
+  "primeros-pasos-ocultos": () => ({ title: "Primeros pasos ocultos", description: "Puedes seguir usando la guía «¿Cómo funciona?» de cada módulo." }),
 };
 
 export function withFlash(path: string, key: FlashKey, arg?: string | number | null): string {

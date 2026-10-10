@@ -14,9 +14,12 @@ import { utilityThisMonth, salesByDayThisWeek, topProductsThisMonth } from "@/li
 import { getTenantSettings } from "@/lib/tenant";
 import { todayISO } from "@/lib/tz";
 import { attentionItems } from "@/lib/dashboard/attention";
+import { gettingStartedStatus } from "@/lib/dashboard/getting-started";
 import { BarChart } from "@/components/reportes/bar-chart";
 import { ModuleGuide } from "@/components/shared/module-guide";
 import { GUIDES } from "@/lib/guides";
+import { GettingStarted } from "@/components/dashboard/getting-started";
+import { hideGettingStartedAction } from "./actions";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -34,9 +37,9 @@ export default async function Dashboard() {
     salesKpi(supabase, tz), receivablesTotal(supabase),
   ]);
   const [invKpi, invBreakdown] = await Promise.all([stockKpi(supabase), inventoryStatusBreakdown(supabase)]);
-  const [util, weekDays, topProds, attention] = await Promise.all([
+  const [util, weekDays, topProds, attention, gs] = await Promise.all([
     utilityThisMonth(supabase, tz), salesByDayThisWeek(supabase, tz), topProductsThisMonth(supabase, tz, 5),
-    attentionItems(supabase, todayISO(tz)),
+    attentionItems(supabase, todayISO(tz)), gettingStartedStatus(supabase),
   ]);
   const utilidadMes = canManageProducts(role) && sKpi.monthTotal > 0 ? { value: formatMoney(util.utility, currency) } : {};
   const weekBars = weekDays.map((d) => ({ label: weekdayShort(d.date), value: d.revenue }));
@@ -61,6 +64,8 @@ export default async function Dashboard() {
         </div>
         {/* Selector de período: se reincorpora cuando los KPIs reaccionen a él (Fase B); hoy todo es "este mes". */}
       </div>
+
+      <GettingStarted status={gs} canHide={["owner", "admin"].includes(role)} action={hideGettingStartedAction} />
 
       {/* Móvil: hero Utilidad + 4 KPIs */}
       <div className="grid grid-cols-2 gap-3 lg:hidden">

@@ -380,3 +380,68 @@ Un solo elemento animado por vista.
   distintas, ver el esqueleto al navegar, ver la barra atenuada al filtrar, abrir el panel de
   ayuda desde la cabecera en tres módulos.
 - Merge a `master` con `--no-ff`.
+
+
+---
+
+# Lo que realmente se construyó
+
+Tres commits sobre `feat/ux-fase-d`, más uno de documentación.
+
+## Piezas nuevas
+
+| Archivo | Para qué |
+|---|---|
+| `src/lib/sorting.ts` | `resolveSort`, `nextSortParams`, `toggleDir`, `compareBy` |
+| `src/components/ui/data-table.tsx` | tabla con `colgroup`, cabecera pegajosa, alineación por columna |
+| `src/components/ui/sort-header.tsx` | cabecera ordenable (cliente) |
+| `src/components/ui/skeleton.tsx` | `Skeleton`, `Loading`, `HeaderSkeleton`, `ToolbarSkeleton`, `TableSkeleton`, `CardsSkeleton`, `FormSkeleton` |
+| `src/components/shared/page.tsx` | ritmo único de página |
+| `src/components/shared/list-box.tsx` | caja de lista |
+| `src/components/shared/pagination.tsx` | paginación que conserva filtros y orden |
+| `src/components/shared/toolbar.tsx` | `useFilterParams`, `Toolbar`, `SearchField` con rebote |
+| `src/components/configuracion/settings-list.tsx` | listas de Configuración a ancho completo |
+| `src/lib/module-icons.ts` | un icono por módulo |
+| 17 `loading.tsx` | esqueleto por segmento de ruta |
+
+## Diferencias con el plan
+
+1. **El esqueleto al filtrar no salió de `useTransition`, sino de `<Suspense>` con clave.**
+   Cada página mueve su consulta a un componente hijo asíncrono envuelto en
+   `<Suspense key={filtros}>`. Al cambiar cualquier parámetro la clave cambia, el bloque
+   se vuelve a suspender y se ve el esqueleto en lugar de la lista vieja congelada.
+   `useTransition` se quedó solo para atenuar la barra de filtros mientras navega.
+
+2. **Las listas de Configuración no son `DataTable`.** Cada fila es un formulario con
+   campos editables; una tabla no deja que un `<form>` cruce celdas. Son filas flexibles
+   a ancho completo (`SettingsList`), con el botón «Guardar» fuera del formulario y
+   atado a él por el atributo `form`. Verificado en navegador: guarda.
+
+3. **La cabecera quedó en dos filas, no en una.** Título y botones arriba, subtítulo
+   debajo a todo el ancho. Compartir fila dejaba el subtítulo en una columna de seis
+   renglones en teléfono.
+
+4. **Las cuatro guías de Configuración, que estaban vacías, se escribieron.** Sin pasos
+   no se renderiza el botón de ayuda, así que esas cuatro pantallas se quedaban sin él y
+   rompían la coherencia que busca el criterio WCAG 2.2 · 3.2.6.
+
+5. **`resolveSort` ignora también la dirección cuando la clave no existe.** Lo descubrió
+   la prueba de integración: con `?sort=basura&dir=desc` la lista salía al revés del
+   orden por defecto. Una columna que no existe no es media orden válida.
+
+6. **El botón de ayuda mide 44×44 en teléfono** (`max-sm:h-11 max-sm:w-11`), donde se
+   queda solo con el icono.
+
+## Verificación
+
+- `npx tsc --noEmit` limpio · `npm run build` OK · **297 pruebas en verde** (257 antes).
+- Pruebas nuevas: `src/lib/sorting.test.ts`, `src/components/ui/data-table.test.tsx`,
+  `src/components/ui/button.test.tsx`, `src/components/shared/module-header.test.tsx`,
+  `src/components/shared/toolbar.test.tsx`, `tests/sorting-lists.test.ts`, `tests/motion.test.ts`.
+- Navegador a 1366 px, 390 px y en oscuro, sin un solo error de consola:
+  - las seis tablas van de 349 a 1325 dentro de una caja de 332 a 1342, sin hueco muerto;
+  - ordenar por Total invierte de verdad y pone `aria-sort`;
+  - buscar «Farm» con rebote deja la URL en `?q=Farm` y una fila;
+  - el botón de ayuda está a `y=80` en los 13 módulos;
+  - las tres listas de Configuración van de 333 a 1341;
+  - en teléfono no hay desbordamiento horizontal y la ayuda mide 44×44.

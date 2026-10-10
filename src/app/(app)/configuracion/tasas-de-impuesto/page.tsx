@@ -34,7 +34,7 @@ export default async function TasasDeImpuestoPage() {
         <Button variant="primary" icon="plus">Añadir</Button>
       </SettingsCreate>
 
-      <SettingsList head={<><span className="flex-1">Tasa</span><span className="w-24">%</span><span>Acciones</span></>}>
+      <SettingsList label="Tasa y porcentaje">
         {rates.map((t) => (
           <SettingsRow key={t.id}
             fields={
@@ -44,13 +44,14 @@ export default async function TasasDeImpuestoPage() {
                 <input id={`tasa-name-${t.id}`} name="name" defaultValue={t.name} className={`${SETTINGS_INPUT} min-w-0 flex-1`} />
                 <label htmlFor={`tasa-pct-${t.id}`} className="sr-only">Porcentaje</label>
                 <input id={`tasa-pct-${t.id}`} name="rate" type="number" step="0.01" min="0" max="100" defaultValue={t.rate} className={`${SETTINGS_INPUT} w-24`} />
-                {t.isDefault
-                  ? <StatusBadge tone="info" label="Predeterminada" />
-                  : <button name="isDefault" value="true" className="rounded-[10px] border border-[var(--border)] px-2.5 py-1.5 text-xs text-[var(--text)] transition-colors hover:bg-[var(--bg)]">Hacer predeterminada</button>}
                 {!t.active && <StatusBadge tone="neutral" label="Inactiva" />}
               </form>
             }
             actions={<>
+              {t.isDefault
+                ? <StatusBadge tone="info" label="Predeterminada" />
+                : <button form={`tasa-${t.id}`} name="isDefault" value="true"
+                    className="rounded-[10px] border border-[var(--border)] px-2.5 py-2 text-xs text-[var(--text)] transition-colors hover:bg-[var(--bg)]">Hacer predeterminada</button>}
               <Button variant="secondary" form={`tasa-${t.id}`}>Guardar</Button>
               <form action={updateTaxRateAction}>
                 <input type="hidden" name="id" value={t.id} />

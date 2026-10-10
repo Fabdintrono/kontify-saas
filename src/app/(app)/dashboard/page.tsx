@@ -59,15 +59,15 @@ export default async function Dashboard() {
 
   return (
     <Page>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">
+      {/* Misma estructura que ModuleHeader: la ayuda en el mismo sitio que en los demás módulos. */}
+      <div className="space-y-1.5">
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="min-w-0 flex-1 text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">
             Hola{firstName ? `, ${firstName}` : ""} 👋
           </h1>
-          <p className="mt-1 max-w-3xl text-sm text-[var(--text-soft)]">{GUIDES.dashboard.subtitle}</p>
+          <div className="flex shrink-0 items-center gap-2"><ModuleGuide guide={GUIDES.dashboard} variant="button" /></div>
         </div>
-        {/* La ayuda va en el mismo sitio que en los demás módulos: primer control de la derecha. */}
-        <div className="flex shrink-0 items-center gap-2"><ModuleGuide guide={GUIDES.dashboard} variant="button" /></div>
+        <p className="max-w-3xl text-sm text-[var(--text-soft)]">{GUIDES.dashboard.subtitle}</p>
       </div>
 
       {gs && <GettingStarted status={gs} canHide={canHideGettingStarted(role)} action={hideGettingStartedAction} />}

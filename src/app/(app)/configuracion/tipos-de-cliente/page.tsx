@@ -29,7 +29,7 @@ export default async function TiposDeClientePage() {
         <Button variant="primary" icon="plus">Añadir</Button>
       </SettingsCreate>
 
-      <SettingsList head={<><span className="flex-1">Tipo de cliente</span><span>Acciones</span></>}>
+      <SettingsList label="Tipo de cliente">
         {types.map((t) => (
           <SettingsRow key={t.id}
             fields={

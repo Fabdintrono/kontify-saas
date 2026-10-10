@@ -3,11 +3,13 @@ import type { ReactNode } from "react";
 /** Lista de ajustes a ancho completo: una fila por registro, los campos a la izquierda
  *  y los botones pegados a la derecha. Antes vivían en una columna de 512 px pegada al
  *  borde izquierdo, con dos tercios de pantalla vacíos. */
-export function SettingsList({ head, children }: { head: ReactNode; children: ReactNode }) {
+export function SettingsList({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
-      <div className="flex items-center gap-2 border-b border-[var(--border)] px-4 py-2.5 text-xs font-medium text-[var(--text-soft)]">
-        {head}
+      {/* Dos rótulos, uno por grupo: los campos crecen y las acciones quedan a la derecha.
+          Una cabecera por columna no cuadraría, porque cada fila es un formulario. */}
+      <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] px-4 py-2.5 text-xs font-medium text-[var(--text-soft)]">
+        <span>{label}</span><span>Acciones</span>
       </div>
       <ul className="divide-y divide-[var(--border)]">{children}</ul>
     </div>

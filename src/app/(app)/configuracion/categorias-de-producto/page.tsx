@@ -29,7 +29,7 @@ export default async function CategoriasDeProductoPage() {
         <Button variant="primary" icon="plus">Añadir</Button>
       </SettingsCreate>
 
-      <SettingsList head={<><span className="flex-1">Categoría</span><span>Acciones</span></>}>
+      <SettingsList label="Categoría">
         {categories.map((c) => (
           <SettingsRow key={c.id}
             fields={

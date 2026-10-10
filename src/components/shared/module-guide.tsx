@@ -16,9 +16,10 @@ export function ModuleGuide({ guide, className, variant = "link" }: {
   const [open, setOpen] = useState(false);
   if (guide.steps.length === 0) return null;
 
+  // En teléfono el botón se queda solo con el icono: 44×44 para que el dedo lo acierte.
   const trigger = variant === "button" ? (
     <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open}
-      aria-label="Cómo funciona" className={buttonCls("secondary", className)}>
+      aria-label="Cómo funciona" className={buttonCls("secondary", `max-sm:h-11 max-sm:w-11 max-sm:px-0 ${className ?? ""}`)}>
       <CircleHelp className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
       <span className="hidden sm:inline">Ayuda</span>
     </button>

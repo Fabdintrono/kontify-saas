@@ -17,8 +17,19 @@ describe("ModuleGuide", () => {
     expect(screen.getAllByRole("listitem").length).toBeGreaterThanOrEqual(GUIDES.ventas.steps.length);
   });
   it("sin pasos no renderiza nada", () => {
-    const { container } = render(<ModuleGuide guide={GUIDES.config_tasas} />);
+    const { container } = render(<ModuleGuide guide={{ title: "X", subtitle: "Y", steps: [] }} />);
     expect(container.innerHTML).toBe("");
+  });
+  it("hoy los 13 módulos tienen pasos: ninguno se queda sin ayuda", () => {
+    for (const id of Object.keys(GUIDES) as (keyof typeof GUIDES)[]) {
+      expect(GUIDES[id].steps.length, `${id} sin pasos`).toBeGreaterThan(0);
+    }
+  });
+  it("la variante de cabecera es un botón con nombre fijo y objetivo táctil de 44 px", () => {
+    render(<ModuleGuide guide={GUIDES.ventas} variant="button" />);
+    const b = screen.getByRole("button", { name: "Cómo funciona" });
+    expect(b.className).toContain("max-sm:h-11");
+    expect(b.className).toContain("max-sm:w-11");
   });
   it("el botón Cerrar cierra el panel", () => {
     render(<ModuleGuide guide={GUIDES.ventas} />);

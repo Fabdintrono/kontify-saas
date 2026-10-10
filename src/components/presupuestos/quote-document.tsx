@@ -24,7 +24,7 @@ export function QuoteDocument({ quote, today }: { quote: Quote; today: string })
             <QuoteStatusBadge status={quote.status} />
           </div>
         </div>
-        <table className="w-full text-sm">
+        <table className="hidden w-full text-sm lg:table">
           <thead>
             <tr className="border-b border-[var(--border)] text-left text-xs text-[var(--text-soft)]">
               <th className="py-1 font-medium">Descripción</th><th className="font-medium">Cant.</th>
@@ -45,6 +45,20 @@ export function QuoteDocument({ quote, today }: { quote: Quote; today: string })
             ))}
           </tbody>
         </table>
+        <ul data-lineas-movil className="space-y-2 lg:hidden">
+          {quote.items.map((it, i) => (
+            <li key={it.id} className="rounded-xl border border-[var(--border)] p-3">
+              <p className="font-medium text-[var(--text)]">{it.description}</p>
+              <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-[var(--text-soft)]">
+                <div className="flex justify-between"><dt>Cant.</dt><dd className="text-[var(--text)]">{Number(it.quantity)}</dd></div>
+                <div className="flex justify-between"><dt>Precio</dt><dd className="text-[var(--text)]">{formatMoney(Number(it.unit_price), c)}</dd></div>
+                <div className="flex justify-between"><dt>Desc.</dt><dd className="text-[var(--text)]">{Number(it.discount_pct)}%</dd></div>
+                <div className="flex justify-between"><dt>IVA</dt><dd className="text-[var(--text)]">{Number(it.tax_rate)}%</dd></div>
+              </dl>
+              <p className="mt-1 text-right text-sm font-semibold text-[var(--text)]">{formatMoney(quote.computed.lines[i]?.neto ?? 0, c)}</p>
+            </li>
+          ))}
+        </ul>
         <div className="mt-3 ml-auto max-w-xs space-y-1 text-sm">
           <div className="flex justify-between"><span className="text-[var(--text-soft)]">Subtotal</span><span className="text-[var(--text)]">{formatMoney(quote.computed.subtotal, c)}</span></div>
           <div className="flex justify-between"><span className="text-[var(--text-soft)]">Descuentos</span><span className="text-[var(--text)]">{formatMoney(quote.computed.discountTotal, c)}</span></div>

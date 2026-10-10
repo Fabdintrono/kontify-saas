@@ -12,6 +12,8 @@ import type { Role } from "@/lib/auth/roles";
 import { formatMoney, weekdayShort } from "@/lib/format";
 import { utilityThisMonth, salesByDayThisWeek, topProductsThisMonth } from "@/lib/reportes/queries";
 import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
+import { attentionItems } from "@/lib/dashboard/attention";
 import { BarChart } from "@/components/reportes/bar-chart";
 
 export default async function Dashboard() {
@@ -30,8 +32,9 @@ export default async function Dashboard() {
     salesKpi(supabase, tz), receivablesTotal(supabase),
   ]);
   const [invKpi, invBreakdown] = await Promise.all([stockKpi(supabase), inventoryStatusBreakdown(supabase)]);
-  const [util, weekDays, topProds] = await Promise.all([
+  const [util, weekDays, topProds, attention] = await Promise.all([
     utilityThisMonth(supabase, tz), salesByDayThisWeek(supabase, tz), topProductsThisMonth(supabase, tz, 5),
+    attentionItems(supabase, todayISO(tz)),
   ]);
   const utilidadMes = canManageProducts(role) && sKpi.monthTotal > 0 ? { value: formatMoney(util.utility, currency) } : {};
   const weekBars = weekDays.map((d) => ({ label: weekdayShort(d.date), value: d.revenue }));
@@ -148,7 +151,7 @@ export default async function Dashboard() {
         </div>
       </div>
 
-      <AttentionList items={[]} />
+      <AttentionList items={attention} />
     </div>
   );
 }

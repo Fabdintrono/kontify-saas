@@ -2,6 +2,7 @@
 import { useActionState, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { submitSaleAction, type FormState } from "@/app/(app)/operaciones/facturacion/actions";
+import { useSubmitIntent } from "@/components/shared/use-submit-intent";
 import { computeSaleTotals } from "@/lib/ventas/totals";
 import { formatMoney } from "@/lib/format";
 import { ClientPicker, type LiteClient } from "./client-picker";
@@ -21,6 +22,7 @@ export function SaleBuilder({ clients, products, branches, role, userBranchId, c
   role: string; userBranchId: string | null; currency: string; values?: Values;
 }) {
   const [state, formAction, pending] = useActionState(submitSaleAction, initial);
+  const submit = useSubmitIntent<"save" | "emit">(pending);
   const isBackOffice = ["owner", "admin", "administrativo"].includes(role);
   const defaultBranch = values.branchId ?? userBranchId ?? branches.find((b) => b.is_main)?.id ?? branches[0]?.id ?? "";
 
@@ -109,9 +111,9 @@ export function SaleBuilder({ clients, products, branches, role, userBranchId, c
       {state.fieldErrors && <p className="text-sm text-[#dc2626]">{Object.values(state.fieldErrors)[0]}</p>}
 
       <div className="flex flex-wrap items-center gap-2">
-        <button name="intent" value="save" disabled={pending}
+        <button name="intent" value="save" disabled={pending} onClick={() => submit.mark("save")}
           className="rounded-[10px] border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--text)] disabled:opacity-60">
-          {pending ? "Guardando…" : "Guardar borrador"}
+          {submit.isPending("save") ? "Guardando…" : "Guardar borrador"}
         </button>
         <button type="button" onClick={() => setEmitOpen((v) => !v)} disabled={lines.length === 0}
           className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
@@ -138,9 +140,9 @@ export function SaleBuilder({ clients, products, branches, role, userBranchId, c
             <div><label className={labelCls}>Fecha de vencimiento (opcional)</label>
               <input name="dueDate" type="date" className={inputCls} /></div>
           )}
-          <button name="intent" value="emit" disabled={pending}
+          <button name="intent" value="emit" disabled={pending} onClick={() => submit.mark("emit")}
             className="w-full rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
-            {pending ? "Emitiendo…" : "Confirmar emisión"}
+            {submit.isPending("emit") ? "Emitiendo…" : "Confirmar emisión"}
           </button>
         </div>
       )}

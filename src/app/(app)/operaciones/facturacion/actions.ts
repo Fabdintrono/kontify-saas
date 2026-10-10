@@ -8,6 +8,7 @@ import { todayISO } from "@/lib/tz";
 import { saleSaveSchema, saleEmitSchema, emitSchema } from "@/lib/ventas/schema";
 import { canSell, canVoidSale } from "@/lib/ventas/permissions";
 import * as m from "@/lib/ventas/mutations";
+import { withFlash } from "@/lib/flash";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -73,11 +74,18 @@ export async function submitSaleAction(_prev: FormState, fd: FormData): Promise<
     }
   } catch (e) { return { ok: false, error: (e as Error).message }; }
 
+  // El número solo existe tras emitir; lo lleva el toast ("Venta #12 emitida").
+  let number: number | null = null;
+  if (intent === "emit") {
+    const { data } = await sb.from("sales").select("number").eq("id", saleId).maybeSingle();
+    number = data?.number ?? null;
+  }
+
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${saleId}`);
   revalidatePath("/dashboard");
   if (parsed.data.clientId) revalidatePath(`/clientes/${parsed.data.clientId}`);
-  redirect(`${LIST}/${saleId}`);
+  redirect(withFlash(`${LIST}/${saleId}`, intent === "emit" ? "venta-emitida" : "venta-borrador", number));
 }
 
 export async function deleteDraftAction(fd: FormData): Promise<void> {
@@ -86,7 +94,7 @@ export async function deleteDraftAction(fd: FormData): Promise<void> {
   const id = String(fd.get("id") ?? "");
   await m.deleteDraft(sb, id);
   revalidatePath(LIST);
-  redirect(LIST);
+  redirect(withFlash(LIST, "venta-borrador-eliminado"));
 }
 
 export async function voidSaleAction(fd: FormData): Promise<void> {

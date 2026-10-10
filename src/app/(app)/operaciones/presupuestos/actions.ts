@@ -7,6 +7,7 @@ import { getTenantCurrency } from "@/lib/productos/queries";
 import { quoteSaveSchema, quoteSendSchema, quoteStatusSchema } from "@/lib/presupuestos/schema";
 import { canSell } from "@/lib/ventas/permissions";
 import * as m from "@/lib/presupuestos/mutations";
+import { withFlash } from "@/lib/flash";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -60,9 +61,16 @@ export async function submitQuoteAction(_prev: FormState, fd: FormData): Promise
     if (intent === "send") await m.sendQuote(sb, quoteId);
   } catch (e) { return { ok: false, error: (e as Error).message }; }
 
+  // El número se asigna al enviar; lo lleva el toast ("Presupuesto #7 enviado").
+  let number: number | null = null;
+  if (intent === "send") {
+    const { data } = await sb.from("quotes").select("number").eq("id", quoteId).maybeSingle();
+    number = data?.number ?? null;
+  }
+
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${quoteId}`);
-  redirect(`${LIST}/${quoteId}`);
+  redirect(withFlash(`${LIST}/${quoteId}`, intent === "send" ? "presupuesto-enviado" : "presupuesto-borrador", number));
 }
 
 export async function deleteQuoteAction(fd: FormData): Promise<void> {
@@ -71,7 +79,7 @@ export async function deleteQuoteAction(fd: FormData): Promise<void> {
   const id = String(fd.get("id") ?? "");
   await m.deleteDraft(sb, id);
   revalidatePath(LIST);
-  redirect(LIST);
+  redirect(withFlash(LIST, "presupuesto-eliminado"));
 }
 
 export async function setQuoteStatusAction(fd: FormData): Promise<void> {
@@ -94,5 +102,5 @@ export async function convertQuoteAction(fd: FormData): Promise<void> {
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${id}`);
   revalidatePath("/operaciones/facturacion");
-  redirect(`/operaciones/facturacion/${saleId}/editar`);
+  redirect(withFlash(`/operaciones/facturacion/${saleId}/editar`, "presupuesto-convertido"));
 }

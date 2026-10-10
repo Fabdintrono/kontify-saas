@@ -9,6 +9,7 @@ import {
 } from "@/lib/productos/schema";
 import { canManageProducts, canArchiveProduct, canManageCategories, canManageTaxRates } from "@/lib/productos/permissions";
 import * as m from "@/lib/productos/mutations";
+import { withFlash } from "@/lib/flash";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -46,7 +47,7 @@ export async function createProductAction(_prev: FormState, fd: FormData): Promi
   try { id = await m.createProduct(sb, tenantId, userId, null, parsed.data); }
   catch (e) { return { ok: false, error: (e as Error).message }; }
   revalidatePath(LIST);
-  redirect(`${LIST}/${id}`);
+  redirect(withFlash(`${LIST}/${id}`, "producto-creado"));
 }
 
 export async function updateProductAction(_prev: FormState, fd: FormData): Promise<FormState> {
@@ -58,7 +59,7 @@ export async function updateProductAction(_prev: FormState, fd: FormData): Promi
   try { await m.updateProduct(sb, id, parsed.data); }
   catch (e) { return { ok: false, error: (e as Error).message }; }
   revalidatePath(`${LIST}/${id}`);
-  redirect(`${LIST}/${id}`);
+  redirect(withFlash(`${LIST}/${id}`, "producto-guardado"));
 }
 
 export async function archiveProductAction(fd: FormData): Promise<void> {

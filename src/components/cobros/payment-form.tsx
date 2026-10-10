@@ -1,6 +1,8 @@
 "use client";
 import { useActionState, useEffect, useState } from "react";
 import { registerPaymentAction, type FormState } from "@/app/(app)/finanzas/cuentas-por-cobrar/actions";
+import { useToast } from "@/components/ui/toast";
+import { flashMessage } from "@/lib/flash";
 import { formatMoney } from "@/lib/format";
 
 const initial: FormState = { ok: false };
@@ -10,10 +12,11 @@ const labelCls = "mb-1 block text-xs font-medium text-[var(--text-soft)]";
 export function PaymentForm({ saleId, balance, currency, today }: { saleId: string; balance: number; currency: string; today: string }) {
   const [state, formAction, pending] = useActionState(registerPaymentAction, initial);
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
   const err = (k: string) => state.fieldErrors?.[k];
 
-  // Tras un abono exitoso, colapsa el panel; el revalidatePath ya refrescó saldo/historial.
-  useEffect(() => { if (state.ok) setOpen(false); }, [state]);
+  // Tras un abono exitoso, colapsa el panel y avisa; el revalidatePath ya refrescó saldo/historial.
+  useEffect(() => { if (state.ok) { setOpen(false); toast(flashMessage("abono-registrado", null)!); } }, [state]);
 
   if (!open) return (
     <button type="button" onClick={() => setOpen(true)}

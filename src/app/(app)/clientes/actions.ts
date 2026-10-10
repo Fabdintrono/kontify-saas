@@ -6,6 +6,7 @@ import { createClient as serverSupabase } from "@/lib/supabase/server";
 import { clientCreateSchema, clientTypeCreateSchema, clientTypeUpdateSchema } from "@/lib/clientes/schema";
 import { canArchiveClient, canManageClientTypes } from "@/lib/clientes/permissions";
 import * as m from "@/lib/clientes/mutations";
+import { withFlash } from "@/lib/flash";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -39,7 +40,7 @@ export async function createClientAction(_prev: FormState, fd: FormData): Promis
   try { id = await m.createClient(sb, tenantId, userId, null, parsed.data); }
   catch (e) { return { ok: false, error: (e as Error).message }; }
   revalidatePath("/clientes");
-  redirect(`/clientes/${id}`);
+  redirect(withFlash(`/clientes/${id}`, "cliente-creado"));
 }
 
 export async function updateClientAction(_prev: FormState, fd: FormData): Promise<FormState> {
@@ -50,7 +51,7 @@ export async function updateClientAction(_prev: FormState, fd: FormData): Promis
   try { await m.updateClient(sb, id, parsed.data); }
   catch (e) { return { ok: false, error: (e as Error).message }; }
   revalidatePath(`/clientes/${id}`);
-  redirect(`/clientes/${id}`);
+  redirect(withFlash(`/clientes/${id}`, "cliente-guardado"));
 }
 
 export async function archiveClientAction(fd: FormData): Promise<void> {

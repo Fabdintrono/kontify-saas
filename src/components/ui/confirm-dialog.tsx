@@ -5,6 +5,7 @@ import { TriangleAlert } from "lucide-react";
 import { useToast, type ToastInput } from "@/components/ui/toast";
 import { GENERIC_ERROR, isRedirectError, type ActionResult } from "@/lib/action-result";
 import { DANGER_TEXT } from "@/lib/ui-tokens";
+import { buttonCls, BUTTON_BASE } from "@/components/ui/button";
 
 /** Confirmación antes de una acción irreversible. Reemplaza <form action={…}> + botón directo.
  *  - `action` es una Server Action (fd: FormData) => Promise<ActionResult>; `payload` son sus campos ocultos.
@@ -70,9 +71,9 @@ export function ConfirmDialog({ action, payload, title, description, confirmLabe
           </div>
           <div className="mt-5 flex justify-end gap-2">
             <Dialog.Close asChild>
-              <button type="button" disabled={pending} className="rounded-[10px] border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text)] disabled:opacity-60">Cancelar</button>
+              <button type="button" disabled={pending} className={buttonCls("secondary")}>Cancelar</button>
             </Dialog.Close>
-            <button type="button" onClick={confirm} disabled={pending} aria-busy={pending} className={`rounded-[10px] px-4 py-2 text-sm font-semibold disabled:opacity-60 ${confirmCls}`}>
+            <button type="button" onClick={confirm} disabled={pending} aria-busy={pending} className={`${BUTTON_BASE} ${confirmCls}`}>
               {pending ? "Procesando…" : confirmLabel}
             </button>
           </div>

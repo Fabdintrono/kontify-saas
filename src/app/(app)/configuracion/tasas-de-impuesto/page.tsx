@@ -5,6 +5,7 @@ import { canManageTaxRates } from "@/lib/productos/permissions";
 import { createTaxRateFormAction, updateTaxRateAction } from "@/app/(app)/operaciones/productos/actions";
 import { ModuleHeader } from "@/components/shared/module-header";
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/ui/status-badge";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function TasasDeImpuestoPage() {
@@ -38,7 +39,7 @@ export default async function TasasDeImpuestoPage() {
               <input name="name" defaultValue={t.name} className={`${inputCls} flex-1`} />
               <input name="rate" type="number" step="0.01" min="0" max="100" defaultValue={t.rate} className={`${inputCls} w-24`} />
               {t.isDefault
-                ? <span className="rounded-full bg-[#0e7490]/10 px-2 py-0.5 text-xs font-medium text-[#0e7490] dark:text-[#5eead4]">Predet.</span>
+                ? <StatusBadge tone="info" label="Predet." />
                 : <button name="isDefault" value="true" className="rounded-[10px] border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--text-soft)]">Hacer predet.</button>}
               <Button variant="secondary">Guardar</Button>
             </form>

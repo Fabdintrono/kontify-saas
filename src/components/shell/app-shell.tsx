@@ -12,14 +12,14 @@ import { Popover } from "@/components/ui/popover";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ToastProvider } from "@/components/ui/toast";
 import { FlashToast } from "@/components/shell/flash-toast";
-import type { ShellUser, ShellBranch } from "@/components/shell/types";
+import type { ShellUser } from "@/components/shell/types";
 
-export type { ShellUser, ShellBranch } from "@/components/shell/types";
+export type { ShellUser } from "@/components/shell/types";
 
 const COLLAPSE_KEY = "kontify-panel-collapsed";
 
 export function AppShell({ user, children }: {
-  user: ShellUser; branches: ShellBranch[]; children: ReactNode;
+  user: ShellUser; children: ReactNode;
 }) {
   const sections = navForRole(user.role);
   const config = configForRole(user.role);

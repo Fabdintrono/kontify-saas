@@ -10,6 +10,7 @@ import { CategoryBadge } from "@/components/productos/category-badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ActionButton } from "@/components/ui/action-button";
 import { buttonCls } from "@/components/ui/button";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { flashFor } from "@/lib/flash";
 import { formatMoney } from "@/lib/format";
 import { getTenantSettings } from "@/lib/tenant";
@@ -36,7 +37,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">{p.name}</h1>
           <CategoryBadge name={p.product_categories?.name ?? null} />
-          {!p.active && <span className="rounded-full bg-[var(--bg)] px-2 py-0.5 text-xs text-[var(--text-soft)]">Archivado</span>}
+          {!p.active && <StatusBadge tone="neutral" label="Archivado" />}
         </div>
         <div className="flex items-center gap-2">
           {canManageProducts(role) && (

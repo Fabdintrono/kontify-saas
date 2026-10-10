@@ -76,10 +76,9 @@ export function ClientForm({ action, types, values = {}, submitLabel }: {
         {adding && (
           <div className="mt-2 flex items-center gap-2 rounded-lg border border-dashed border-[var(--border)] p-2">
             <input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="Nuevo tipo (ej. VIP)" className={inputCls} />
-            <button type="button" onClick={addType} disabled={creating || !newType.trim()}
-              className="flex-none rounded-[10px] bg-[#0e7490] px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">
+            <Button variant="primary" type="button" onClick={addType} disabled={creating || !newType.trim()} className="flex-none">
               {creating ? "…" : "Crear"}
-            </button>
+            </Button>
           </div>
         )}
         {typeErr && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{typeErr}</p>}

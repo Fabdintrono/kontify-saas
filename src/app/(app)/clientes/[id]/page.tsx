@@ -9,6 +9,7 @@ import { TypeBadge } from "@/components/clientes/type-badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ActionButton } from "@/components/ui/action-button";
 import { buttonCls } from "@/components/ui/button";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { flashFor } from "@/lib/flash";
 import { salesByClient } from "@/lib/ventas/queries";
 import { formatMoney, formatDate } from "@/lib/format";
@@ -39,7 +40,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">{c.name}</h1>
           <TypeBadge name={c.client_types?.name ?? null} />
-          {!c.active && <span className="rounded-full bg-[var(--bg)] px-2 py-0.5 text-xs text-[var(--text-soft)]">Archivado</span>}
+          {!c.active && <StatusBadge tone="neutral" label="Archivado" />}
         </div>
         <div className="flex items-center gap-2">
           <Link href={`/clientes/${c.id}/editar`} className={secondaryBtn}>

@@ -97,10 +97,9 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
         {adding && (
           <div className="mt-2 flex items-center gap-2 rounded-lg border border-dashed border-[var(--border)] p-2">
             <input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="Nueva categoría (ej. Repuestos)" className={inputCls} />
-            <button type="button" onClick={addCategory} disabled={creating || !newCat.trim()}
-              className="flex-none rounded-[10px] bg-[#0e7490] px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">
+            <Button variant="primary" type="button" onClick={addCategory} disabled={creating || !newCat.trim()} className="flex-none">
               {creating ? "…" : "Crear"}
-            </button>
+            </Button>
           </div>
         )}
         {catErr && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{catErr}</p>}

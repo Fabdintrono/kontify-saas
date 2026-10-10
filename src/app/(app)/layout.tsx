@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { AppShell, type ShellUser, type ShellBranch } from "@/components/shell/app-shell";
+import { AppShell, type ShellUser } from "@/components/shell/app-shell";
 import type { Role } from "@/lib/auth/roles";
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // tenant y .single() fallaría (PGRST116) con 2+ usuarios.
   const { data: membership } = await supabase.from("memberships").select("role").eq("user_id", user.id).single();
   const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
-  const { data: branches } = await supabase.from("branches").select("id, name").order("is_main", { ascending: false });
+  // Las sucursales vuelven cuando el selector filtre de verdad (Fase D).
 
   const role = (membership?.role ?? "vendedor") as Role;
   const fullName = profile?.full_name ?? "";
@@ -30,7 +30,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     role,
     roleLabel: ROLE_LABEL[role],
   };
-  const shellBranches: ShellBranch[] = (branches ?? []) as ShellBranch[];
 
-  return <AppShell user={shellUser} branches={shellBranches}>{children}</AppShell>;
+  return <AppShell user={shellUser}>{children}</AppShell>;
 }

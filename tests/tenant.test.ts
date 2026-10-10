@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { newUserClient } from "./setup";
 import { getTenantSettings } from "@/lib/tenant";
 import { getTenantCurrency } from "@/lib/productos/queries";
@@ -37,10 +38,17 @@ describe("getTenantSettings", () => {
   it("la base rechaza una zona con forma inválida", async () => {
     const t = await makeTenant("tz5");
     const { error } = await t.client.from("tenants").update({ timezone: "Foo Bar" }).eq("id", t.tenantId);
-    expect(error).not.toBeNull();
+    expect(error?.code).toBe("23514"); // check_violation
   });
   it("usuario sin empresa → defaults, nunca lanza", async () => {
     const u = await newUserClient();
     expect(await getTenantSettings(u.client)).toEqual({ currency: "USD", timezone: "America/Caracas" });
+  });
+  it("si la columna timezone no existe, la moneda sigue siendo la real (no cae a USD)", async () => {
+    const fake = { from: () => ({ select: (cols: string) => ({ maybeSingle: async () =>
+      cols.includes("timezone")
+        ? { data: null, error: { code: "42703", message: "column tenants.timezone does not exist" } }
+        : { data: { currency: "VES" }, error: null } }) }) } as unknown as SupabaseClient;
+    expect(await getTenantSettings(fake)).toEqual({ currency: "VES", timezone: "America/Caracas" });
   });
 });

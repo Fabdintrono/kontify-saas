@@ -802,6 +802,119 @@ git commit -m "feat(ui): fechas y períodos en la zona horaria de la empresa; co
 
 ---
 
+### Task 6b: El lado de escritura también usa el día de la empresa (fecha de cobro)
+
+> Añadida tras la revisión de la Task 5: las lecturas ya respetan la zona, pero `paid_at` se guardaba con el día UTC y la regla «la fecha no puede ser futura» se evaluaba contra el día UTC. En Caracas, un cobro al contado después de las 20:00 quedaba fechado mañana.
+
+**Files:**
+- Modify: `src/lib/ventas/mutations.ts` (`emitSale`)
+- Modify: `src/lib/cobros/mutations.ts` (`registerPayment`), `src/lib/cobros/schema.ts` (quitar la validación «futura» del schema)
+- Modify: `src/app/(app)/operaciones/facturacion/actions.ts:71`, `src/app/(app)/finanzas/cuentas-por-cobrar/actions.ts:44-50`
+- Test: `tests/cobros.test.ts`
+
+- [ ] **Step 1: Test que falla (añadir a `tests/cobros.test.ts`)**
+
+```ts
+describe("cobros — la fecha del cobro es el día de la empresa", () => {
+  it("contado: paid_at = today recibido (no el día UTC del servidor)", async () => {
+    const a = await makeTenant("payday"); const b = await mainBranch(a); const p = await makeProduct(a);
+    const id = await createDraft(a.client, a.tenantId, a.id, "USD", saleOf(b, [
+      { productId: p, description: "Café", quantity: 1, unitPrice: 10, discountPct: 0, taxRate: 0 },
+    ]));
+    await emitSale(a.client, id, { paymentType: "contado", paymentMethod: "efectivo" }, "2026-10-09");
+    const { data } = await a.client.from("payments").select("paid_at").eq("sale_id", id).single();
+    expect(data!.paid_at).toBe("2026-10-09");
+  });
+  it("abono: sin paidAt usa today; con paidAt futuro respecto a today lanza", async () => {
+    const a = await makeTenant("payday2"); const b = await mainBranch(a); const p = await makeProduct(a);
+    const id = await createDraft(a.client, a.tenantId, a.id, "USD", saleOf(b, [
+      { productId: p, description: "Café", quantity: 1, unitPrice: 100, discountPct: 0, taxRate: 0 },
+    ]));
+    await emitSale(a.client, id, { paymentType: "credito" }, "2026-10-09");
+    const pid = await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 10 }, "2026-10-09");
+    const { data } = await a.client.from("payments").select("paid_at").eq("id", pid).single();
+    expect(data!.paid_at).toBe("2026-10-09");
+    await expect(registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 10, paidAt: "2026-10-10" }, "2026-10-09"))
+      .rejects.toThrow(/futura/);
+    await expect(registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 10 }, "basura"))
+      .rejects.toThrow(/today/);
+  });
+});
+```
+(Usar los helpers `makeTenant`/`mainBranch`/`makeProduct`/`saleOf` que ya existen en ese archivo o copiarlos de `tests/reportes.test.ts`.)
+
+- [ ] **Step 2: Correr y verificar que falla**
+
+Run: `npx vitest run tests/cobros.test.ts`
+Expected: FAIL — `emitSale` ignora el cuarto argumento (paid_at = día UTC de hoy) y `registerPayment` no acepta `today`.
+
+- [ ] **Step 3: `emitSale` recibe `today`** — en `src/lib/ventas/mutations.ts`
+
+```ts
+import { todayISO, isDateISO, DEFAULT_TZ } from "@/lib/tz";
+
+/** `today` = "YYYY-MM-DD" en la zona de la empresa (fecha del cobro al contado). */
+export async function emitSale(sb: SupabaseClient, id: string, payment: EmitInput, today: string = todayISO(DEFAULT_TZ)): Promise<void> {
+  if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
+  // … igual …
+  // en el insert del contado:
+      method: payment.paymentMethod ?? null, paid_at: today,
+```
+
+- [ ] **Step 4: `registerPayment` recibe `today` y valida «no futura» ahí** — en `src/lib/cobros/mutations.ts`
+
+```ts
+import { isDateISO } from "@/lib/tz";
+
+export async function registerPayment(
+  sb: SupabaseClient, tenantId: string, userId: string, input: PaymentInput, today: string,
+): Promise<string> {
+  if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
+  if (input.paidAt && input.paidAt > today) throw new Error("La fecha no puede ser futura");
+  // … igual …
+    paid_at: input.paidAt ?? today,
+```
+En `src/lib/cobros/schema.ts` borrar `const todayISO = …` y dejar `paidAt: optDate,` (sin `.refine`): la regla vive en la mutación y en la acción, donde se conoce la zona.
+
+- [ ] **Step 5: Las acciones pasan `today` de la empresa**
+
+`src/app/(app)/operaciones/facturacion/actions.ts` (dentro de `submitSaleAction`, donde ya obtiene `currency`):
+```ts
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
+// …
+    const { currency, timezone } = await getTenantSettings(sb);
+    // …
+      await m.emitSale(sb, saleId, pay.data, todayISO(timezone));
+```
+(y quitar `getTenantCurrency` si queda sin uso en ese archivo).
+
+`src/app/(app)/finanzas/cuentas-por-cobrar/actions.ts` (`registerPaymentAction`):
+```ts
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
+// …
+  if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
+  const today = todayISO((await getTenantSettings(sb)).timezone);
+  if (parsed.data.paidAt && parsed.data.paidAt > today) return { ok: false, fieldErrors: { paidAt: "La fecha no puede ser futura" } };
+  try { await m.registerPayment(sb, tenantId, userId, parsed.data, today); }
+```
+
+- [ ] **Step 6: Tests existentes** — en `tests/cobros.test.ts` toda llamada a `registerPayment(` existente pasa `HOY` como quinto argumento. Las llamadas a `emitSale(` sin cuarto argumento siguen válidas (default).
+
+- [ ] **Step 7: Verificar**
+
+Run: `npx vitest run tests/cobros.test.ts tests/ventas.test.ts tests/reportes.test.ts` → PASS. `npx vitest run` → PASS. `npx tsc --noEmit` → sin errores nuevos.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add src/lib/ventas/mutations.ts src/lib/cobros/mutations.ts src/lib/cobros/schema.ts "src/app/(app)/operaciones/facturacion/actions.ts" "src/app/(app)/finanzas/cuentas-por-cobrar/actions.ts" tests/cobros.test.ts
+git commit -m "fix(cobros): la fecha del cobro y la regla 'no futura' usan el día de la empresa"
+```
+
+---
+
 ### Task 7: Estado de pago (Pagada / Parcial / Pendiente / Vencida) en lista, detalle y badge
 
 **Files:**
@@ -1842,5 +1955,6 @@ git push origin master
 | Zona horaria por empresa (B2) | Tasks 1–6 |
 | Vencimiento solo con saldo (hallazgo menor) | Task 7 Step 9 |
 | Columna DATE corrida un día (hallazgo de la implementación) | Task 4 + Task 6 |
+| Escritura de paid_at y regla «no futura» con el día de la empresa (hallazgo de la revisión de Task 5) | Task 6b |
 
 Fuera de alcance (Fases B/C): ModuleHeader, EmptyState v2, FieldHelp, GettingStarted, renombre Facturación→Ventas, buscador global, móvil de líneas de venta, contraste `--text-soft`.

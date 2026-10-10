@@ -39,7 +39,9 @@ export async function listClients(sb: SupabaseClient, opts: {
   const s = sanitize(search);
   if (s) q = q.or(`name.ilike.%${s}%,phone.ilike.%${s}%,email.ilike.%${s}%,doc_id.ilike.%${s}%`);
   const from = (page - 1) * pageSize;
-  q = q.order(order.column, { ascending: order.ascending, nullsFirst: order.nullsFirst ?? order.ascending });
+  // Los vacíos van siempre al final, ordene hacia donde ordene: igual que `compareBy`
+  // en las listas que ordenan en memoria. Postgres, por su cuenta, los pondría primero al bajar.
+  q = q.order(order.column, { ascending: order.ascending, nullsFirst: order.nullsFirst ?? false });
   // Segundo criterio estable: sin él, dos filas con el mismo valor pueden saltar de página.
   if (order.column !== "name") q = q.order("name", { ascending: true });
   q = q.range(from, from + pageSize - 1);

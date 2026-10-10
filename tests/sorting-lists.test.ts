@@ -78,3 +78,16 @@ describe("orden de listas — productos", () => {
     expect(asc.rows.map((r) => r.sku)).toEqual(["AAA-1", null]);
   });
 });
+
+describe("los vacíos van al final en los dos sentidos", () => {
+  it("al ordenar por SKU descendente, el producto sin SKU sigue al final", async () => {
+    const a = await makeTenant("ord-nulos");
+    const cats = await listCategories(a.client);
+    await createProduct(a.client, a.tenantId, a.id, null, { kind: "good", name: "Sin código", price: 1, unit: "unidad", minStock: 0, categoryId: cats[0]?.id ?? null });
+    await createProduct(a.client, a.tenantId, a.id, null, { kind: "good", name: "A", price: 1, sku: "AAA-1", unit: "unidad", minStock: 0, categoryId: cats[0]?.id ?? null });
+    await createProduct(a.client, a.tenantId, a.id, null, { kind: "good", name: "Z", price: 1, sku: "ZZZ-9", unit: "unidad", minStock: 0, categoryId: cats[0]?.id ?? null });
+
+    const desc = await listProducts(a.client, { sort: "sku", dir: "desc" });
+    expect(desc.rows.map((r) => r.sku)).toEqual(["ZZZ-9", "AAA-1", null]);
+  });
+});

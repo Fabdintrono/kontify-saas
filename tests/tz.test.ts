@@ -58,6 +58,11 @@ describe("tz helpers", () => {
     expect(() => addDaysISO("basura", 1)).toThrow(/Fecha local inválida/);
     expect(() => startOfDayUTC("2026-13-45", "UTC")).toThrow(/Fecha local inválida/);
     expect(() => localDateISO(new Date(), "Mars/Phobos")).toThrow(RangeError);
+    expect(isDateISO("0099-01-01")).toBe(false);
+    expect(isDateISO("1000-01-01")).toBe(true);
+    expect(() => addDaysISO("2026-10-09", NaN)).toThrow(/Desplazamiento de días inválido/);
+    expect(() => addDaysISO("2026-10-09", 0.5)).toThrow(/Desplazamiento de días inválido/);
+    expect(() => rangeToInstants({ from: "2026-10-20", to: "basura" }, "UTC")).toThrow(/basura/);
   });
   it("todayISO sin now usa el reloj y devuelve YYYY-MM-DD", () => {
     expect(todayISO("UTC")).toMatch(/^\d{4}-\d{2}-\d{2}$/);

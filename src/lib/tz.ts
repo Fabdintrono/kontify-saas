@@ -37,29 +37,19 @@ function partsIn(instant: Date, tz: string) {
 export function isDateISO(s: unknown): s is string {
   if (typeof s !== "string" || !DATE_ISO.test(s)) return false;
   const [y, m, d] = s.split("-").map(Number);
+  if (y < 1000 || y > 9999) return false; // fuera de ese rango Date.UTC remapea años y el ISO cambia de ancho
   const t = new Date(Date.UTC(y, m - 1, d));
-  t.setUTCFullYear(y); // Date.UTC mapea años 0–99 a 1900–1999
   return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
 }
 function assertDateISO(s: string): void {
   if (!isDateISO(s)) throw new Error(`Fecha local inválida: ${s}`);
-}
-function utcDate(y: number, m0: number, d: number): Date {
-  // Date.UTC mapea años 0–99 a 1900–1999: para esos casos se calcula en y+400 (mismo patrón de
-  // bisiestos, el ciclo gregoriano se repite exacto cada 400 años) y se retrocede el año después.
-  // Un pivote fijo (p. ej. año 2000) rompe la resolución de día 0/32 cuando el año destino tiene
-  // bisiesto distinto al del pivote (ej. addDaysISO("2026-03-01", -1) resolvía mal el 28/02).
-  const shift = y >= 0 && y <= 99 ? 400 : 0;
-  const t = new Date(Date.UTC(y + shift, m0, d));
-  if (shift) t.setUTCFullYear(y);
-  return t;
 }
 const toISO = (t: Date) => `${pad(t.getUTCFullYear(), 4)}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
 
 /** Desfase de la zona (minutos respecto a UTC) en un instante dado. Caracas → -240. */
 export function tzOffsetMinutes(instant: Date, tz: string): number {
   const p = partsIn(instant, tz);
-  const asUTC = utcDate(p.y, p.m - 1, p.d).getTime() + ((p.h * 60 + p.mi) * 60 + p.s) * 1000;
+  const asUTC = new Date(Date.UTC(p.y, p.m - 1, p.d)).getTime() + ((p.h * 60 + p.mi) * 60 + p.s) * 1000;
   return Math.round((asUTC - instant.getTime()) / 60000);
 }
 
@@ -76,16 +66,17 @@ export function todayISO(tz: string, now: Date = new Date()): string {
 
 /** Suma días a una fecha local sin pasar por la zona del proceso. */
 export function addDaysISO(dateISO: string, n: number): string {
+  if (!Number.isSafeInteger(n)) throw new Error(`Desplazamiento de días inválido: ${n}`);
   assertDateISO(dateISO);
   const [y, m, d] = dateISO.split("-").map(Number);
-  return toISO(utcDate(y, m - 1, d + n));
+  return toISO(new Date(Date.UTC(y, m - 1, d + n)));
 }
 
 /** Instante UTC (ISO) de la medianoche local de `dateISO` en la zona. */
 export function startOfDayUTC(dateISO: string, tz: string): string {
   assertDateISO(dateISO);
   const [y, m, d] = dateISO.split("-").map(Number);
-  const guess = utcDate(y, m - 1, d).getTime();
+  const guess = new Date(Date.UTC(y, m - 1, d)).getTime();
   const a = guess - tzOffsetMinutes(new Date(guess), tz) * 60000;
   const b = guess - tzOffsetMinutes(new Date(a), tz) * 60000;
   // Candidatos que de verdad caen en el día pedido; si ninguno (medianoche dentro de un salto de
@@ -97,6 +88,7 @@ export function startOfDayUTC(dateISO: string, tz: string): string {
 /** Rango de días locales inclusivo → [fromInstant, toInstant) para filtrar columnas timestamptz.
  *  Un rango invertido se normaliza (from/to intercambiados) en vez de devolver vacío en silencio. */
 export function rangeToInstants(range: DateRange, tz: string): { fromInstant: string; toInstant: string } {
+  assertDateISO(range.from); assertDateISO(range.to);
   const [from, to] = range.from <= range.to ? [range.from, range.to] : [range.to, range.from];
   return { fromInstant: startOfDayUTC(from, tz), toInstant: startOfDayUTC(addDaysISO(to, 1), tz) };
 }

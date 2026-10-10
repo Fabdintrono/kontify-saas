@@ -1,11 +1,10 @@
 "use client";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { presetRangeFor, activePreset, type Preset } from "@/lib/reportes/ranges";
+import { presetRangeFor, activePreset, PRESET_KEYS, type Preset } from "@/lib/reportes/ranges";
 
-const PRESETS: { key: Preset; label: string }[] = [
-  { key: "hoy", label: "Hoy" }, { key: "semana", label: "Esta semana" },
-  { key: "mes", label: "Este mes" }, { key: "mes_pasado", label: "Mes pasado" },
-];
+const PRESET_LABEL: Record<Preset, string> = {
+  hoy: "Hoy", semana: "Esta semana", mes: "Este mes", mes_pasado: "Mes pasado",
+};
 
 export function PeriodSelector({ branches, showBranch, today, from, to }: {
   branches: { id: string; name: string }[]; showBranch: boolean; today: string; from: string; to: string;
@@ -38,12 +37,12 @@ export function PeriodSelector({ branches, showBranch, today, from, to }: {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="flex flex-wrap gap-1">
-        {PRESETS.map((p) => (
-          <button key={p.key} onClick={() => setPreset(p.key)} aria-pressed={active === p.key}
-            className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium ${active === p.key
+        {PRESET_KEYS.map((key) => (
+          <button key={key} onClick={() => setPreset(key)} aria-pressed={active === key}
+            className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium ${active === key
               ? "border-[#0e7490] bg-[#0e7490] text-white"
               : "border-[var(--border)] text-[var(--text)] hover:bg-[var(--bg)]"}`}>
-            {p.label}
+            {PRESET_LABEL[key]}
           </button>
         ))}
       </div>

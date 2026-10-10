@@ -1,4 +1,4 @@
-import { addDaysISO, localDateISO, type DateRange } from "@/lib/tz";
+import { addDaysISO, localDateISO, isDateISO, type DateRange } from "@/lib/tz";
 
 export type { DateRange };
 export type Preset = "hoy" | "semana" | "mes" | "mes_pasado";
@@ -12,6 +12,7 @@ const mondayIndex = (dateISO: string) => (new Date(`${dateISO}T00:00:00Z`).getUT
 
 /** Preset → rango a partir de un día local ya calculado ("YYYY-MM-DD"). */
 export function presetRangeFor(preset: Preset, today: string): DateRange {
+  if (!isDateISO(today)) throw new Error(`Fecha local inválida: ${today}`);
   switch (preset) {
     case "hoy": return { from: today, to: today };
     case "semana": return { from: addDaysISO(today, -mondayIndex(today)), to: today };
@@ -28,7 +29,7 @@ export function presetRange(preset: Preset, ref: Date, tz: string): DateRange {
   return presetRangeFor(preset, localDateISO(ref, tz));
 }
 
-export const PRESET_KEYS: Preset[] = ["hoy", "semana", "mes", "mes_pasado"];
+export const PRESET_KEYS = ["hoy", "semana", "mes", "mes_pasado"] as const satisfies readonly Preset[];
 
 /** Qué preset coincide exactamente con un rango (el más estrecho gana en empates: hoy > semana > mes). */
 export function activePreset(today: string, r: DateRange): Preset | undefined {

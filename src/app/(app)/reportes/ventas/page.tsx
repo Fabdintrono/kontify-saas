@@ -22,8 +22,7 @@ export default async function ReporteVentasPage({ searchParams }: {
   const { currency, timezone: tz } = await getTenantSettings(sb);
   const def = monthRange(new Date(), tz);
   // Si cualquiera de los dos extremos no sirve, manda el preset completo: nunca un rango mezclado.
-  const valid = isDateISO(sp.from) && isDateISO(sp.to);
-  const { from, to } = valid ? { from: sp.from as string, to: sp.to as string } : def;
+  const { from, to } = isDateISO(sp.from) && isDateISO(sp.to) ? { from: sp.from, to: sp.to } : def;
   const isBackOffice = ["owner", "admin", "administrativo"].includes(role);
 
   const [report, { data: branches }] = await Promise.all([

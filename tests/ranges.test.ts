@@ -40,4 +40,7 @@ describe("presetRange con zona horaria", () => {
     expect(activePreset("2026-10-09", { from: "2026-09-01", to: "2026-09-30" })).toBe("mes_pasado");
     expect(activePreset("2026-10-09", { from: "2026-10-02", to: "2026-10-09" })).toBeUndefined();
   });
+  it("presetRangeFor lanza si 'today' no es una fecha local válida", () => {
+    expect(() => presetRangeFor("hoy", "basura")).toThrow(/Fecha local inválida/);
+  });
 });

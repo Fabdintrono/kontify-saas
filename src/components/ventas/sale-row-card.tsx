@@ -1,9 +1,8 @@
 import Link from "next/link";
 import type { SaleListRow } from "@/lib/ventas/queries";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatDate } from "@/lib/format";
 import { SaleStatusBadge } from "./status-badge";
 
-// `tz` aún no se muestra: queda lista para la fecha que suma Task 7.
 export function SaleRowCard({ r, tz }: { r: SaleListRow; tz: string }) {
   return (
     <Link href={`/operaciones/facturacion/${r.id}`}
@@ -13,10 +12,11 @@ export function SaleRowCard({ r, tz }: { r: SaleListRow; tz: string }) {
           {r.number != null ? `#${r.number}` : "Borrador"} · {r.clientName ?? "Consumidor final"}
         </p>
         <p className="truncate text-xs text-[var(--text-soft)]">
-          {formatMoney(r.total, r.currency)}{r.balance > 0 ? ` · saldo ${formatMoney(r.balance, r.currency)}` : ""}
+          {formatDate(r.issuedAt ?? r.createdAt, tz)} · {formatMoney(r.total, r.currency)}
+          {r.status === "issued" && r.balance > 0 ? ` · saldo ${formatMoney(r.balance, r.currency)}` : ""}
         </p>
       </div>
-      <SaleStatusBadge status={r.status} />
+      <SaleStatusBadge status={r.status} paymentStatus={r.paymentStatus} />
     </Link>
   );
 }

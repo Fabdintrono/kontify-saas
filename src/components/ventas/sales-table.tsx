@@ -23,8 +23,10 @@ export function SalesTable({ rows, tz }: { rows: SaleListRow[]; tz: string }) {
             <td className="text-[var(--text-soft)]">{formatDate(r.issuedAt ?? r.createdAt, tz)}</td>
             <td className="text-[var(--text)]">{r.clientName ?? "Consumidor final"}</td>
             <td className="text-[var(--text)]">{formatMoney(r.total, r.currency)}</td>
-            <td className={r.balance > 0 ? "text-[#dc2626]" : "text-[var(--text-soft)]"}>{formatMoney(r.balance, r.currency)}</td>
-            <td><SaleStatusBadge status={r.status} /></td>
+            <td className={r.paymentStatus === "vencida" ? "font-medium text-[#dc2626]" : "text-[var(--text-soft)]"}>
+              {r.status === "issued" ? formatMoney(r.balance, r.currency) : "—"}
+            </td>
+            <td><SaleStatusBadge status={r.status} paymentStatus={r.paymentStatus} /></td>
           </tr>
         ))}
       </tbody>

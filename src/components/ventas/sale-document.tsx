@@ -1,15 +1,16 @@
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatDateOnly } from "@/lib/format";
+import type { PaymentStatus } from "@/lib/cobros/status";
 import { SaleStatusBadge } from "./status-badge";
 
 type Item = { id: string; description: string; quantity: number; unit_price: number; discount_pct: number; tax_rate: number };
 type Sale = {
   number: number | null; status: string; currency: string; notes: string | null;
-  payment_method: string | null; total: number; paid_amount: number;
+  payment_method: string | null; total: number; paid_amount: number; due_date?: string | null;
   clients?: { name: string } | null; branches?: { name: string } | null;
   items: Item[]; computed: { subtotal: number; discountTotal: number; taxTotal: number; total: number; lines: { neto: number }[] };
 };
 
-export function SaleDocument({ sale }: { sale: Sale }) {
+export function SaleDocument({ sale, paymentStatus }: { sale: Sale; paymentStatus?: PaymentStatus | null }) {
   const c = sale.currency;
   const balance = Number(sale.total) - Number(sale.paid_amount);
   return (
@@ -20,7 +21,7 @@ export function SaleDocument({ sale }: { sale: Sale }) {
             <p className="text-lg font-extrabold text-[var(--text)]">{sale.number != null ? `Venta #${sale.number}` : "BORRADOR"}</p>
             <p className="text-sm text-[var(--text-soft)]">{sale.clients?.name ?? "Consumidor final"} · {sale.branches?.name ?? "—"}</p>
           </div>
-          <SaleStatusBadge status={sale.status} />
+          <SaleStatusBadge status={sale.status} paymentStatus={paymentStatus} />
         </div>
         <table className="w-full text-sm">
           <thead>
@@ -53,13 +54,16 @@ export function SaleDocument({ sale }: { sale: Sale }) {
 
       {sale.status === "issued" && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-[var(--text-soft)]">Pago</span>
-            <span className="font-medium text-[var(--text)]">
-              {balance <= 0 ? `Pagada${sale.payment_method ? ` · ${sale.payment_method}` : ""}` : `Pendiente · saldo ${formatMoney(balance, c)}`}
+            <span className="flex items-center gap-2 font-medium text-[var(--text)]">
+              <SaleStatusBadge status="issued" paymentStatus={paymentStatus ?? null} />
+              {paymentStatus === "pagada" && sale.payment_method ? `· ${sale.payment_method}` : null}
+              {paymentStatus === "parcial" ? `· pagado ${formatMoney(Number(sale.paid_amount), c)} de ${formatMoney(Number(sale.total), c)}` : null}
+              {(paymentStatus === "pendiente" || paymentStatus === "vencida") ? `· saldo ${formatMoney(balance, c)}` : null}
+              {sale.due_date && paymentStatus !== "pagada" ? ` · ${paymentStatus === "vencida" ? "venció el" : "vence el"} ${formatDateOnly(sale.due_date)}` : null}
             </span>
           </div>
-          {balance > 0 && <p className="mt-2 text-xs text-[var(--text-soft)]">Los abonos parciales llegan con el módulo de Cobros.</p>}
         </div>
       )}
       {sale.notes && <p className="text-sm text-[var(--text-soft)]">Notas: {sale.notes}</p>}

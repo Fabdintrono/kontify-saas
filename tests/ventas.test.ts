@@ -38,7 +38,7 @@ describe("ventas — flujo y correlativo", () => {
     await emitSale(a.client, id1, { paymentType: "contado", paymentMethod: "efectivo" }, HOY);
     await emitSale(a.client, id2, { paymentType: "credito" }, HOY);
 
-    const emitidas = await listSales(a.client, { status: "emitidas" });
+    const emitidas = await listSales(a.client, { status: "emitidas", today: HOY });
     const nums = emitidas.rows.map((r) => r.number).sort((x, y) => (x! - y!));
     expect(nums).toEqual([1, 2]);
 
@@ -87,7 +87,7 @@ describe("ventas — RLS", () => {
   it("un tenant no ve ventas de otro", async () => {
     const a = await makeTenant("aa"); const b = await makeTenant("bb");
     await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a)));
-    expect((await listSales(b.client, { status: "todas" })).total).toBe(0);
+    expect((await listSales(b.client, { status: "todas", today: HOY })).total).toBe(0);
   });
 
   it("scoping por sucursal: vendedor de otra sucursal no ve la venta; back-office sí", async () => {
@@ -99,9 +99,9 @@ describe("ventas — RLS", () => {
     const vendedorOtra = await addMember(a, "vendedor", otra!.id);
     const vendedorMain = await addMember(a, "vendedor", main);
     const admin = await addMember(a, "administrativo", null);
-    expect((await listSales(vendedorOtra.client, { status: "todas" })).total).toBe(0); // otra sucursal
-    expect((await listSales(vendedorMain.client, { status: "todas" })).total).toBe(1); // su sucursal
-    expect((await listSales(admin.client, { status: "todas" })).total).toBe(1);        // back-office ve todo
+    expect((await listSales(vendedorOtra.client, { status: "todas", today: HOY })).total).toBe(0); // otra sucursal
+    expect((await listSales(vendedorMain.client, { status: "todas", today: HOY })).total).toBe(1); // su sucursal
+    expect((await listSales(admin.client, { status: "todas", today: HOY })).total).toBe(1);        // back-office ve todo
   });
 
   it("almacen no puede insertar ventas (RLS niega)", async () => {

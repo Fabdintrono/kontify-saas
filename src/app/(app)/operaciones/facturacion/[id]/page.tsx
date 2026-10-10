@@ -8,6 +8,7 @@ import { getTenantSettings } from "@/lib/tenant";
 import { todayISO } from "@/lib/tz";
 import { listPayments } from "@/lib/cobros/queries";
 import { canRegisterPayment, canVoidPayment, canEditDueDate } from "@/lib/cobros/permissions";
+import { paymentStatusOf } from "@/lib/cobros/status";
 import { deleteDraftAction, voidSaleAction } from "@/app/(app)/operaciones/facturacion/actions";
 import { SaleDocument } from "@/components/ventas/sale-document";
 import { PaymentsHistory } from "@/components/cobros/payments-history";
@@ -31,7 +32,12 @@ export default async function VentaDetallePage({ params }: { params: Promise<{ i
     getTenantSettings(sb),
   ]);
   const { currency, timezone: tz } = settings;
+  const today = todayISO(tz);
   const hasPayments = Number(sale.paid_amount) > 0;
+  const paymentStatus = paymentStatusOf(
+    { status: sale.status, total: Number(sale.total), paidAmount: Number(sale.paid_amount), dueDate: sale.due_date ?? null },
+    today,
+  );
 
   return (
     <div className="space-y-4 p-6">
@@ -60,17 +66,17 @@ export default async function VentaDetallePage({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      <SaleDocument sale={sale as any} />
+      <SaleDocument sale={sale as any} paymentStatus={paymentStatus} />
 
       {issued && (
         <div className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-bold text-[var(--text)]">Cobros</p>
-            <DueDateField saleId={sale.id} dueDate={sale.due_date ?? null} canEdit={canEditDueDate(role)} />
+            {balance > 0 && <DueDateField saleId={sale.id} dueDate={sale.due_date ?? null} canEdit={canEditDueDate(role)} />}
           </div>
           <PaymentsHistory payments={payments} saleId={sale.id} currency={currency} canVoid={canVoidPayment(role)} />
           {balance > 0 && canRegisterPayment(role) && (
-            <PaymentForm saleId={sale.id} balance={balance} currency={currency} today={todayISO(tz)} />
+            <PaymentForm saleId={sale.id} balance={balance} currency={currency} today={today} />
           )}
         </div>
       )}

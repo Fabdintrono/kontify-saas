@@ -2,13 +2,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeSaleTotals, round2 } from "@/lib/ventas/totals";
 import { monthRange } from "@/lib/reportes/ranges";
 import { rangeToInstants } from "@/lib/tz";
+import { paymentStatusOf, type PaymentStatus } from "@/lib/cobros/status";
 
 export type SaleStatusFilter = "borradores" | "emitidas" | "anuladas" | "todas";
-export type SalePaymentFilter = "pendientes" | "todas";
+export type SalePaymentFilter = "pendientes" | "vencidas" | "todas";
 export type SaleListRow = {
   id: string; number: number | null; status: "draft" | "issued" | "void";
   clientName: string | null; branchName: string | null;
   total: number; balance: number; currency: string; issuedAt: string | null; createdAt: string;
+  dueDate: string | null; paymentStatus: PaymentStatus | null;
 };
 
 const STATUS_MAP: Record<string, string> = { borradores: "draft", emitidas: "issued", anuladas: "void" };
@@ -16,15 +18,16 @@ const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 function sanitize(term: string): string { return term.replace(/[%,()*]/g, " ").trim(); }
 
 export async function listSales(sb: SupabaseClient, opts: {
-  search?: string; status?: SaleStatusFilter; payment?: SalePaymentFilter; page?: number; pageSize?: number;
-} = {}): Promise<{ rows: SaleListRow[]; total: number; page: number; pageSize: number }> {
-  const { search = "", status = "todas", payment = "todas", page = 1, pageSize = 20 } = opts;
+  search?: string; status?: SaleStatusFilter; payment?: SalePaymentFilter; page?: number; pageSize?: number; today: string;
+}): Promise<{ rows: SaleListRow[]; total: number; page: number; pageSize: number }> {
+  const { search = "", status = "todas", payment = "todas", page = 1, pageSize = 20, today } = opts;
   let q = sb.from("sales").select(
-    "id, number, status, total, paid_amount, currency, issued_at, created_at, clients(name), branches(name)",
+    "id, number, status, total, paid_amount, currency, issued_at, created_at, due_date, clients(name), branches(name)",
     { count: "exact" },
   );
   if (STATUS_MAP[status]) q = q.eq("status", STATUS_MAP[status]);
   if (payment === "pendientes") q = q.eq("status", "issued").gt("balance", 0);
+  if (payment === "vencidas") q = q.eq("status", "issued").gt("balance", 0).lt("due_date", today);
   const s = sanitize(search);
   if (s) {
     if (/^\d+$/.test(s)) {
@@ -44,6 +47,8 @@ export async function listSales(sb: SupabaseClient, opts: {
     clientName: r.clients?.name ?? null, branchName: r.branches?.name ?? null,
     total: Number(r.total), balance: round2(Number(r.total) - Number(r.paid_amount)),
     currency: r.currency, issuedAt: r.issued_at, createdAt: r.created_at,
+    dueDate: r.due_date ?? null,
+    paymentStatus: paymentStatusOf({ status: r.status, total: Number(r.total), paidAmount: Number(r.paid_amount), dueDate: r.due_date ?? null }, today),
   }));
   return { rows, total: count ?? 0, page, pageSize };
 }

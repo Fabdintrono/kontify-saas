@@ -3,6 +3,7 @@ import { useActionState, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { submitSaleAction, type FormState } from "@/app/(app)/operaciones/facturacion/actions";
 import { useSubmitIntent } from "@/components/shared/use-submit-intent";
+import { FieldLabel } from "@/components/shared/field-label";
 import { computeSaleTotals } from "@/lib/ventas/totals";
 import { formatMoney } from "@/lib/format";
 import { ClientPicker, type LiteClient } from "./client-picker";
@@ -53,8 +54,8 @@ export function SaleBuilder({ clients, products, branches, role, userBranchId, c
       <div className="grid gap-3 sm:grid-cols-2">
         <div><label className={labelCls}>Cliente</label><ClientPicker clients={clients} value={clientId} onChange={setClientId} /></div>
         {isBackOffice && (
-          <div><label className={labelCls}>Sucursal</label>
-            <select className={inputCls} value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+          <div><FieldLabel htmlFor="branchId" help="sucursal">Sucursal</FieldLabel>
+            <select id="branchId" className={inputCls} value={branchId} onChange={(e) => setBranchId(e.target.value)}>
               {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
@@ -96,8 +97,8 @@ export function SaleBuilder({ clients, products, branches, role, userBranchId, c
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm">
           <Row label="Subtotal" value={formatMoney(totals.subtotal, currency)} />
           <div className="flex items-center justify-between py-1">
-            <span className="text-[var(--text-soft)]">Descuento global %</span>
-            <input className={`${cell} w-20 text-right`} type="number" step="0.01" min="0" max="100" value={globalDiscountPct} onChange={(e) => setGlobalDiscountPct(num(e.target.value))} />
+            <FieldLabel htmlFor="globalDiscountPct" help="descuentoGlobal">Descuento global %</FieldLabel>
+            <input id="globalDiscountPct" className={`${cell} w-20 text-right`} type="number" step="0.01" min="0" max="100" value={globalDiscountPct} onChange={(e) => setGlobalDiscountPct(num(e.target.value))} />
           </div>
           <Row label="Descuentos" value={formatMoney(totals.discountTotal, currency)} />
           <Row label="Impuesto" value={formatMoney(totals.taxTotal, currency)} />
@@ -133,12 +134,12 @@ export function SaleBuilder({ clients, products, branches, role, userBranchId, c
             </label>
           </div>
           {paymentType === "contado" && (
-            <div><label className={labelCls}>Método de pago (opcional)</label>
-              <input name="paymentMethod" className={inputCls} placeholder="Efectivo, transferencia…" /></div>
+            <div><FieldLabel htmlFor="paymentMethod" help="metodoPago">Método de pago (opcional)</FieldLabel>
+              <input id="paymentMethod" name="paymentMethod" className={inputCls} placeholder="Efectivo, transferencia…" /></div>
           )}
           {paymentType === "credito" && (
-            <div><label className={labelCls}>Fecha de vencimiento (opcional)</label>
-              <input name="dueDate" type="date" className={inputCls} /></div>
+            <div><FieldLabel htmlFor="dueDate" help="vencimiento">Fecha de vencimiento (opcional)</FieldLabel>
+              <input id="dueDate" name="dueDate" type="date" className={inputCls} /></div>
           )}
           <button name="intent" value="emit" disabled={pending} onClick={() => submit.mark("emit")}
             className="w-full rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">

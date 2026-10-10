@@ -3,6 +3,7 @@ import { useActionState, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { submitQuoteAction, type FormState } from "@/app/(app)/operaciones/presupuestos/actions";
 import { useSubmitIntent } from "@/components/shared/use-submit-intent";
+import { FieldLabel } from "@/components/shared/field-label";
 import { computeSaleTotals } from "@/lib/ventas/totals";
 import { formatMoney } from "@/lib/format";
 import { ClientPicker, type LiteClient } from "@/components/ventas/client-picker";
@@ -52,14 +53,14 @@ export function QuoteBuilder({ clients, products, branches, role, userBranchId, 
       <div className="grid gap-3 sm:grid-cols-3">
         <div><label className={labelCls}>Cliente</label><ClientPicker clients={clients} value={clientId} onChange={setClientId} /></div>
         {isBackOffice && (
-          <div><label className={labelCls}>Sucursal</label>
-            <select className={inputCls} value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+          <div><FieldLabel htmlFor="branchId" help="sucursal">Sucursal</FieldLabel>
+            <select id="branchId" className={inputCls} value={branchId} onChange={(e) => setBranchId(e.target.value)}>
               {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
         )}
-        <div><label className={labelCls}>Válido hasta</label>
-          <input type="date" className={inputCls} value={validUntil} onChange={(e) => setValidUntil(e.target.value)} /></div>
+        <div><FieldLabel htmlFor="validUntil" help="validoHasta">Válido hasta</FieldLabel>
+          <input id="validUntil" type="date" className={inputCls} value={validUntil} onChange={(e) => setValidUntil(e.target.value)} /></div>
       </div>
 
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3">

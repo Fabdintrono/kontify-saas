@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useState } from "react";
 import { createClientTypeNamed, type FormState } from "@/app/(app)/clientes/actions";
+import { FieldLabel } from "@/components/shared/field-label";
 
 type ClientType = { id: string; name: string };
 type Values = {
@@ -39,8 +40,8 @@ export function ClientForm({ action, types, values = {}, submitLabel }: {
       {values.id && <input type="hidden" name="id" defaultValue={values.id} />}
       <input type="hidden" name="typeId" value={typeId} />
       <div>
-        <label className={labelCls}>Tipo de registro</label>
-        <select name="kind" defaultValue={values.kind ?? "person"} className={inputCls}>
+        <FieldLabel htmlFor="kind" help="tipoRegistro">Tipo de registro</FieldLabel>
+        <select id="kind" name="kind" defaultValue={values.kind ?? "person"} className={inputCls}>
           <option value="person">Persona</option>
           <option value="company">Empresa</option>
         </select>
@@ -51,7 +52,7 @@ export function ClientForm({ action, types, values = {}, submitLabel }: {
         {err("name") && <p className="mt-1 text-xs text-[#dc2626]">{err("name")}</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelCls}>Documento / ID</label><input name="docId" defaultValue={values.docId ?? ""} className={inputCls} /></div>
+        <div><FieldLabel htmlFor="docId" help="documentoId">Documento / ID</FieldLabel><input id="docId" name="docId" defaultValue={values.docId ?? ""} className={inputCls} /></div>
         <div><label className={labelCls}>Teléfono</label><input name="phone" defaultValue={values.phone ?? ""} className={inputCls} /></div>
       </div>
       <div>
@@ -62,9 +63,9 @@ export function ClientForm({ action, types, values = {}, submitLabel }: {
       <div><label className={labelCls}>Dirección</label><input name="address" defaultValue={values.address ?? ""} className={inputCls} /></div>
       <div><label className={labelCls}>Persona de contacto</label><input name="contactName" defaultValue={values.contactName ?? ""} className={inputCls} /></div>
       <div>
-        <label className={labelCls}>Tipo de cliente</label>
+        <FieldLabel htmlFor="typeId" help="tipoCliente">Tipo de cliente</FieldLabel>
         <div className="flex gap-2">
-          <select value={typeId} onChange={(e) => setTypeId(e.target.value)} className={inputCls}>
+          <select id="typeId" value={typeId} onChange={(e) => setTypeId(e.target.value)} className={inputCls}>
             <option value="">Sin tipo</option>
             {localTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>

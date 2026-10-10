@@ -11,11 +11,11 @@ export function ModuleGuide({ guide, className }: { guide: Guide; className?: st
   if (guide.steps.length === 0) return null;
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)}
+      <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open}
         className={`inline-flex items-center gap-1 text-xs font-semibold text-[#0e7490] hover:underline dark:text-[#5eead4] ${className ?? ""}`}>
         <CircleHelp className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> ¿Cómo funciona?
       </button>
-      <Sheet open={open} onOpenChange={setOpen} side="right" title={`¿Cómo funciona ${guide.title}?`}>
+      <Sheet open={open} onOpenChange={setOpen} side="right" title={`Cómo funciona: ${guide.title}`}>
         <p className="mb-4 text-sm text-[var(--text-soft)]">{guide.subtitle}</p>
         <ol className="space-y-3">
           {guide.steps.map((s, i) => (

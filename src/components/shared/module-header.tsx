@@ -12,10 +12,10 @@ export function ModuleHeader({ module, title, subtitle, actions }: {
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
         <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">{title ?? g.title}</h1>
-        {sub && (
-          <p className="mt-0.5 max-w-3xl text-sm text-[var(--text-soft)]">
-            {sub} <ModuleGuide guide={g} className="ml-1 align-baseline" />
-          </p>
+        {sub ? (
+          <p className="mt-0.5 max-w-3xl text-sm text-[var(--text-soft)]">{sub} <ModuleGuide guide={g} /></p>
+        ) : (
+          <ModuleGuide guide={g} className="mt-0.5" />
         )}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

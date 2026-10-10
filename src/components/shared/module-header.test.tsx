@@ -17,4 +17,13 @@ describe("ModuleHeader", () => {
     render(<ModuleHeader module="cuentas_por_cobrar" title="Distribuidora El Sol" />);
     expect(screen.getByRole("heading", { level: 1, name: "Distribuidora El Sol" })).toBeTruthy();
   });
+  it("con subtitle={null} no hay subtítulo pero sí el enlace de ayuda", () => {
+    render(<ModuleHeader module="clientes" subtitle={null} />);
+    expect(screen.queryByText(/Personas o empresas a las que vendes/)).toBeNull();
+    expect(screen.getByRole("button", { name: /cómo funciona/i })).toBeTruthy();
+  });
+  it("un módulo sin pasos no muestra el enlace", () => {
+    render(<ModuleHeader module="config_tasas" />);
+    expect(screen.queryByRole("button", { name: /cómo funciona/i })).toBeNull();
+  });
 });

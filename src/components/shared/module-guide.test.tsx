@@ -11,7 +11,7 @@ describe("ModuleGuide", () => {
     render(<ModuleGuide guide={GUIDES.ventas} />);
     expect(screen.queryByText("Elige el cliente o deja «Consumidor final».")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /cómo funciona/i }));
-    expect(screen.getByRole("dialog", { name: /cómo funciona ventas/i })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: /cómo funciona: ventas/i })).toBeTruthy();
     expect(screen.getByText("Elige el cliente o deja «Consumidor final».")).toBeTruthy();
     expect(screen.getByText(/no es una factura fiscal/i)).toBeTruthy();
     expect(screen.getAllByRole("listitem").length).toBeGreaterThanOrEqual(GUIDES.ventas.steps.length);
@@ -19,5 +19,12 @@ describe("ModuleGuide", () => {
   it("sin pasos no renderiza nada", () => {
     const { container } = render(<ModuleGuide guide={GUIDES.config_tasas} />);
     expect(container.innerHTML).toBe("");
+  });
+  it("el botón Cerrar cierra el panel", () => {
+    render(<ModuleGuide guide={GUIDES.ventas} />);
+    fireEvent.click(screen.getByRole("button", { name: /cómo funciona/i }));
+    expect(screen.getByRole("dialog", { name: /cómo funciona: ventas/i })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /cerrar/i }));
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

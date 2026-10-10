@@ -729,6 +729,14 @@ Run: `npx vitest run tests/getting-started.test.ts` → FAIL (módulo inexistent
 
 - [ ] **Step 3: Implementar `src/lib/dashboard/getting-started.ts`**
 
+> **Ajustado tras revisión:** cada ítem lleva `available: boolean`. «Invita a tu equipo» todavía no tiene
+> pantalla (`/configuracion/usuarios` es un placeholder, no hay flujo de invitación): va con
+> `label: "Invita a tu equipo (pronto)"` y `available: false`. El estado expone `complete` = todos los
+> ítems `available` están hechos (el de equipo no cuenta, si contara la tarjeta nunca se podría ocultar);
+> `done`/`total` siguen contando los cinco, para que el «4 de 5» sea honesto. También se exportan
+> `canSeeGettingStarted` / `canHideGettingStarted` (`owner` o `admin`): la tarjeta es para quien configura
+> la empresa, y la página la renderiza solo para ellos.
+
 ```ts
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -826,6 +834,11 @@ describe("GettingStarted", () => {
 
 - [ ] **Step 7: Implementar `src/components/dashboard/getting-started.tsx`**
 
+> **Ajustado tras revisión:** el componente usa `status.complete` (no lo recalcula). Un pendiente con
+> `available: false` se dibuja como `<div>` sin enlace (no se manda a nadie a una pantalla que no existe).
+> Accesibilidad: la barra lleva `aria-labelledby="primeros-pasos"` y `aria-valuetext="{done} de {total}"`,
+> y los hechos abren con `<span className="sr-only">Listo: </span>` (el tachado no se oye).
+
 ```tsx
 import Link from "next/link";
 import { CircleCheck, Circle, Rocket } from "lucide-react";
@@ -886,7 +899,7 @@ export function GettingStarted({ status, canHide, action }: {
 
 - [ ] **Step 8: Correr y verificar** — `npx vitest run src/components/dashboard/getting-started.test.tsx tests/getting-started.test.ts tests/flash.test.ts` → PASS.
 
-- [ ] **Step 9: Dashboard** — en `src/app/(app)/dashboard/page.tsx`: sumar `gettingStartedStatus(supabase)` al `Promise.all` de consultas, importar `GettingStarted` y `hideGettingStartedAction`, y renderizar **justo debajo del saludo y antes de los KPIs**: `<GettingStarted status={gs} canHide={["owner", "admin"].includes(role)} action={hideGettingStartedAction} />`.
+- [ ] **Step 9: Dashboard** — en `src/app/(app)/dashboard/page.tsx`: sumar `gettingStartedStatus(supabase)` al `Promise.all` de consultas, importar `GettingStarted` y `hideGettingStartedAction`, y renderizar **justo debajo del saludo y antes de los KPIs**: `{canSeeGettingStarted(role) && <GettingStarted status={gs} canHide={canHideGettingStarted(role)} action={hideGettingStartedAction} />}`.
 
 - [ ] **Step 10: Verificar + commit**
 

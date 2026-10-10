@@ -14,7 +14,7 @@ import { utilityThisMonth, salesByDayThisWeek, topProductsThisMonth } from "@/li
 import { getTenantSettings } from "@/lib/tenant";
 import { todayISO } from "@/lib/tz";
 import { attentionItems } from "@/lib/dashboard/attention";
-import { gettingStartedStatus } from "@/lib/dashboard/getting-started";
+import { gettingStartedStatus, canSeeGettingStarted, canHideGettingStarted } from "@/lib/dashboard/getting-started";
 import { BarChart } from "@/components/reportes/bar-chart";
 import { ModuleGuide } from "@/components/shared/module-guide";
 import { GUIDES } from "@/lib/guides";
@@ -65,7 +65,7 @@ export default async function Dashboard() {
         {/* Selector de período: se reincorpora cuando los KPIs reaccionen a él (Fase B); hoy todo es "este mes". */}
       </div>
 
-      <GettingStarted status={gs} canHide={["owner", "admin"].includes(role)} action={hideGettingStartedAction} />
+      {canSeeGettingStarted(role) && <GettingStarted status={gs} canHide={canHideGettingStarted(role)} action={hideGettingStartedAction} />}
 
       {/* Móvil: hero Utilidad + 4 KPIs */}
       <div className="grid grid-cols-2 gap-3 lg:hidden">

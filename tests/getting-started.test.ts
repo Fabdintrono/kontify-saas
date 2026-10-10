@@ -24,6 +24,10 @@ describe("gettingStartedStatus", () => {
     expect(s.items.map((i) => i.key)).toEqual(["producto", "existencias", "cliente", "venta", "equipo"]);
     expect(s.items.every((i) => !i.done && i.href.startsWith("/"))).toBe(true);
     expect(s.done).toBe(0); expect(s.total).toBe(5);
+    // El paso de equipo todavía no tiene pantalla: se muestra pero no cuenta para el 100 %.
+    expect(s.items.find((i) => i.key === "equipo")!.available).toBe(false);
+    expect(s.items.filter((i) => i.available).map((i) => i.key)).toEqual(["producto", "existencias", "cliente", "venta"]);
+    expect(s.complete).toBe(false);
   });
   it("va marcando pasos con datos reales (producto, existencias, cliente, venta)", async () => {
     const t = await makeTenant("gs1"); const b = await mainBranch(t);
@@ -40,6 +44,8 @@ describe("gettingStartedStatus", () => {
     s = await gettingStartedStatus(t.client);
     expect(s.done).toBe(4);
     expect(s.items.find((i) => i.key === "equipo")!.done).toBe(false);
+    // Los cuatro pasos disponibles están hechos: completo (y «Ocultar» disponible) aunque el total diga 5.
+    expect(s.complete).toBe(true);
   });
   it("hidden refleja la columna", async () => {
     const t = await makeTenant("gs2");

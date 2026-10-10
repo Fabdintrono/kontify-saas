@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { round2 } from "@/lib/ventas/totals";
-import { addDays, monthRange, weekRange, type DateRange } from "@/lib/reportes/ranges";
+import { monthRange, weekRange, type DateRange } from "@/lib/reportes/ranges";
+import { rangeToInstants, localDateISO } from "@/lib/tz";
 
 export type SalesReport = {
   summary: { count: number; revenue: number; utility: number; avgTicket: number; marginPct: number; costIncompleteCount: number };
@@ -15,11 +16,14 @@ const EMPTY: SalesReport = {
   byDay: [], byProduct: [], bySeller: [], byClient: [],
 };
 
-export async function salesReport(sb: SupabaseClient, opts: { from: string; to: string; branchId?: string | null }): Promise<SalesReport> {
+export type ReportOpts = DateRange & { branchId?: string | null; tz: string };
+
+export async function salesReport(sb: SupabaseClient, opts: ReportOpts): Promise<SalesReport> {
   try {
-    const { from, to, branchId = null } = opts;
+    const { from, to, branchId = null, tz } = opts;
+    const { fromInstant, toInstant } = rangeToInstants({ from, to }, tz);
     let sq = sb.from("sales").select("id, created_by, client_id, total, tax_total, issued_at, clients(name)")
-      .eq("status", "issued").gte("issued_at", from).lt("issued_at", addDays(to, 1));
+      .eq("status", "issued").gte("issued_at", fromInstant).lt("issued_at", toInstant);
     if (branchId) sq = sq.eq("branch_id", branchId);
     const { data: sales, error } = await sq;
     if (error || !sales || sales.length === 0) return EMPTY;
@@ -53,7 +57,7 @@ export async function salesReport(sb: SupabaseClient, opts: { from: string; to: 
       const util = net - (costBySale.get(s.id) ?? 0);
       revenue += total; netRevenue += net; utility += util;
       if (incompleteSale.has(s.id)) costIncompleteCount++;
-      const date = String(s.issued_at).slice(0, 10);
+      const date = localDateISO(new Date(s.issued_at), tz);
       const d = byDay.get(date) ?? { date, revenue: 0, utility: 0 }; d.revenue += total; d.utility += util; byDay.set(date, d);
       const sk = s.created_by ?? "none";
       const se = bySeller.get(sk) ?? { userId: s.created_by ?? null, name: nameById.get(s.created_by) || "—", count: 0, revenue: 0, utility: 0 };
@@ -86,13 +90,13 @@ export async function salesReport(sb: SupabaseClient, opts: { from: string; to: 
   } catch { return EMPTY; }
 }
 
-export async function utilityThisMonth(sb: SupabaseClient): Promise<{ utility: number; costIncompleteCount: number }> {
-  const r = await salesReport(sb, monthRange(new Date()));
+export async function utilityThisMonth(sb: SupabaseClient, tz: string): Promise<{ utility: number; costIncompleteCount: number }> {
+  const r = await salesReport(sb, { ...monthRange(new Date(), tz), tz });
   return { utility: r.summary.utility, costIncompleteCount: r.summary.costIncompleteCount };
 }
-export async function salesByDayThisWeek(sb: SupabaseClient): Promise<{ date: string; revenue: number; utility: number }[]> {
-  return (await salesReport(sb, weekRange(new Date()))).byDay;
+export async function salesByDayThisWeek(sb: SupabaseClient, tz: string): Promise<{ date: string; revenue: number; utility: number }[]> {
+  return (await salesReport(sb, { ...weekRange(new Date(), tz), tz })).byDay;
 }
-export async function topProductsThisMonth(sb: SupabaseClient, limit = 5): Promise<{ productId: string | null; name: string; qty: number; revenue: number }[]> {
-  return (await salesReport(sb, monthRange(new Date()))).byProduct.slice(0, limit);
+export async function topProductsThisMonth(sb: SupabaseClient, tz: string, limit = 5): Promise<{ productId: string | null; name: string; qty: number; revenue: number }[]> {
+  return (await salesReport(sb, { ...monthRange(new Date(), tz), tz })).byProduct.slice(0, limit);
 }

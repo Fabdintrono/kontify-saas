@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeSaleTotals, round2 } from "@/lib/ventas/totals";
+import { monthRange } from "@/lib/reportes/ranges";
+import { rangeToInstants } from "@/lib/tz";
 
 export type SaleStatusFilter = "borradores" | "emitidas" | "anuladas" | "todas";
 export type SalePaymentFilter = "pendientes" | "todas";
@@ -12,7 +14,6 @@ export type SaleListRow = {
 const STATUS_MAP: Record<string, string> = { borradores: "draft", emitidas: "issued", anuladas: "void" };
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 function sanitize(term: string): string { return term.replace(/[%,()*]/g, " ").trim(); }
-function monthStartISO(): string { const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d.toISOString(); }
 
 export async function listSales(sb: SupabaseClient, opts: {
   search?: string; status?: SaleStatusFilter; payment?: SalePaymentFilter; page?: number; pageSize?: number;
@@ -62,9 +63,11 @@ export async function getSale(sb: SupabaseClient, id: string) {
   return { ...(data as any), items: items ?? [], computed };
 }
 
-export async function salesKpi(sb: SupabaseClient): Promise<{ monthTotal: number; avgTicket: number }> {
+export async function salesKpi(sb: SupabaseClient, tz: string): Promise<{ monthTotal: number; avgTicket: number }> {
   try {
-    const { data, error } = await sb.from("sales").select("total").eq("status", "issued").gte("issued_at", monthStartISO());
+    const { fromInstant, toInstant } = rangeToInstants(monthRange(new Date(), tz), tz);
+    const { data, error } = await sb.from("sales").select("total").eq("status", "issued")
+      .gte("issued_at", fromInstant).lt("issued_at", toInstant);
     if (error || !data) return { monthTotal: 0, avgTicket: 0 };
     const monthTotal = data.reduce((s: number, r: any) => s + Number(r.total), 0);
     return { monthTotal: round2(monthTotal), avgTicket: data.length ? round2(monthTotal / data.length) : 0 };

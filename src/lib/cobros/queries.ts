@@ -3,15 +3,16 @@ import { round2 } from "@/lib/ventas/totals";
 
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 function sanitize(term: string): string { return term.replace(/[%,()*]/g, " ").trim(); }
-function todayISO(): string { return new Date().toISOString().slice(0, 10); }
 
 export type ReceivableClientRow = { clientId: string | null; name: string; totalDue: number; overdueAmount: number; oldestDueDate: string | null };
 
+// `today` es un "YYYY-MM-DD" en la zona horaria de la empresa (lo produce todayISO(tz) en las páginas):
+// comparar un DATE due_date contra el "hoy" del servidor fechaba mal los vencimientos.
 export async function listReceivablesByClient(sb: SupabaseClient, opts: {
-  search?: string; filter?: "todos" | "vencidos";
-} = {}): Promise<ReceivableClientRow[]> {
+  search?: string; filter?: "todos" | "vencidos"; today: string;
+}): Promise<ReceivableClientRow[]> {
   try {
-    const { search = "", filter = "todos" } = opts;
+    const { search = "", filter = "todos", today } = opts;
     let q = sb.from("sales").select("client_id, total, paid_amount, balance, due_date, clients(name)")
       .eq("status", "issued").gt("balance", 0);
     const s = sanitize(search);
@@ -22,7 +23,6 @@ export async function listReceivablesByClient(sb: SupabaseClient, opts: {
     }
     const { data, error } = await q;
     if (error || !data) return [];
-    const today = todayISO();
     const map = new Map<string, ReceivableClientRow>();
     for (const r of data as any[]) {
       const key = r.client_id ?? "none";
@@ -42,7 +42,7 @@ export async function listReceivablesByClient(sb: SupabaseClient, opts: {
   } catch { return []; }
 }
 
-export async function getClientReceivable(sb: SupabaseClient, clientId: string): Promise<{
+export async function getClientReceivable(sb: SupabaseClient, clientId: string, today: string): Promise<{
   clientName: string | null;
   rows: { saleId: string; number: number | null; total: number; paid: number; balance: number; dueDate: string | null; overdue: boolean }[];
   totalDue: number; overdueAmount: number;
@@ -52,7 +52,6 @@ export async function getClientReceivable(sb: SupabaseClient, clientId: string):
       .select("id, number, total, paid_amount, balance, due_date, clients(name)")
       .eq("client_id", clientId).eq("status", "issued").gt("balance", 0).order("due_date", { nullsFirst: false });
     if (error || !data) return { clientName: null, rows: [], totalDue: 0, overdueAmount: 0 };
-    const today = todayISO();
     let totalDue = 0, overdueAmount = 0;
     const rows = (data as any[]).map((r) => {
       const balance = Number(r.balance);
@@ -75,11 +74,10 @@ export async function listPayments(sb: SupabaseClient, saleId: string): Promise<
 }
 
 // Total por cobrar + porción vencida. La consumirá el dashboard ("Requieren atención") en un plan posterior.
-export async function receivablesKpi(sb: SupabaseClient): Promise<{ total: number; overdue: number }> {
+export async function receivablesKpi(sb: SupabaseClient, today: string): Promise<{ total: number; overdue: number }> {
   try {
     const { data, error } = await sb.from("sales").select("balance, due_date").eq("status", "issued").gt("balance", 0);
     if (error || !data) return { total: 0, overdue: 0 };
-    const today = todayISO();
     let total = 0, overdue = 0;
     for (const r of data as any[]) { const b = Number(r.balance); total += b; if (r.due_date && r.due_date < today) overdue += b; }
     return { total: round2(total), overdue: round2(overdue) };

@@ -51,10 +51,10 @@ describe("ventas — flujo y correlativo", () => {
     const b = await mainBranch(a);
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b, { items: [{ productId: null, description: "X", quantity: 1, unitPrice: 100, discountPct: 0, taxRate: 0 }] }));
     await emitSale(a.client, id, { paymentType: "credito" });
-    expect((await salesKpi(a.client)).monthTotal).toBe(100);
+    expect((await salesKpi(a.client, "UTC")).monthTotal).toBe(100);
     expect((await receivablesTotal(a.client)).total).toBe(100);
     await voidSale(a.client, id);
-    expect((await salesKpi(a.client)).monthTotal).toBe(0);
+    expect((await salesKpi(a.client, "UTC")).monthTotal).toBe(0);
     expect((await receivablesTotal(a.client)).total).toBe(0);
   });
 

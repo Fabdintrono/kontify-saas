@@ -5,6 +5,8 @@ import { createDraft, emitSale, voidSale } from "@/lib/ventas/mutations";
 import { registerPayment, voidPayment, setDueDate } from "@/lib/cobros/mutations";
 import { listReceivablesByClient, getClientReceivable, listPayments } from "@/lib/cobros/queries";
 
+const HOY = new Date().toISOString().slice(0, 10);
+
 async function makeTenant(name: string) {
   const u = await newUserClient();
   const { data: tenantId } = await u.client.rpc("bootstrap_tenant", {
@@ -90,15 +92,15 @@ describe("cobros — Cuentas por Cobrar", () => {
     const id2 = await createDraft(a.client, a.tenantId, a.id, "USD", sale(branch, cli, 50));
     await emitSale(a.client, id2, { paymentType: "credito" }); // sin vencimiento
 
-    const byClient = await listReceivablesByClient(a.client, {});
+    const byClient = await listReceivablesByClient(a.client, { today: HOY });
     const row = byClient.find((r) => r.clientId === cli);
     expect(row?.totalDue).toBe(150);
     expect(row?.overdueAmount).toBe(100);
 
-    const soloVencidos = await listReceivablesByClient(a.client, { filter: "vencidos" });
+    const soloVencidos = await listReceivablesByClient(a.client, { filter: "vencidos", today: HOY });
     expect(soloVencidos.find((r) => r.clientId === cli)?.overdueAmount).toBe(100);
 
-    const detail = await getClientReceivable(a.client, cli);
+    const detail = await getClientReceivable(a.client, cli, HOY);
     expect(detail.totalDue).toBe(150);
     expect(detail.rows).toHaveLength(2);
     expect(detail.rows.find((r) => r.saleId === id1)?.overdue).toBe(true);

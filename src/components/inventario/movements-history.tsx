@@ -1,7 +1,9 @@
+import { formatDate } from "@/lib/format";
+
 type Movement = { id: string; type: string; qtyDelta: number; branchName: string | null; reason: string | null; createdAt: string };
 const LABEL: Record<string, string> = { adjustment: "Ajuste", sale: "Venta", sale_void: "Anulación venta" };
 
-export function MovementsHistory({ movements }: { movements: Movement[] }) {
+export function MovementsHistory({ movements, tz }: { movements: Movement[]; tz: string }) {
   if (movements.length === 0) return <p className="text-sm text-[var(--text-soft)]">Sin movimientos.</p>;
   return (
     <ul className="divide-y divide-[var(--border)]">
@@ -10,7 +12,7 @@ export function MovementsHistory({ movements }: { movements: Movement[] }) {
           <span className="text-[var(--text)]">
             {LABEL[m.type] ?? m.type}
             <span className="ml-2 text-xs text-[var(--text-soft)]">
-              {new Date(m.createdAt).toLocaleDateString("es-VE")}{m.branchName ? ` · ${m.branchName}` : ""}{m.reason ? ` · ${m.reason}` : ""}
+              {formatDate(m.createdAt, tz)}{m.branchName ? ` · ${m.branchName}` : ""}{m.reason ? ` · ${m.reason}` : ""}
             </span>
           </span>
           <span className={`font-semibold ${m.qtyDelta < 0 ? "text-[#dc2626]" : "text-[#0f766e] dark:text-[#6ee7b7]"}`}>

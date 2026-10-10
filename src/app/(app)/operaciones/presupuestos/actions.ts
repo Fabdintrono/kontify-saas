@@ -7,6 +7,8 @@ import { getTenantCurrency } from "@/lib/productos/queries";
 import { quoteSaveSchema, quoteSendSchema, quoteStatusSchema } from "@/lib/presupuestos/schema";
 import { canSell } from "@/lib/ventas/permissions";
 import * as m from "@/lib/presupuestos/mutations";
+import { withFlash } from "@/lib/flash";
+import { actionError, type ActionResult } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -43,7 +45,7 @@ function commonFields(fd: FormData) {
 
 export async function submitQuoteAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const { sb, userId, role, tenantId, branchId } = await ctx();
-  if (!canSell(role)) return { ok: false, error: "Sin permiso" };
+  if (!canSell(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const intent = String(fd.get("intent") ?? "save");
   const id = String(fd.get("id") ?? "");
 
@@ -53,46 +55,53 @@ export async function submitQuoteAction(_prev: FormState, fd: FormData): Promise
   if (!BACK_OFFICE.includes(role) && branchId) parsed.data.branchId = branchId;
 
   let quoteId = id;
+  let number: number | null = null; // el número se asigna al enviar; lo lleva el toast
   try {
     const currency = await getTenantCurrency(sb);
     if (id) await m.updateDraft(sb, id, tenantId, parsed.data);
     else quoteId = await m.createDraft(sb, tenantId, userId, currency, parsed.data);
-    if (intent === "send") await m.sendQuote(sb, quoteId);
-  } catch (e) { return { ok: false, error: (e as Error).message }; }
+    if (intent === "send") number = await m.sendQuote(sb, quoteId);
+  } catch (e) { return { ok: false, ...actionError(e) }; }
 
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${quoteId}`);
-  redirect(`${LIST}/${quoteId}`);
+  redirect(withFlash(`${LIST}/${quoteId}`, intent === "send" ? "presupuesto-enviado" : "presupuesto-borrador", number));
 }
 
-export async function deleteQuoteAction(fd: FormData): Promise<void> {
+export async function deleteQuoteAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canSell(role)) return;
+  if (!canSell(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
-  await m.deleteDraft(sb, id);
+  try { await m.deleteDraft(sb, id); }
+  catch (e) { return actionError(e); }
   revalidatePath(LIST);
-  redirect(LIST);
+  redirect(withFlash(LIST, "presupuesto-eliminado")); // fuera del try: redirect lanza
 }
 
-export async function setQuoteStatusAction(fd: FormData): Promise<void> {
+export async function setQuoteStatusAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canSell(role)) return;
+  if (!canSell(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
   const parsed = quoteStatusSchema.safeParse({ status: fd.get("status") });
-  if (!parsed.success) return;
-  await m.setQuoteStatus(sb, id, parsed.data.status);
+  if (!parsed.success) return { error: "Ese estado no es válido para un presupuesto." };
+  try { await m.setQuoteStatus(sb, id, parsed.data.status); }
+  catch (e) { return actionError(e); }
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${id}`);
 }
 
-export async function convertQuoteAction(fd: FormData): Promise<void> {
+export async function convertQuoteAction(fd: FormData): Promise<ActionResult> {
   const { sb, userId, role, tenantId } = await ctx();
-  if (!canSell(role)) return;
+  if (!canSell(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
-  const currency = await getTenantCurrency(sb);
-  const saleId = await m.convertToSale(sb, tenantId, userId, currency, id);
+  let saleId: string;
+  try {
+    const currency = await getTenantCurrency(sb);
+    saleId = await m.convertToSale(sb, tenantId, userId, currency, id);
+  } catch (e) { return actionError(e); }
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${id}`);
   revalidatePath("/operaciones/facturacion");
-  redirect(`/operaciones/facturacion/${saleId}/editar`);
+  // fuera del try: redirect lanza
+  redirect(withFlash(`/operaciones/facturacion/${saleId}/editar`, "presupuesto-convertido"));
 }

@@ -3,10 +3,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient as serverSupabase } from "@/lib/supabase/server";
-import { getTenantCurrency } from "@/lib/productos/queries";
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
 import { saleSaveSchema, saleEmitSchema, emitSchema } from "@/lib/ventas/schema";
 import { canSell, canVoidSale } from "@/lib/ventas/permissions";
 import * as m from "@/lib/ventas/mutations";
+import { withFlash } from "@/lib/flash";
+import { actionError, type ActionResult } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -47,7 +50,7 @@ function commonFields(fd: FormData) {
 // Acción única con intent (save | emit) para el builder; compatible con useActionState.
 export async function submitSaleAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const { sb, userId, role, tenantId, branchId } = await ctx();
-  if (!canSell(role)) return { ok: false, error: "Sin permiso" };
+  if (!canSell(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const intent = String(fd.get("intent") ?? "save");
   const id = String(fd.get("id") ?? "");
 
@@ -60,40 +63,44 @@ export async function submitSaleAction(_prev: FormState, fd: FormData): Promise<
   if (!BACK_OFFICE.includes(role) && branchId) parsed.data.branchId = branchId;
 
   let saleId = id;
+  let number: number | null = null; // el número solo existe tras emitir; lo lleva el toast
   try {
-    const currency = await getTenantCurrency(sb);
+    const { currency, timezone } = await getTenantSettings(sb);
     if (id) await m.updateDraft(sb, id, tenantId, parsed.data);
     else saleId = await m.createDraft(sb, tenantId, userId, currency, parsed.data);
 
     if (intent === "emit") {
       const pay = emitSchema.safeParse({ paymentType: fd.get("paymentType"), paymentMethod: fd.get("paymentMethod"), dueDate: fd.get("dueDate") });
       if (!pay.success) return { ok: false, fieldErrors: zodErrors(pay.error) };
-      await m.emitSale(sb, saleId, pay.data);
+      number = await m.emitSale(sb, saleId, pay.data, todayISO(timezone));
     }
-  } catch (e) { return { ok: false, error: (e as Error).message }; }
+  } catch (e) { return { ok: false, ...actionError(e) }; }
 
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${saleId}`);
   revalidatePath("/dashboard");
   if (parsed.data.clientId) revalidatePath(`/clientes/${parsed.data.clientId}`);
-  redirect(`${LIST}/${saleId}`);
+  redirect(withFlash(`${LIST}/${saleId}`, intent === "emit" ? "venta-emitida" : "venta-borrador", number));
 }
 
-export async function deleteDraftAction(fd: FormData): Promise<void> {
+export async function deleteDraftAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canSell(role)) return;
+  if (!canSell(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
-  await m.deleteDraft(sb, id);
+  try { await m.deleteDraft(sb, id); }
+  catch (e) { return actionError(e); }
   revalidatePath(LIST);
-  redirect(LIST);
+  redirect(withFlash(LIST, "venta-borrador-eliminado")); // fuera del try: redirect lanza
 }
 
-export async function voidSaleAction(fd: FormData): Promise<void> {
+export async function voidSaleAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canVoidSale(role)) return; // botón oculto; defensa extra
+  // Botón oculto; si llega igual, que lo sepa en vez de creer que funcionó.
+  if (!canVoidSale(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
   const clientId = String(fd.get("clientId") ?? "");
-  await m.voidSale(sb, id);
+  try { await m.voidSale(sb, id); }
+  catch (e) { return actionError(e); }
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${id}`);
   revalidatePath("/dashboard");

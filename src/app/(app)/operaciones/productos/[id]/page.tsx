@@ -2,18 +2,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getProduct, getTenantCurrency } from "@/lib/productos/queries";
+import { getProduct } from "@/lib/productos/queries";
 import { canManageProducts, canArchiveProduct } from "@/lib/productos/permissions";
 import { archiveProductAction } from "@/app/(app)/operaciones/productos/actions";
 import { ProductStockPanel } from "@/components/inventario/product-stock-panel";
 import { CategoryBadge } from "@/components/productos/category-badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ActionButton } from "@/components/ui/action-button";
+import { flashFor } from "@/lib/flash";
 import { formatMoney } from "@/lib/format";
+import { getTenantSettings } from "@/lib/tenant";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function ProductoDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const sb = await createClient();
-  const [p, currency] = await Promise.all([getProduct(sb, id), getTenantCurrency(sb)]);
+  const [p, { currency, timezone: tz }] = await Promise.all([getProduct(sb, id), getTenantSettings(sb)]);
   if (!p) notFound();
   const { data: { user } } = await sb.auth.getUser();
   const { data: mem } = await sb.from("memberships").select("role, branch_id").eq("user_id", user!.id).single();
@@ -23,6 +27,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
   const field = (label: string, value: string | null) => (
     <div><p className="text-xs text-[var(--text-soft)]">{label}</p><p className="text-sm text-[var(--text)]">{value || "—"}</p></div>
   );
+  const secondaryBtn = "rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[var(--text)]";
 
   return (
     <div className="space-y-4 p-6">
@@ -39,15 +44,19 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
               <Pencil className="h-4 w-4" /> Editar
             </Link>
           )}
-          {canArchiveProduct(role) && (
-            <form action={archiveProductAction}>
-              <input type="hidden" name="id" value={p.id} />
-              <input type="hidden" name="active" value={p.active ? "false" : "true"} />
-              <button className="rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[var(--text)]">
-                {p.active ? "Archivar" : "Reactivar"}
-              </button>
-            </form>
-          )}
+          {canArchiveProduct(role) && (p.active ? (
+            <ConfirmDialog action={archiveProductAction} payload={{ id: p.id, active: "false" }}
+              title={`¿Archivar ${p.name}?`}
+              description="Deja de aparecer en el catálogo y al vender. Sus existencias y movimientos se conservan."
+              confirmLabel="Archivar" tone="primary" successToast={flashFor("producto-archivado")} triggerClassName={secondaryBtn}>
+              Archivar
+            </ConfirmDialog>
+          ) : (
+            <ActionButton action={archiveProductAction} payload={{ id: p.id, active: "true" }}
+              successToast={flashFor("producto-reactivado")} pendingLabel="Reactivando…" className={secondaryBtn}>
+              Reactivar
+            </ActionButton>
+          ))}
         </div>
       </div>
 
@@ -62,7 +71,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
         <div className="sm:col-span-2">{field("Descripción", p.description)}</div>
       </div>
 
-      <ProductStockPanel productId={p.id} kind={p.kind} role={role} userBranchId={mem?.branch_id ?? null} />
+      <ProductStockPanel productId={p.id} kind={p.kind} role={role} userBranchId={mem?.branch_id ?? null} tz={tz} />
     </div>
   );
 }

@@ -3,6 +3,9 @@ import { newUserClient } from "./setup";
 import type { SaleSaveInput } from "@/lib/ventas/schema";
 import { createDraft, emitSale, voidSale, deleteDraft } from "@/lib/ventas/mutations";
 import { listSales, salesKpi, receivablesTotal, salesByClient } from "@/lib/ventas/queries";
+import { todayISO } from "@/lib/tz";
+
+const HOY = todayISO("UTC");
 
 async function makeTenant(name: string) {
   const u = await newUserClient();
@@ -32,10 +35,10 @@ describe("ventas — flujo y correlativo", () => {
     const b = await mainBranch(a);
     const id1 = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b));
     const id2 = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b));
-    await emitSale(a.client, id1, { paymentType: "contado", paymentMethod: "efectivo" });
-    await emitSale(a.client, id2, { paymentType: "credito" });
+    await emitSale(a.client, id1, { paymentType: "contado", paymentMethod: "efectivo" }, HOY);
+    await emitSale(a.client, id2, { paymentType: "credito" }, HOY);
 
-    const emitidas = await listSales(a.client, { status: "emitidas" });
+    const emitidas = await listSales(a.client, { status: "emitidas", today: HOY });
     const nums = emitidas.rows.map((r) => r.number).sort((x, y) => (x! - y!));
     expect(nums).toEqual([1, 2]);
 
@@ -50,11 +53,11 @@ describe("ventas — flujo y correlativo", () => {
     const a = await makeTenant("kpi");
     const b = await mainBranch(a);
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b, { items: [{ productId: null, description: "X", quantity: 1, unitPrice: 100, discountPct: 0, taxRate: 0 }] }));
-    await emitSale(a.client, id, { paymentType: "credito" });
-    expect((await salesKpi(a.client)).monthTotal).toBe(100);
+    await emitSale(a.client, id, { paymentType: "credito" }, HOY);
+    expect((await salesKpi(a.client, "UTC")).monthTotal).toBe(100);
     expect((await receivablesTotal(a.client)).total).toBe(100);
     await voidSale(a.client, id);
-    expect((await salesKpi(a.client)).monthTotal).toBe(0);
+    expect((await salesKpi(a.client, "UTC")).monthTotal).toBe(0);
     expect((await receivablesTotal(a.client)).total).toBe(0);
   });
 
@@ -67,12 +70,41 @@ describe("ventas — flujo y correlativo", () => {
     expect(count ?? 0).toBe(0);
   });
 
+  it("estado de pago en la lista: dueDate/paymentStatus por fila y filtro «vencidas»", async () => {
+    const a = await makeTenant("pago");
+    const b = await mainBranch(a);
+    const HOY_FIJO = "2026-10-09";
+    const vencida = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b));
+    await emitSale(a.client, vencida, { paymentType: "credito", dueDate: "2026-10-01" }, HOY);
+    const futura = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b));
+    await emitSale(a.client, futura, { paymentType: "credito", dueDate: "2026-11-15" }, HOY);
+    const sinFecha = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b));
+    await emitSale(a.client, sinFecha, { paymentType: "credito" }, HOY);
+
+    const vencidas = await listSales(a.client, { payment: "vencidas", today: HOY_FIJO });
+    expect(vencidas.rows.map((r) => r.id)).toEqual([vencida]);
+    expect(vencidas.rows[0].dueDate).toBe("2026-10-01");
+    expect(vencidas.rows[0].paymentStatus).toBe("vencida");
+
+    const conSaldo = await listSales(a.client, { payment: "pendientes", today: HOY_FIJO });
+    expect(conSaldo.total).toBe(3);
+    const porId = new Map(conSaldo.rows.map((r) => [r.id, r]));
+    expect(porId.get(vencida)!.paymentStatus).toBe("vencida");
+    expect(porId.get(futura)!.paymentStatus).toBe("pendiente");
+    expect(porId.get(futura)!.dueDate).toBe("2026-11-15");
+    expect(porId.get(sinFecha)!.paymentStatus).toBe("pendiente");
+    expect(porId.get(sinFecha)!.dueDate).toBeNull();
+
+    // un `today` inválido es un error de programación: falla en vez de pintar estados inventados
+    await expect(listSales(a.client, { payment: "vencidas", today: "basura" })).rejects.toThrow(/Fecha local inválida/);
+  });
+
   it("historial por cliente", async () => {
     const a = await makeTenant("hist");
     const b = await mainBranch(a);
     const { data: cli } = await a.client.from("clients").insert({ tenant_id: a.tenantId, kind: "person", name: "Ana" }).select("id").single();
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b, { clientId: cli!.id }));
-    await emitSale(a.client, id, { paymentType: "credito" });
+    await emitSale(a.client, id, { paymentType: "credito" }, HOY);
     const h = await salesByClient(a.client, cli!.id);
     expect(h.list).toHaveLength(1);
     expect(h.purchasedTotal).toBe(23.2);
@@ -84,7 +116,7 @@ describe("ventas — RLS", () => {
   it("un tenant no ve ventas de otro", async () => {
     const a = await makeTenant("aa"); const b = await makeTenant("bb");
     await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a)));
-    expect((await listSales(b.client, { status: "todas" })).total).toBe(0);
+    expect((await listSales(b.client, { status: "todas", today: HOY })).total).toBe(0);
   });
 
   it("scoping por sucursal: vendedor de otra sucursal no ve la venta; back-office sí", async () => {
@@ -96,9 +128,9 @@ describe("ventas — RLS", () => {
     const vendedorOtra = await addMember(a, "vendedor", otra!.id);
     const vendedorMain = await addMember(a, "vendedor", main);
     const admin = await addMember(a, "administrativo", null);
-    expect((await listSales(vendedorOtra.client, { status: "todas" })).total).toBe(0); // otra sucursal
-    expect((await listSales(vendedorMain.client, { status: "todas" })).total).toBe(1); // su sucursal
-    expect((await listSales(admin.client, { status: "todas" })).total).toBe(1);        // back-office ve todo
+    expect((await listSales(vendedorOtra.client, { status: "todas", today: HOY })).total).toBe(0); // otra sucursal
+    expect((await listSales(vendedorMain.client, { status: "todas", today: HOY })).total).toBe(1); // su sucursal
+    expect((await listSales(admin.client, { status: "todas", today: HOY })).total).toBe(1);        // back-office ve todo
   });
 
   it("almacen no puede insertar ventas (RLS niega)", async () => {

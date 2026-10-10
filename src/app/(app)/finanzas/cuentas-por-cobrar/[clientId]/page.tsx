@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getTenantCurrency } from "@/lib/productos/queries";
 import { getClientReceivable } from "@/lib/cobros/queries";
 import { canRegisterPayment } from "@/lib/cobros/permissions";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatDateOnly } from "@/lib/format";
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
 import { PaymentForm } from "@/components/cobros/payment-form";
 import type { Role } from "@/lib/auth/roles";
 
@@ -16,7 +17,9 @@ export default async function EstadoDeCuentaPage({ params }: { params: Promise<{
   const role = (mem?.role ?? "vendedor") as Role;
   if (!canRegisterPayment(role)) redirect("/dashboard");
 
-  const [data, currency] = await Promise.all([getClientReceivable(sb, clientId), getTenantCurrency(sb)]);
+  const { currency, timezone: tz } = await getTenantSettings(sb);
+  const today = todayISO(tz);
+  const data = await getClientReceivable(sb, { clientId, today });
 
   return (
     <div className="space-y-4 p-6">
@@ -40,13 +43,13 @@ export default async function EstadoDeCuentaPage({ params }: { params: Promise<{
                   <Link href={`/operaciones/facturacion/${s.saleId}`} className="font-medium text-[var(--text)] hover:text-[#0e7490]">Venta #{s.number}</Link>
                   <p className="text-xs text-[var(--text-soft)]">
                     Total {formatMoney(s.total, currency)} · Pagado {formatMoney(s.paid, currency)}
-                    {s.dueDate ? ` · Vence ${new Date(s.dueDate).toLocaleDateString("es-VE")}` : ""}
+                    {s.dueDate ? ` · Vence ${formatDateOnly(s.dueDate)}` : ""}
                     {s.overdue ? " · VENCIDA" : ""}
                   </p>
                 </div>
                 <span className={`text-sm font-semibold ${s.overdue ? "text-[#dc2626]" : "text-[var(--text)]"}`}>Saldo {formatMoney(s.balance, currency)}</span>
               </div>
-              <div className="mt-3"><PaymentForm saleId={s.saleId} balance={s.balance} currency={currency} /></div>
+              <div className="mt-3"><PaymentForm saleId={s.saleId} balance={s.balance} currency={currency} today={today} /></div>
             </div>
           ))}
         </div>

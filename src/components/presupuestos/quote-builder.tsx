@@ -2,6 +2,7 @@
 import { useActionState, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { submitQuoteAction, type FormState } from "@/app/(app)/operaciones/presupuestos/actions";
+import { useSubmitIntent } from "@/components/shared/use-submit-intent";
 import { computeSaleTotals } from "@/lib/ventas/totals";
 import { formatMoney } from "@/lib/format";
 import { ClientPicker, type LiteClient } from "@/components/ventas/client-picker";
@@ -21,6 +22,7 @@ export function QuoteBuilder({ clients, products, branches, role, userBranchId, 
   role: string; userBranchId: string | null; currency: string; values?: Values;
 }) {
   const [state, formAction, pending] = useActionState(submitQuoteAction, initial);
+  const submit = useSubmitIntent<"save" | "send">(pending);
   const isBackOffice = ["owner", "admin", "administrativo"].includes(role);
   const defaultBranch = values.branchId ?? userBranchId ?? branches.find((b) => b.is_main)?.id ?? branches[0]?.id ?? "";
 
@@ -110,13 +112,13 @@ export function QuoteBuilder({ clients, products, branches, role, userBranchId, 
       {state.fieldErrors && <p className="text-sm text-[#dc2626]">{Object.values(state.fieldErrors)[0]}</p>}
 
       <div className="flex flex-wrap items-center gap-2">
-        <button name="intent" value="save" disabled={pending}
+        <button name="intent" value="save" disabled={pending} onClick={() => submit.mark("save")}
           className="rounded-[10px] border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--text)] disabled:opacity-60">
-          {pending ? "Guardando…" : "Guardar borrador"}
+          {submit.isPending("save") ? "Guardando…" : "Guardar borrador"}
         </button>
-        <button name="intent" value="send" disabled={pending || lines.length === 0}
+        <button name="intent" value="send" disabled={pending || lines.length === 0} onClick={() => submit.mark("send")}
           className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
-          {pending ? "Enviando…" : "Enviar"}
+          {submit.isPending("send") ? "Enviando…" : "Enviar"}
         </button>
       </div>
     </form>

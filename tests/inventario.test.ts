@@ -4,6 +4,9 @@ import type { SaleSaveInput } from "@/lib/ventas/schema";
 import { createDraft, emitSale, voidSale } from "@/lib/ventas/mutations";
 import { registerAdjustment } from "@/lib/inventario/mutations";
 import { listStock, stockKpi, inventoryStatusBreakdown } from "@/lib/inventario/queries";
+import { todayISO } from "@/lib/tz";
+
+const HOY = todayISO("UTC");
 
 async function makeTenant(name: string) {
   const u = await newUserClient();
@@ -49,7 +52,7 @@ describe("inventario — integración con ventas", () => {
     await registerAdjustment(a.client, a.tenantId, a.id, { productId: p, branchId: b, direction: "in", quantity: 10 });
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", saleOf(b, p, 4));
     // crédito: la venta queda sin cobros → es anulable (el contado bloquearía void por su pago)
-    await emitSale(a.client, id, { paymentType: "credito" });
+    await emitSale(a.client, id, { paymentType: "credito" }, HOY);
     expect(await qtyOf(a, p, b)).toBe(6);
     await voidSale(a.client, id);
     expect(await qtyOf(a, p, b)).toBe(10); // repuesto
@@ -59,7 +62,7 @@ describe("inventario — integración con ventas", () => {
     const a = await makeTenant("svc"); const b = await mainBranch(a);
     const svc = await makeProduct(a, { kind: "service", name: "Corte", min_stock: 0 });
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", saleOf(b, svc, 2));
-    await emitSale(a.client, id, { paymentType: "credito" });
+    await emitSale(a.client, id, { paymentType: "credito" }, HOY);
     expect(await qtyOf(a, svc, b)).toBe(0); // sin stock_levels
   });
 });

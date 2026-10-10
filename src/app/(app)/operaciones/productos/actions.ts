@@ -9,6 +9,8 @@ import {
 } from "@/lib/productos/schema";
 import { canManageProducts, canArchiveProduct, canManageCategories, canManageTaxRates } from "@/lib/productos/permissions";
 import * as m from "@/lib/productos/mutations";
+import { withFlash } from "@/lib/flash";
+import { actionError, type ActionResult } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -39,34 +41,36 @@ async function ctx() {
 
 export async function createProductAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const { sb, userId, role, tenantId } = await ctx();
-  if (!canManageProducts(role)) return { ok: false, error: "Sin permiso" };
+  if (!canManageProducts(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const parsed = productCreateSchema.safeParse(productFields(fd));
   if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
   let id: string;
   try { id = await m.createProduct(sb, tenantId, userId, null, parsed.data); }
-  catch (e) { return { ok: false, error: (e as Error).message }; }
+  catch (e) { return { ok: false, ...actionError(e) }; }
   revalidatePath(LIST);
-  redirect(`${LIST}/${id}`);
+  redirect(withFlash(`${LIST}/${id}`, "producto-creado"));
 }
 
 export async function updateProductAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const { sb, role } = await ctx();
-  if (!canManageProducts(role)) return { ok: false, error: "Sin permiso" };
+  if (!canManageProducts(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
   const parsed = productCreateSchema.safeParse(productFields(fd));
   if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
   try { await m.updateProduct(sb, id, parsed.data); }
-  catch (e) { return { ok: false, error: (e as Error).message }; }
+  catch (e) { return { ok: false, ...actionError(e) }; }
   revalidatePath(`${LIST}/${id}`);
-  redirect(`${LIST}/${id}`);
+  redirect(withFlash(`${LIST}/${id}`, "producto-guardado"));
 }
 
-export async function archiveProductAction(fd: FormData): Promise<void> {
+export async function archiveProductAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canArchiveProduct(role)) return; // botón oculto para no-owner/admin; defensa extra
+  // Botón oculto para no-owner/admin; si llega igual, que lo sepa en vez de creer que funcionó.
+  if (!canArchiveProduct(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
   const active = fd.get("active") === "true";
-  await m.archiveProduct(sb, id, active);
+  try { await m.archiveProduct(sb, id, active); }
+  catch (e) { return actionError(e); }
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${id}`);
 }
@@ -76,14 +80,14 @@ export async function createCategoryNamed(
   name: string,
 ): Promise<{ ok: boolean; category?: { id: string; name: string }; error?: string }> {
   const { sb, role, tenantId } = await ctx();
-  if (!canManageProducts(role)) return { ok: false, error: "Sin permiso" };
+  if (!canManageProducts(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const parsed = categoryCreateSchema.safeParse({ name });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message };
   try {
     const c = await m.createCategory(sb, tenantId, parsed.data.name);
     revalidatePath(LIST);
     return { ok: true, category: c };
-  } catch (e) { return { ok: false, error: (e as Error).message }; }
+  } catch (e) { return { ok: false, ...actionError(e) }; }
 }
 
 export async function createCategoryFormAction(fd: FormData): Promise<void> {

@@ -6,6 +6,8 @@ import { createClient as serverSupabase } from "@/lib/supabase/server";
 import { clientCreateSchema, clientTypeCreateSchema, clientTypeUpdateSchema } from "@/lib/clientes/schema";
 import { canArchiveClient, canManageClientTypes } from "@/lib/clientes/permissions";
 import * as m from "@/lib/clientes/mutations";
+import { withFlash } from "@/lib/flash";
+import { actionError, type ActionResult } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -37,9 +39,9 @@ export async function createClientAction(_prev: FormState, fd: FormData): Promis
   if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
   let id: string;
   try { id = await m.createClient(sb, tenantId, userId, null, parsed.data); }
-  catch (e) { return { ok: false, error: (e as Error).message }; }
+  catch (e) { return { ok: false, ...actionError(e) }; }
   revalidatePath("/clientes");
-  redirect(`/clientes/${id}`);
+  redirect(withFlash(`/clientes/${id}`, "cliente-creado"));
 }
 
 export async function updateClientAction(_prev: FormState, fd: FormData): Promise<FormState> {
@@ -48,17 +50,19 @@ export async function updateClientAction(_prev: FormState, fd: FormData): Promis
   const parsed = clientCreateSchema.safeParse(clientFields(fd));
   if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
   try { await m.updateClient(sb, id, parsed.data); }
-  catch (e) { return { ok: false, error: (e as Error).message }; }
+  catch (e) { return { ok: false, ...actionError(e) }; }
   revalidatePath(`/clientes/${id}`);
-  redirect(`/clientes/${id}`);
+  redirect(withFlash(`/clientes/${id}`, "cliente-guardado"));
 }
 
-export async function archiveClientAction(fd: FormData): Promise<void> {
+export async function archiveClientAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canArchiveClient(role)) return; // el botón no se muestra a vendedor; defensa extra
+  // El botón no se muestra a vendedor; si llega igual, que lo sepa en vez de creer que funcionó.
+  if (!canArchiveClient(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
   const active = fd.get("active") === "true";
-  await m.archiveClient(sb, id, active);
+  try { await m.archiveClient(sb, id, active); }
+  catch (e) { return actionError(e); }
   revalidatePath("/clientes");
   revalidatePath(`/clientes/${id}`);
 }
@@ -83,7 +87,7 @@ export async function createClientTypeNamed(
     const t = await m.createClientType(sb, tenantId, parsed.data.name);
     revalidatePath("/clientes");
     return { ok: true, type: t };
-  } catch (e) { return { ok: false, error: (e as Error).message }; }
+  } catch (e) { return { ok: false, ...actionError(e) }; }
 }
 
 export async function updateClientTypeAction(fd: FormData): Promise<void> {

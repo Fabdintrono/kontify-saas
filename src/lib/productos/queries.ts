@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getTenantSettings } from "@/lib/tenant";
 
 export type ProductListRow = {
   id: string; name: string; kind: "good" | "service";
@@ -61,11 +62,7 @@ export async function listTaxRates(sb: SupabaseClient, opts: { includeInactive?:
 }
 
 export async function getTenantCurrency(sb: SupabaseClient): Promise<string> {
-  try {
-    const { data, error } = await sb.from("tenants").select("currency").maybeSingle();
-    if (error || !data) return "USD";
-    return (data.currency as string) || "USD";
-  } catch { return "USD"; }
+  return (await getTenantSettings(sb)).currency;
 }
 
 // Consumidas por el dashboard: ante error/permiso denegado devuelven vacío, nunca lanzan.

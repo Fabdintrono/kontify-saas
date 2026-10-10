@@ -4,14 +4,18 @@ import { Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getSale } from "@/lib/ventas/queries";
 import { canVoidSale } from "@/lib/ventas/permissions";
-import { getTenantCurrency } from "@/lib/productos/queries";
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
 import { listPayments } from "@/lib/cobros/queries";
 import { canRegisterPayment, canVoidPayment, canEditDueDate } from "@/lib/cobros/permissions";
+import { paymentStatusOf } from "@/lib/cobros/status";
 import { deleteDraftAction, voidSaleAction } from "@/app/(app)/operaciones/facturacion/actions";
 import { SaleDocument } from "@/components/ventas/sale-document";
 import { PaymentsHistory } from "@/components/cobros/payments-history";
 import { PaymentForm } from "@/components/cobros/payment-form";
 import { DueDateField } from "@/components/cobros/due-date-field";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { flashFor } from "@/lib/flash";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function VentaDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -25,11 +29,19 @@ export default async function VentaDetallePage({ params }: { params: Promise<{ i
 
   const issued = sale.status === "issued";
   const balance = Number(sale.balance);
-  const [payments, currency] = await Promise.all([
+  const [payments, settings] = await Promise.all([
     issued ? listPayments(sb, id) : Promise.resolve([]),
-    getTenantCurrency(sb),
+    getTenantSettings(sb),
   ]);
+  const { currency, timezone: tz } = settings;
+  const today = todayISO(tz);
   const hasPayments = Number(sale.paid_amount) > 0;
+  const paymentStatus = paymentStatusOf(
+    { status: sale.status, total: Number(sale.total), paidAmount: Number(sale.paid_amount), dueDate: sale.due_date ?? null },
+    today,
+  );
+
+  const dangerBtn = "rounded-[10px] border border-[#dc2626]/40 px-3 py-2 text-sm font-medium text-[#dc2626] hover:bg-[#dc2626]/5";
 
   return (
     <div className="space-y-4 p-6">
@@ -42,33 +54,34 @@ export default async function VentaDetallePage({ params }: { params: Promise<{ i
                 className="flex items-center gap-1.5 rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[var(--text)]">
                 <Pencil className="h-4 w-4" /> Editar
               </Link>
-              <form action={deleteDraftAction}>
-                <input type="hidden" name="id" value={sale.id} />
-                <button className="rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[#dc2626]">Eliminar borrador</button>
-              </form>
+              <ConfirmDialog action={deleteDraftAction} payload={{ id: sale.id }}
+                title="¿Eliminar este borrador?" description="Se borra la venta en preparación. No afecta stock ni numeración."
+                confirmLabel="Eliminar borrador" triggerClassName={dangerBtn}>
+                Eliminar borrador
+              </ConfirmDialog>
             </>
           )}
           {issued && canVoidSale(role) && !hasPayments && (
-            <form action={voidSaleAction}>
-              <input type="hidden" name="id" value={sale.id} />
-              <input type="hidden" name="clientId" value={sale.client_id ?? ""} />
-              <button className="rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[#dc2626]">Anular</button>
-            </form>
+            <ConfirmDialog action={voidSaleAction} payload={{ id: sale.id, clientId: sale.client_id ?? "" }}
+              title={`¿Anular la venta #${sale.number}?`} description="El stock vuelve al inventario y la venta queda anulada. No se puede deshacer."
+              confirmLabel="Anular venta" successToast={flashFor("venta-anulada", sale.number)} triggerClassName={dangerBtn}>
+              Anular
+            </ConfirmDialog>
           )}
         </div>
       </div>
 
-      <SaleDocument sale={sale as any} />
+      <SaleDocument sale={sale as any} paymentStatus={paymentStatus} />
 
       {issued && (
         <div className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-bold text-[var(--text)]">Cobros</p>
-            <DueDateField saleId={sale.id} dueDate={sale.due_date ?? null} canEdit={canEditDueDate(role)} />
+            {balance > 0 && <DueDateField saleId={sale.id} dueDate={sale.due_date ?? null} canEdit={canEditDueDate(role)} />}
           </div>
           <PaymentsHistory payments={payments} saleId={sale.id} currency={currency} canVoid={canVoidPayment(role)} />
           {balance > 0 && canRegisterPayment(role) && (
-            <PaymentForm saleId={sale.id} balance={balance} currency={currency} />
+            <PaymentForm saleId={sale.id} balance={balance} currency={currency} today={today} />
           )}
         </div>
       )}

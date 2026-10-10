@@ -1,4 +1,4 @@
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatDateOnly } from "@/lib/format";
 import { QuoteStatusBadge } from "./quote-status-badge";
 
 type Item = { id: string; description: string; quantity: number; unit_price: number; discount_pct: number; tax_rate: number };
@@ -8,9 +8,9 @@ type Quote = {
   items: Item[]; computed: { subtotal: number; discountTotal: number; taxTotal: number; total: number; lines: { neto: number }[] };
 };
 
-export function QuoteDocument({ quote }: { quote: Quote }) {
+export function QuoteDocument({ quote, today }: { quote: Quote; today: string }) {
   const c = quote.currency;
-  const overdue = !!quote.valid_until && quote.valid_until < new Date().toISOString().slice(0, 10) && ["sent", "accepted"].includes(quote.status);
+  const overdue = !!quote.valid_until && quote.valid_until < today && ["sent", "accepted"].includes(quote.status);
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
@@ -52,7 +52,7 @@ export function QuoteDocument({ quote }: { quote: Quote }) {
           <div className="flex justify-between border-t border-[var(--border)] pt-1 text-base font-bold text-[var(--text)]"><span>Total</span><span>{formatMoney(quote.computed.total, c)}</span></div>
         </div>
       </div>
-      {quote.valid_until && <p className="text-sm text-[var(--text-soft)]">Válido hasta: {new Date(quote.valid_until).toLocaleDateString("es-VE")}</p>}
+      {quote.valid_until && <p className="text-sm text-[var(--text-soft)]">Válido hasta: {formatDateOnly(quote.valid_until)}</p>}
       {quote.notes && <p className="text-sm text-[var(--text-soft)]">Notas: {quote.notes}</p>}
     </div>
   );

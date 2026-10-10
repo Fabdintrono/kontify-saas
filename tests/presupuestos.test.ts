@@ -4,6 +4,9 @@ import type { QuoteSaveInput } from "@/lib/presupuestos/schema";
 import { createDraft, sendQuote, setQuoteStatus, convertToSale, deleteDraft } from "@/lib/presupuestos/mutations";
 import { emitSale } from "@/lib/ventas/mutations";
 import { listQuotes } from "@/lib/presupuestos/queries";
+import { todayISO } from "@/lib/tz";
+
+const HOY = todayISO("UTC");
 
 async function makeTenant(name: string) {
   const u = await newUserClient();
@@ -74,7 +77,7 @@ describe("presupuestos — flujo", () => {
       clientId: null, branchId: b, globalDiscountPct: 0, notes: undefined,
       items: [{ productId: null, description: "X", quantity: 1, unitPrice: 5, discountPct: 0, taxRate: 0 }],
     });
-    await emitSale(a.client, sId, { paymentType: "credito" });
+    await emitSale(a.client, sId, { paymentType: "credito" }, HOY);
     const qId = await createDraft(a.client, a.tenantId, a.id, "USD", quote(b));
     await sendQuote(a.client, qId);
     const { data: q } = await a.client.from("quotes").select("number").eq("id", qId).single();

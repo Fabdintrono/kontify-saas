@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getTenantCurrency } from "@/lib/productos/queries";
 import { salesReport } from "@/lib/reportes/queries";
 import { monthRange } from "@/lib/reportes/ranges";
 import { canAccess, type Role } from "@/lib/auth/roles";
-import { formatMoney } from "@/lib/format";
+import { getTenantSettings } from "@/lib/tenant";
+import { isDateISO, todayISO } from "@/lib/tz";
+import { formatMoney, formatDateOnly } from "@/lib/format";
 import { PeriodSelector } from "@/components/reportes/period-selector";
 import { BarChart } from "@/components/reportes/bar-chart";
 
@@ -18,24 +19,24 @@ export default async function ReporteVentasPage({ searchParams }: {
   const role = (mem?.role ?? "vendedor") as Role;
   if (!canAccess(role, "reportes")) redirect("/dashboard");
 
-  const def = monthRange(new Date());
-  const from = sp.from || def.from;
-  const to = sp.to || def.to;
+  const { currency, timezone: tz } = await getTenantSettings(sb);
+  const def = monthRange(new Date(), tz);
+  // Si cualquiera de los dos extremos no sirve, manda el preset completo: nunca un rango mezclado.
+  const { from, to } = isDateISO(sp.from) && isDateISO(sp.to) ? { from: sp.from, to: sp.to } : def;
   const isBackOffice = ["owner", "admin", "administrativo"].includes(role);
 
-  const [report, currency, { data: branches }] = await Promise.all([
-    salesReport(sb, { from, to, branchId: sp.branch || null }),
-    getTenantCurrency(sb),
+  const [report, { data: branches }] = await Promise.all([
+    salesReport(sb, { from, to, branchId: sp.branch || null, tz }),
     sb.from("branches").select("id, name").order("is_main", { ascending: false }),
   ]);
   const s = report.summary;
-  const dayBars = report.byDay.map((d) => ({ label: new Date(`${d.date}T00:00:00`).toLocaleDateString("es-VE", { day: "2-digit", month: "2-digit" }), value: d.revenue }));
+  const dayBars = report.byDay.map((d) => ({ label: formatDateOnly(d.date).slice(0, 5), value: d.revenue }));
 
   const card = "rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4";
   return (
     <div className="space-y-4 p-6">
       <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Reporte de ventas</h1>
-      <PeriodSelector branches={(branches ?? []) as any} showBranch={isBackOffice} />
+      <PeriodSelector branches={(branches ?? []) as any} showBranch={isBackOffice} today={todayISO(tz)} from={from} to={to} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Ventas" value={String(s.count)} />

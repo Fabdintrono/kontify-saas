@@ -38,7 +38,7 @@ describe("clientes — seed y CRUD", () => {
     expect(activos.total).toBe(1);
     expect(activos.rows[0].typeName).toBe(types[0].name);
 
-    const kpi = await clientsKpi(a.client);
+    const kpi = await clientsKpi(a.client, "UTC");
     expect(kpi.total).toBe(1);
     expect(kpi.newThisMonth).toBe(1);
 

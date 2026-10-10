@@ -1,26 +1,43 @@
-export type DateRange = { from: string; to: string };
+import { addDaysISO, localDateISO, assertDateISO, type DateRange } from "@/lib/tz";
+
+export type { DateRange };
 export type Preset = "hoy" | "semana" | "mes" | "mes_pasado";
 
-const fmt = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/** Mantiene el nombre anterior; ahora valida la entrada y lanza ante basura (ver tz.ts). */
+export const addDays = addDaysISO;
 
-export function addDays(iso: string, n: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return fmt(new Date(y, m - 1, d + n));
-}
+const startOfMonth = (dateISO: string) => `${dateISO.slice(0, 7)}-01`;
+/** 0 = lunes … 6 = domingo, leído de la fecha local (no de la zona del proceso). */
+const mondayIndex = (dateISO: string) => (new Date(`${dateISO}T00:00:00Z`).getUTCDay() + 6) % 7;
 
-export function presetRange(preset: Preset, ref: Date): DateRange {
-  const y = ref.getFullYear(), m = ref.getMonth(), day = ref.getDate();
+/** Preset → rango a partir de un día local ya calculado ("YYYY-MM-DD"). */
+export function presetRangeFor(preset: Preset, today: string): DateRange {
+  assertDateISO(today);
   switch (preset) {
-    case "hoy": { const t = fmt(ref); return { from: t, to: t }; }
-    case "semana": {
-      const dow = (ref.getDay() + 6) % 7; // 0 = lunes
-      return { from: fmt(new Date(y, m, day - dow)), to: fmt(ref) };
+    case "hoy": return { from: today, to: today };
+    case "semana": return { from: addDaysISO(today, -mondayIndex(today)), to: today };
+    case "mes": return { from: startOfMonth(today), to: today };
+    case "mes_pasado": {
+      const to = addDaysISO(startOfMonth(today), -1);
+      return { from: startOfMonth(to), to };
     }
-    case "mes": return { from: fmt(new Date(y, m, 1)), to: fmt(ref) };
-    case "mes_pasado": return { from: fmt(new Date(y, m - 1, 1)), to: fmt(new Date(y, m, 0)) };
   }
 }
 
-export const monthRange = (ref: Date): DateRange => presetRange("mes", ref);
-export const weekRange = (ref: Date): DateRange => presetRange("semana", ref);
+/** Preset → rango de días locales en la zona `tz`, tomando `ref` como "ahora". */
+export function presetRange(preset: Preset, ref: Date, tz: string): DateRange {
+  return presetRangeFor(preset, localDateISO(ref, tz));
+}
+
+export const PRESET_KEYS = ["hoy", "semana", "mes", "mes_pasado"] as const satisfies readonly Preset[];
+// Si falta un Preset en PRESET_KEYS, esta línea deja de compilar.
+type _AllPresetsListed = Exclude<Preset, (typeof PRESET_KEYS)[number]> extends never ? true : never;
+const _allPresetsListed: _AllPresetsListed = true;
+
+/** Qué preset coincide exactamente con un rango (el más estrecho gana en empates: hoy > semana > mes). */
+export function activePreset(today: string, r: DateRange): Preset | undefined {
+  return PRESET_KEYS.find((p) => { const x = presetRangeFor(p, today); return x.from === r.from && x.to === r.to; });
+}
+
+export const monthRange = (ref: Date, tz: string): DateRange => presetRange("mes", ref, tz);
+export const weekRange = (ref: Date, tz: string): DateRange => presetRange("semana", ref, tz);

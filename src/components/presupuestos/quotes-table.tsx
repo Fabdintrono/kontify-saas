@@ -1,13 +1,13 @@
 import Link from "next/link";
 import type { QuoteListRow } from "@/lib/presupuestos/queries";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatDate, formatDateOnly } from "@/lib/format";
 import { QuoteStatusBadge } from "./quote-status-badge";
 
-function isOverdue(r: QuoteListRow): boolean {
-  return !!r.validUntil && r.validUntil < new Date().toISOString().slice(0, 10) && ["sent", "accepted"].includes(r.status);
+function isOverdue(r: QuoteListRow, today: string): boolean {
+  return !!r.validUntil && r.validUntil < today && ["sent", "accepted"].includes(r.status);
 }
 
-export function QuotesTable({ rows }: { rows: QuoteListRow[] }) {
+export function QuotesTable({ rows, tz, today }: { rows: QuoteListRow[]; tz: string; today: string }) {
   return (
     <table className="hidden w-full text-sm lg:table">
       <thead>
@@ -24,11 +24,11 @@ export function QuotesTable({ rows }: { rows: QuoteListRow[] }) {
                 {r.number != null ? `#${r.number}` : "—"}
               </Link>
             </td>
-            <td className="text-[var(--text-soft)]">{new Date(r.createdAt).toLocaleDateString("es-VE")}</td>
+            <td className="text-[var(--text-soft)]">{formatDate(r.createdAt, tz)}</td>
             <td className="text-[var(--text)]">{r.clientName ?? "Consumidor final"}</td>
             <td className="text-[var(--text)]">{formatMoney(r.total, r.currency)}</td>
-            <td className={isOverdue(r) ? "text-[#dc2626]" : "text-[var(--text-soft)]"}>
-              {r.validUntil ? new Date(r.validUntil).toLocaleDateString("es-VE") : "—"}{isOverdue(r) ? " · vencido" : ""}
+            <td className={isOverdue(r, today) ? "text-[#dc2626]" : "text-[var(--text-soft)]"}>
+              {formatDateOnly(r.validUntil)}{isOverdue(r, today) ? " · vencido" : ""}
             </td>
             <td><QuoteStatusBadge status={r.status} /></td>
           </tr>

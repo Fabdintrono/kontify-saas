@@ -200,6 +200,8 @@ describe("tz helpers", () => {
 });
 ```
 
+(Más casos —salto de horario, retroceso, desfases no enteros, guardas— se añadieron en la revisión; ver tests/tz.test.ts.)
+
 - [ ] **Step 2: Correr y verificar que falla**
 
 Run: `npx vitest run tests/tz.test.ts`
@@ -209,32 +211,64 @@ Expected: FAIL — `Cannot find module '@/lib/tz'`.
 
 ```ts
 // Helpers puros de zona horaria. Sin librerías: usa Intl, que trae la base de datos IANA de Node.
-// Convención: "fecha local" = string "YYYY-MM-DD" en la zona de la empresa; "instante" = ISO UTC.
+// Contrato:
+//  - "fecha local" = string estricto "YYYY-MM-DD" en la zona de la empresa; "instante" = ISO UTC.
+//  - `tz` debe ser una zona IANA válida (ya validada por getTenantSettings/validTz); una zona
+//    inválida lanza RangeError. Una fecha mal formada lanza Error (nunca devuelve "NaN-NaN-NaN").
+//  - Rangos: inclusivos por días locales; rangeToInstants devuelve [fromInstant, toInstant).
+//  - startOfDayUTC: si la medianoche local no existe (salto de horario), el día arranca en la
+//    transición; si ocurre dos veces (retroceso), toma la primera.
 
 export type DateRange = { from: string; to: string };
 
-const pad = (n: number) => String(n).padStart(2, "0");
+const pad = (n: number, w = 2) => String(n).padStart(w, "0");
+const DATE_ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+const fmtCache = new Map<string, Intl.DateTimeFormat>();
+function fmtFor(tz: string): Intl.DateTimeFormat {
+  let f = fmtCache.get(tz);
+  if (!f) {
+    f = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz, hourCycle: "h23",
+      year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+    });
+    fmtCache.set(tz, f); // una zona inválida lanza antes del set: la caché solo guarda zonas IANA reales
+  }
+  return f;
+}
 
 function partsIn(instant: Date, tz: string) {
-  const f = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz, hourCycle: "h23",
-    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
-  });
-  const get = (type: string) => Number(f.formatToParts(instant).find((p) => p.type === type)?.value);
-  return { y: get("year"), m: get("month"), d: get("day"), h: get("hour"), mi: get("minute"), s: get("second") };
+  const o: Record<string, number> = {};
+  for (const p of fmtFor(tz).formatToParts(instant)) if (p.type !== "literal") o[p.type] = Number(p.value);
+  const r = { y: o.year, m: o.month, d: o.day, h: o.hour, mi: o.minute, s: o.second };
+  if (![r.y, r.m, r.d, r.h, r.mi, r.s].every(Number.isFinite)) throw new Error(`No se pudo descomponer la fecha en la zona ${tz}`);
+  return r;
 }
+
+/** ¿Es un "YYYY-MM-DD" real? Rechaza "2026-02-30", instantes ISO completos y basura. */
+export function isDateISO(s: unknown): s is string {
+  if (typeof s !== "string" || !DATE_ISO.test(s)) return false;
+  const [y, m, d] = s.split("-").map(Number);
+  if (y < 1000 || y > 9999) return false; // fuera de ese rango Date.UTC remapea años y el ISO cambia de ancho
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+}
+function assertDateISO(s: string): void {
+  if (!isDateISO(s)) throw new Error(`Fecha local inválida: ${s}`);
+}
+const toISO = (t: Date) => `${pad(t.getUTCFullYear(), 4)}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
 
 /** Desfase de la zona (minutos respecto a UTC) en un instante dado. Caracas → -240. */
 export function tzOffsetMinutes(instant: Date, tz: string): number {
   const p = partsIn(instant, tz);
-  const asUTC = Date.UTC(p.y, p.m - 1, p.d, p.h, p.mi, p.s);
+  const asUTC = new Date(Date.UTC(p.y, p.m - 1, p.d)).getTime() + ((p.h * 60 + p.mi) * 60 + p.s) * 1000;
   return Math.round((asUTC - instant.getTime()) / 60000);
 }
 
 /** "YYYY-MM-DD" del instante en la zona. */
 export function localDateISO(instant: Date, tz: string): string {
   const p = partsIn(instant, tz);
-  return `${p.y}-${pad(p.m)}-${pad(p.d)}`;
+  return `${pad(p.y, 4)}-${pad(p.m)}-${pad(p.d)}`;
 }
 
 /** Hoy en la zona. `now` es inyectable para tests. */
@@ -244,25 +278,31 @@ export function todayISO(tz: string, now: Date = new Date()): string {
 
 /** Suma días a una fecha local sin pasar por la zona del proceso. */
 export function addDaysISO(dateISO: string, n: number): string {
+  if (!Number.isSafeInteger(n)) throw new Error(`Desplazamiento de días inválido: ${n}`);
+  assertDateISO(dateISO);
   const [y, m, d] = dateISO.split("-").map(Number);
-  const t = new Date(Date.UTC(y, m - 1, d + n));
-  return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
+  return toISO(new Date(Date.UTC(y, m - 1, d + n)));
 }
 
-/** Instante UTC (ISO) de la medianoche local de `dateISO` en la zona. Dos pasadas por si cruza un cambio de horario. */
+/** Instante UTC (ISO) de la medianoche local de `dateISO` en la zona. */
 export function startOfDayUTC(dateISO: string, tz: string): string {
+  assertDateISO(dateISO);
   const [y, m, d] = dateISO.split("-").map(Number);
-  const guess = Date.UTC(y, m - 1, d);
-  let off = tzOffsetMinutes(new Date(guess), tz);
-  let instant = guess - off * 60000;
-  off = tzOffsetMinutes(new Date(instant), tz);
-  instant = guess - off * 60000;
-  return new Date(instant).toISOString();
+  const guess = new Date(Date.UTC(y, m - 1, d)).getTime();
+  const a = guess - tzOffsetMinutes(new Date(guess), tz) * 60000;
+  const b = guess - tzOffsetMinutes(new Date(a), tz) * 60000;
+  // Candidatos que de verdad caen en el día pedido; si ninguno (medianoche dentro de un salto de
+  // horario), el primer instante del día es la transición misma = el mayor de los dos.
+  const valid = [a, b].filter((t) => localDateISO(new Date(t), tz) === dateISO);
+  return new Date(valid.length ? Math.min(...valid) : Math.max(a, b)).toISOString();
 }
 
-/** Rango de días locales inclusivo → [fromInstant, toInstant) para filtrar columnas timestamptz. */
+/** Rango de días locales inclusivo → [fromInstant, toInstant) para filtrar columnas timestamptz.
+ *  Un rango invertido se normaliza (from/to intercambiados) en vez de devolver vacío en silencio. */
 export function rangeToInstants(range: DateRange, tz: string): { fromInstant: string; toInstant: string } {
-  return { fromInstant: startOfDayUTC(range.from, tz), toInstant: startOfDayUTC(addDaysISO(range.to, 1), tz) };
+  assertDateISO(range.from); assertDateISO(range.to);
+  const [from, to] = range.from <= range.to ? [range.from, range.to] : [range.to, range.from];
+  return { fromInstant: startOfDayUTC(from, tz), toInstant: startOfDayUTC(addDaysISO(to, 1), tz) };
 }
 ```
 
@@ -319,32 +359,29 @@ Expected: FAIL — `presetRange("hoy", REF, VE)` devuelve la fecha del proceso, 
 - [ ] **Step 3: Reescribir `src/lib/reportes/ranges.ts`**
 
 ```ts
-import { addDaysISO, localDateISO } from "@/lib/tz";
+import { addDaysISO, localDateISO, type DateRange } from "@/lib/tz";
 
-export type DateRange = { from: string; to: string };
+export type { DateRange };
 export type Preset = "hoy" | "semana" | "mes" | "mes_pasado";
 
-const pad = (n: number) => String(n).padStart(2, "0");
-const iso = (y: number, m0: number, d: number) => {
-  const t = new Date(Date.UTC(y, m0, d));
-  return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
-};
-
-/** Mantiene la firma anterior; delega en el helper puro. */
+/** Mantiene el nombre anterior; ahora valida la entrada y lanza ante basura (ver tz.ts). */
 export const addDays = addDaysISO;
+
+const startOfMonth = (dateISO: string) => `${dateISO.slice(0, 7)}-01`;
+/** 0 = lunes … 6 = domingo, leído de la fecha local (no de la zona del proceso). */
+const mondayIndex = (dateISO: string) => (new Date(`${dateISO}T00:00:00Z`).getUTCDay() + 6) % 7;
 
 /** Preset → rango de días locales en la zona `tz`, tomando `ref` como "ahora". */
 export function presetRange(preset: Preset, ref: Date, tz: string): DateRange {
   const today = localDateISO(ref, tz);
-  const [y, m, d] = today.split("-").map(Number);
   switch (preset) {
     case "hoy": return { from: today, to: today };
-    case "semana": {
-      const dow = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7; // 0 = lunes
-      return { from: iso(y, m - 1, d - dow), to: today };
+    case "semana": return { from: addDaysISO(today, -mondayIndex(today)), to: today };
+    case "mes": return { from: startOfMonth(today), to: today };
+    case "mes_pasado": {
+      const to = addDaysISO(startOfMonth(today), -1);
+      return { from: startOfMonth(to), to };
     }
-    case "mes": return { from: iso(y, m - 1, 1), to: today };
-    case "mes_pasado": return { from: iso(y, m - 2, 1), to: iso(y, m - 1, 0) };
   }
 }
 
@@ -404,24 +441,39 @@ Expected: FAIL — `formatDate is not a function`.
 - [ ] **Step 3: Añadir a `src/lib/format.ts`** (debajo de `formatMoney`)
 
 ```ts
-/** Timestamp (ISO con zona) → "dd/mm/aaaa" en la zona de la empresa. */
-export function formatDate(iso: string | null | undefined, tz: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("es-VE", { timeZone: tz, day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
+import { isDateISO } from "@/lib/tz";
+
+// Zona de respaldo local a este módulo (no importar tenant.ts aquí: arrastraría código de servidor
+// a cualquier cliente que importe formatMoney).
+const FALLBACK_TZ = "America/Caracas";
+
+function dateFormatter(tz: string): Intl.DateTimeFormat {
+  const opts: Intl.DateTimeFormatOptions = { day: "2-digit", month: "2-digit", year: "numeric" };
+  try { return new Intl.DateTimeFormat("es-VE", { ...opts, timeZone: tz || FALLBACK_TZ }); }
+  catch { return new Intl.DateTimeFormat("es-VE", { ...opts, timeZone: FALLBACK_TZ }); }
 }
 
-/** Columna DATE ("YYYY-MM-DD") → "dd/mm/aaaa" sin interpretar zona (new Date("2026-10-01") daría 30/09 en Venezuela). */
+/** Timestamp (ISO con zona) → "dd/mm/aaaa" en la zona de la empresa. Nunca lanza.
+ *  Si por error recibe una columna DATE ("YYYY-MM-DD"), la muestra tal cual sin correrla un día. */
+export function formatDate(iso: string | null | undefined, tz: string): string {
+  if (!iso) return "—";
+  if (isDateISO(iso)) return formatDateOnly(iso);
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return dateFormatter(tz).format(d);
+}
+
+/** Columna DATE ("YYYY-MM-DD") → "dd/mm/aaaa" sin interpretar zona (new Date("2026-10-01") daría 30/09 en Venezuela).
+ *  Rechaza instantes completos y fechas inválidas con "—" en vez de inventar un día. */
 export function formatDateOnly(dateISO: string | null | undefined): string {
-  if (!dateISO) return "—";
-  const [y, m, d] = dateISO.slice(0, 10).split("-");
-  if (!y || !m || !d) return "—";
+  if (!isDateISO(dateISO)) return "—";
+  const [y, m, d] = dateISO.split("-");
   return `${d}/${m}/${y}`;
 }
 
-/** "YYYY-MM-DD" → "lun" … "dom" (minúsculas, como lo devuelve es-VE). */
-export function weekdayShort(dateISO: string): string {
+/** "YYYY-MM-DD" → "lun" … "dom" (minúsculas, como lo devuelve es-VE). "—" si la fecha no es válida. */
+export function weekdayShort(dateISO: string | null | undefined): string {
+  if (!isDateISO(dateISO)) return "—";
   const [y, m, d] = dateISO.split("-").map(Number);
   return new Intl.DateTimeFormat("es-VE", { timeZone: "UTC", weekday: "short" }).format(new Date(Date.UTC(y, m - 1, d)));
 }
@@ -431,6 +483,7 @@ export function weekdayShort(dateISO: string): string {
 
 Run: `npx vitest run tests/format.test.ts`
 Expected: PASS (3 tests). Si `weekdayShort` devuelve `"vie."` con punto, ajustar el test a lo que da Node (`console.log` una vez) — la forma exacta depende de ICU; lo que importa es que sea el día correcto.
+(Más casos —borde de medianoche, DATE por error, zona inválida, degradación— se añadieron en la revisión; ver tests/format.test.ts.)
 
 - [ ] **Step 5: Commit**
 
@@ -448,7 +501,7 @@ git commit -m "feat(format): formatDate en zona de la empresa, formatDateOnly pa
 - Modify: `src/lib/ventas/queries.ts` (`salesKpi`, quitar `monthStartISO`)
 - Modify: `src/lib/clientes/queries.ts:52-61` (`clientsKpi`)
 - Modify: `src/lib/cobros/queries.ts` (`todayISO` → parámetro `today`)
-- Test: `tests/reportes.test.ts` (añadir bloque), `tests/cobros.test.ts` (ajustar llamadas)
+- Test: `tests/reportes.test.ts` (añadir bloque), `tests/cobros.test.ts` (ajustar llamadas), `tests/ventas.test.ts` y `tests/clientes.test.ts` (pasar `tz` a `salesKpi`/`clientsKpi`: `tsconfig` también typechequea `tests/`)
 
 - [ ] **Step 1: Test que falla (añadir al final de `tests/reportes.test.ts`)**
 
@@ -569,8 +622,8 @@ export async function listReceivablesByClient(sb: SupabaseClient, opts: {
     // … (resto igual; eliminar la línea `const today = todayISO();`)
 ```
 ```ts
-export async function getClientReceivable(sb: SupabaseClient, clientId: string, today: string): Promise<{ … }> {
-  // … eliminar `const today = todayISO();`
+export async function getClientReceivable(sb: SupabaseClient, { clientId, today }: { clientId: string; today: string }): Promise<{ … }> {
+  // … eliminar `const today = todayISO();` (objeto de opciones: dos strings adyacentes se confunden)
 ```
 ```ts
 export async function receivablesKpi(sb: SupabaseClient, today: string): Promise<{ total: number; overdue: number }> {
@@ -592,7 +645,7 @@ Expected: errores SOLO en páginas/componentes que llaman a estas funciones (se 
 - [ ] **Step 9: Commit**
 
 ```bash
-git add src/lib/reportes/queries.ts src/lib/ventas/queries.ts src/lib/clientes/queries.ts src/lib/cobros/queries.ts tests/reportes.test.ts tests/cobros.test.ts
+git add src/lib/reportes/queries.ts src/lib/ventas/queries.ts src/lib/clientes/queries.ts src/lib/cobros/queries.ts tests/reportes.test.ts tests/cobros.test.ts tests/ventas.test.ts tests/clientes.test.ts
 git commit -m "feat(consultas): rangos y 'hoy' en la zona horaria de la empresa (ventas, reportes, clientes, cobros)"
 ```
 
@@ -637,12 +690,14 @@ Quitar `getTenantCurrency` del import de productos (ya no se usa aquí).
 `src/app/(app)/reportes/ventas/page.tsx`:
 ```ts
 import { getTenantSettings } from "@/lib/tenant";
+import { isDateISO, todayISO } from "@/lib/tz";
 import { formatDateOnly } from "@/lib/format";
 // …
   const { currency, timezone: tz } = await getTenantSettings(sb);
   const def = monthRange(new Date(), tz);
-  const from = sp.from || def.from;
-  const to = sp.to || def.to;
+  // Si cualquiera de los dos extremos no sirve, manda el preset completo: nunca un rango mezclado.
+  const valid = isDateISO(sp.from) && isDateISO(sp.to);
+  const { from, to } = valid ? { from: sp.from as string, to: sp.to as string } : def;
   // …
   const [report, { data: branches }] = await Promise.all([
     salesReport(sb, { from, to, branchId: sp.branch || null, tz }),
@@ -650,19 +705,21 @@ import { formatDateOnly } from "@/lib/format";
   ]);
   const dayBars = report.byDay.map((d) => ({ label: formatDateOnly(d.date).slice(0, 5), value: d.revenue }));
   // …
-  <PeriodSelector branches={(branches ?? []) as any} showBranch={isBackOffice} tz={tz} from={from} to={to} />
+  <PeriodSelector branches={(branches ?? []) as any} showBranch={isBackOffice} today={todayISO(tz)} from={from} to={to} />
 ```
-`src/components/reportes/period-selector.tsx`: añadir props `tz`, `from`, `to`; usar `presetRange(p, new Date(), tz)`; los `<input type="date">` muestran `defaultValue={from}` / `defaultValue={to}` (así el preset por defecto se ve); y marcar el preset activo:
+En `src/lib/reportes/ranges.ts` añadir una entrada por día ya calculado y que la anterior delegue, para que el selector sea determinista (sin `new Date()` en el cliente): `presetRangeFor(preset, today)`, `PRESET_KEYS` y `activePreset(today, range)` (el preset más estrecho gana en empates: hoy > semana > mes). `presetRange(preset, ref, tz)` queda como `presetRangeFor(preset, localDateISO(ref, tz))`.
+
+`src/components/reportes/period-selector.tsx`: añadir props `today`, `from`, `to` (la página pasa `today={todayISO(tz)}`); usar `presetRangeFor(p, today)` y `activePreset`; los `<input type="date">` muestran `defaultValue={from}` / `defaultValue={to}` (así el preset por defecto se ve); y marcar el preset activo:
 ```tsx
-export function PeriodSelector({ branches, showBranch, tz, from, to }: {
-  branches: { id: string; name: string }[]; showBranch: boolean; tz: string; from: string; to: string;
+export function PeriodSelector({ branches, showBranch, today, from, to }: {
+  branches: { id: string; name: string }[]; showBranch: boolean; today: string; from: string; to: string;
 }) {
   // …
   function setPreset(p: Preset) {
-    const r = presetRange(p, new Date(), tz);
+    const r = presetRangeFor(p, today);
     // … igual
   }
-  const active = PRESETS.find((p) => { const r = presetRange(p.key, new Date(), tz); return r.from === from && r.to === to; })?.key;
+  const active = activePreset(today, { from, to });
   // en el map de PRESETS:
   <button key={p.key} onClick={() => setPreset(p.key)} aria-pressed={active === p.key}
     className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium ${active === p.key
@@ -718,7 +775,7 @@ import { todayISO } from "@/lib/tz";
 - [ ] **Step 6: Movimientos de inventario**
 
 `src/components/inventario/movements-history.tsx`: prop `tz: string`; `{formatDate(m.createdAt, tz)}`.
-`src/components/inventario/product-stock-panel.tsx`: obtener `tz` con `getTenantSettings(sb)` junto a las otras consultas y pasar `<MovementsHistory movements={movements} tz={tz} />`.
+`src/components/inventario/product-stock-panel.tsx`: prop `tz: string` (no consulta ajustes por su cuenta) y pasarlo a `<MovementsHistory movements={movements} tz={tz} />`. En `src/app/(app)/operaciones/productos/[id]/page.tsx` cambiar `getTenantCurrency(sb)` por `getTenantSettings(sb)` y pasar `tz` al panel.
 
 - [ ] **Step 7: Presupuestos**
 
@@ -732,7 +789,7 @@ export function QuotesTable({ rows, tz, today }: { rows: QuoteListRow[]; tz: str
   // Fecha: {formatDate(r.createdAt, tz)}
   // Vigencia: {formatDateOnly(r.validUntil)}{isOverdue(r, today) ? " · vencido" : ""}
 ```
-`src/components/presupuestos/quote-document.tsx`: `Válido hasta: {formatDateOnly(quote.valid_until)}`.
+`src/components/presupuestos/quote-document.tsx`: prop `today: string` para el cálculo de `overdue` (el mismo día de la empresa que usa la lista) y `Válido hasta: {formatDateOnly(quote.valid_until)}`. En `src/app/(app)/operaciones/presupuestos/[id]/page.tsx`: `const { timezone: tz } = await getTenantSettings(sb);` y `<QuoteDocument quote={quote as any} today={todayISO(tz)} />`.
 
 - [ ] **Step 8: Typecheck + tests + arranque**
 
@@ -745,6 +802,119 @@ Run: `npm run build` → Expected: build limpio.
 ```bash
 git add -A src/app src/components
 git commit -m "feat(ui): fechas y períodos en la zona horaria de la empresa; columnas DATE sin corrimiento"
+```
+
+---
+
+### Task 6b: El lado de escritura también usa el día de la empresa (fecha de cobro)
+
+> Añadida tras la revisión de la Task 5: las lecturas ya respetan la zona, pero `paid_at` se guardaba con el día UTC y la regla «la fecha no puede ser futura» se evaluaba contra el día UTC. En Caracas, un cobro al contado después de las 20:00 quedaba fechado mañana.
+
+**Files:**
+- Modify: `src/lib/ventas/mutations.ts` (`emitSale`)
+- Modify: `src/lib/cobros/mutations.ts` (`registerPayment`), `src/lib/cobros/schema.ts` (quitar la validación «futura» del schema)
+- Modify: `src/app/(app)/operaciones/facturacion/actions.ts:71`, `src/app/(app)/finanzas/cuentas-por-cobrar/actions.ts:44-50`
+- Test: `tests/cobros.test.ts`
+
+- [ ] **Step 1: Test que falla (añadir a `tests/cobros.test.ts`)**
+
+```ts
+describe("cobros — la fecha del cobro es el día de la empresa", () => {
+  it("contado: paid_at = today recibido (no el día UTC del servidor)", async () => {
+    const a = await makeTenant("payday"); const b = await mainBranch(a); const p = await makeProduct(a);
+    const id = await createDraft(a.client, a.tenantId, a.id, "USD", saleOf(b, [
+      { productId: p, description: "Café", quantity: 1, unitPrice: 10, discountPct: 0, taxRate: 0 },
+    ]));
+    await emitSale(a.client, id, { paymentType: "contado", paymentMethod: "efectivo" }, "2026-10-09");
+    const { data } = await a.client.from("payments").select("paid_at").eq("sale_id", id).single();
+    expect(data!.paid_at).toBe("2026-10-09");
+  });
+  it("abono: sin paidAt usa today; con paidAt futuro respecto a today lanza", async () => {
+    const a = await makeTenant("payday2"); const b = await mainBranch(a); const p = await makeProduct(a);
+    const id = await createDraft(a.client, a.tenantId, a.id, "USD", saleOf(b, [
+      { productId: p, description: "Café", quantity: 1, unitPrice: 100, discountPct: 0, taxRate: 0 },
+    ]));
+    await emitSale(a.client, id, { paymentType: "credito" }, "2026-10-09");
+    const pid = await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 10 }, "2026-10-09");
+    const { data } = await a.client.from("payments").select("paid_at").eq("id", pid).single();
+    expect(data!.paid_at).toBe("2026-10-09");
+    await expect(registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 10, paidAt: "2026-10-10" }, "2026-10-09"))
+      .rejects.toThrow(/futura/);
+    await expect(registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 10 }, "basura"))
+      .rejects.toThrow(/today/);
+  });
+});
+```
+(Usar los helpers `makeTenant`/`mainBranch`/`makeProduct`/`saleOf` que ya existen en ese archivo o copiarlos de `tests/reportes.test.ts`.)
+
+- [ ] **Step 2: Correr y verificar que falla**
+
+Run: `npx vitest run tests/cobros.test.ts`
+Expected: FAIL — `emitSale` ignora el cuarto argumento (paid_at = día UTC de hoy) y `registerPayment` no acepta `today`.
+
+- [ ] **Step 3: `emitSale` recibe `today`** — en `src/lib/ventas/mutations.ts`
+
+```ts
+import { todayISO, isDateISO, DEFAULT_TZ } from "@/lib/tz";
+
+/** `today` = "YYYY-MM-DD" en la zona de la empresa (fecha del cobro al contado). */
+export async function emitSale(sb: SupabaseClient, id: string, payment: EmitInput, today: string = todayISO(DEFAULT_TZ)): Promise<void> {
+  if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
+  // … igual …
+  // en el insert del contado:
+      method: payment.paymentMethod ?? null, paid_at: today,
+```
+
+- [ ] **Step 4: `registerPayment` recibe `today` y valida «no futura» ahí** — en `src/lib/cobros/mutations.ts`
+
+```ts
+import { isDateISO } from "@/lib/tz";
+
+export async function registerPayment(
+  sb: SupabaseClient, tenantId: string, userId: string, input: PaymentInput, today: string,
+): Promise<string> {
+  if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
+  if (input.paidAt && input.paidAt > today) throw new Error("La fecha no puede ser futura");
+  // … igual …
+    paid_at: input.paidAt ?? today,
+```
+En `src/lib/cobros/schema.ts` borrar `const todayISO = …` y dejar `paidAt: optDate,` (sin `.refine`): la regla vive en la mutación y en la acción, donde se conoce la zona.
+
+- [ ] **Step 5: Las acciones pasan `today` de la empresa**
+
+`src/app/(app)/operaciones/facturacion/actions.ts` (dentro de `submitSaleAction`, donde ya obtiene `currency`):
+```ts
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
+// …
+    const { currency, timezone } = await getTenantSettings(sb);
+    // …
+      await m.emitSale(sb, saleId, pay.data, todayISO(timezone));
+```
+(y quitar `getTenantCurrency` si queda sin uso en ese archivo).
+
+`src/app/(app)/finanzas/cuentas-por-cobrar/actions.ts` (`registerPaymentAction`):
+```ts
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
+// …
+  if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
+  const today = todayISO((await getTenantSettings(sb)).timezone);
+  if (parsed.data.paidAt && parsed.data.paidAt > today) return { ok: false, fieldErrors: { paidAt: "La fecha no puede ser futura" } };
+  try { await m.registerPayment(sb, tenantId, userId, parsed.data, today); }
+```
+
+- [ ] **Step 6: Tests existentes** — en `tests/cobros.test.ts` toda llamada a `registerPayment(` existente pasa `HOY` como quinto argumento. Las llamadas a `emitSale(` sin cuarto argumento siguen válidas (default).
+
+- [ ] **Step 7: Verificar**
+
+Run: `npx vitest run tests/cobros.test.ts tests/ventas.test.ts tests/reportes.test.ts` → PASS. `npx vitest run` → PASS. `npx tsc --noEmit` → sin errores nuevos.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add src/lib/ventas/mutations.ts src/lib/cobros/mutations.ts src/lib/cobros/schema.ts "src/app/(app)/operaciones/facturacion/actions.ts" "src/app/(app)/finanzas/cuentas-por-cobrar/actions.ts" tests/cobros.test.ts
+git commit -m "fix(cobros): la fecha del cobro y la regla 'no futura' usan el día de la empresa"
 ```
 
 ---
@@ -804,6 +974,7 @@ export type SaleLike = { status: string; total: number; paidAmount: number; dueD
 
 /** Estado de pago derivado de una venta. `today` = "YYYY-MM-DD" en la zona de la empresa. Solo ventas emitidas. */
 export function paymentStatusOf(s: SaleLike, today: string): PaymentStatus | null {
+  if (!isDateISO(today)) throw new Error(`Fecha local inválida: ${today}`); // isDateISO de @/lib/tz
   if (s.status !== "issued") return null;
   const balance = round2(Number(s.total) - Number(s.paidAmount));
   if (balance <= 0) return "pagada";
@@ -896,22 +1067,24 @@ import { Pencil, Check, CircleCheck, CircleDot, Clock, TriangleAlert, X } from "
 import type { PaymentStatus } from "@/lib/cobros/status";
 
 type Spec = { label: string; cls: string; icon: LucideIcon };
-const GRAY = "bg-[var(--bg)] text-[var(--text-soft)]";
+// Contraste AA a 12px: en light los tonos oscuros, en dark los claros.
+const GRAY = "bg-[var(--bg)] text-[#475569] dark:text-[var(--text-soft)]";
 const TEAL = "bg-[#0e7490]/10 text-[#0e7490] dark:text-[#5eead4]";
 const GREEN = "bg-[#0f766e]/10 text-[#0f766e] dark:text-[#6ee7b7]";
-const AMBER = "bg-[#b45309]/10 text-[#b45309] dark:text-[#fbbf24]";
-const RED = "bg-[#dc2626]/10 text-[#dc2626] dark:text-[#f87171]";
+const AMBER = "bg-[#b45309]/10 text-[#92400e] dark:text-[#fbbf24]";
+const RED = "bg-[#dc2626]/10 text-[#b91c1c] dark:text-[#f87171]";
+export const DANGER_TEXT = "font-medium text-[#b91c1c] dark:text-[#f87171]"; // saldo vencido fuera del chip
 
 const DOC: Record<string, Spec> = {
   draft:  { label: "Borrador", cls: GRAY, icon: Pencil },
   issued: { label: "Emitida",  cls: TEAL, icon: Check },
   void:   { label: "Anulada",  cls: RED,  icon: X },
 };
-const PAY: Record<PaymentStatus, Spec> = {
-  pagada:    { label: "Pagada",    cls: GREEN, icon: CircleCheck },
-  parcial:   { label: "Parcial",   cls: AMBER, icon: CircleDot },
-  pendiente: { label: "Pendiente", cls: AMBER, icon: Clock },
-  vencida:   { label: "Vencida",   cls: RED,   icon: TriangleAlert },
+const PAY: Record<PaymentStatus, Spec> = { // etiquetas desde PAYMENT_LABEL (una sola fuente)
+  pagada:    { label: PAYMENT_LABEL.pagada,    cls: GREEN, icon: CircleCheck },
+  parcial:   { label: PAYMENT_LABEL.parcial,   cls: AMBER, icon: CircleDot },
+  pendiente: { label: PAYMENT_LABEL.pendiente, cls: AMBER, icon: Clock },
+  vencida:   { label: PAYMENT_LABEL.vencida,   cls: RED,   icon: TriangleAlert },
 };
 
 /** Estado del documento; si está emitida y se conoce el estado de pago, muestra ese (es lo que importa al usuario). */
@@ -931,43 +1104,53 @@ Run: `npx vitest run src/components/ventas/status-badge.test.tsx` → PASS (4).
 
 `src/components/ventas/sales-table.tsx` (celdas Saldo y Estado):
 ```tsx
-<td className={r.paymentStatus === "vencida" ? "font-medium text-[#dc2626]" : "text-[var(--text-soft)]"}>
-  {r.status === "issued" ? formatMoney(r.balance, r.currency) : "—"}
+<td className={r.paymentStatus === "vencida" ? DANGER_TEXT : "text-[var(--text-soft)]"}>
+  {r.status === "issued" && r.paymentStatus !== "pagada" ? formatMoney(r.balance, r.currency) : "—"}
 </td>
 <td><SaleStatusBadge status={r.status} paymentStatus={r.paymentStatus} /></td>
 ```
 `src/components/ventas/sale-row-card.tsx`:
 ```tsx
-<p className="truncate text-xs text-[var(--text-soft)]">
-  {formatDate(r.issuedAt ?? r.createdAt, tz)} · {formatMoney(r.total, r.currency)}
+<p className="truncate text-xs text-[var(--text-soft)]">  {/* fecha al final: si se recorta, se pierde la fecha, no el saldo */}
+  {formatMoney(r.total, r.currency)}
   {r.status === "issued" && r.balance > 0 ? ` · saldo ${formatMoney(r.balance, r.currency)}` : ""}
+  {` · ${formatDate(r.issuedAt ?? r.createdAt, tz)}`}
 </p>
 // …
 <SaleStatusBadge status={r.status} paymentStatus={r.paymentStatus} />
 ```
-`src/components/ventas/sales-toolbar.tsx`: añadir `<option value="vencidas">Vencidas</option>` después de «Pendientes».
+`src/components/ventas/sales-toolbar.tsx`: la opción `pendientes` se llama «Con saldo» (el valor no cambia) y debajo va `<option value="vencidas">Vencidas</option>`.
 `src/app/(app)/operaciones/facturacion/page.tsx`: aceptar `vencidas` en la validación del filtro (`["pendientes", "vencidas", "todas"]`) y llamar `listSales(sb, { search: sp.q ?? "", status, payment, page, today: todayISO(tz) })`.
 
 - [ ] **Step 9: Detalle: bloque «Pago» honesto y vencimiento solo con saldo**
 
 `src/components/ventas/sale-document.tsx`: añadir al tipo `Sale` → `due_date?: string | null;` y nuevas props `paymentStatus?: PaymentStatus | null`. Reemplazar el bloque `{sale.status === "issued" && (…)}` por:
 ```tsx
+// La frase se arma con los datos, no con el estado (una vencida parcial dice lo pagado y lo que falta).
+const paid = Number(sale.paid_amount), total = Number(sale.total);
+const balance = round2(total - paid);
+const payParts = [
+  paymentStatus === "pagada" && sale.payment_method ? sale.payment_method : null,
+  paid > 0 && balance > 0 ? `pagado ${formatMoney(paid, c)} de ${formatMoney(total, c)}` : null,
+  balance > 0 ? `saldo ${formatMoney(balance, c)}` : null,
+  sale.due_date
+    ? `${paymentStatus === "vencida" ? "venció el" : paymentStatus === "pagada" ? "vencía el" : "vence el"} ${formatDateOnly(sale.due_date)}`
+    : null,
+].filter(Boolean);
+
 {sale.status === "issued" && (
   <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <span className="text-[var(--text-soft)]">Pago</span>
-      <span className="flex items-center gap-2 font-medium text-[var(--text)]">
+      <span className="flex flex-wrap items-center justify-end gap-2 font-medium text-[var(--text)]">
         <SaleStatusBadge status="issued" paymentStatus={paymentStatus ?? null} />
-        {paymentStatus === "pagada" && sale.payment_method ? `· ${sale.payment_method}` : null}
-        {paymentStatus === "parcial" ? `· pagado ${formatMoney(Number(sale.paid_amount), c)} de ${formatMoney(Number(sale.total), c)}` : null}
-        {(paymentStatus === "pendiente" || paymentStatus === "vencida") ? `· saldo ${formatMoney(balance, c)}` : null}
-        {sale.due_date && paymentStatus !== "pagada" ? ` · ${paymentStatus === "vencida" ? "venció el" : "vence el"} ${formatDateOnly(sale.due_date)}` : null}
+        {payParts.length ? <span>· {payParts.join(" · ")}</span> : null}
       </span>
     </div>
   </div>
 )}
 ```
-(Se elimina la frase «Los abonos parciales llegan con el módulo de Cobros».) Imports: `formatDateOnly` de `@/lib/format`, `PaymentStatus` de `@/lib/cobros/status`.
+(Se elimina la frase «Los abonos parciales llegan con el módulo de Cobros».) Imports: `formatDateOnly` de `@/lib/format`, `round2` de `@/lib/ventas/totals`, `PaymentStatus` de `@/lib/cobros/status`.
 
 `src/app/(app)/operaciones/facturacion/[id]/page.tsx`:
 ```ts
@@ -1048,7 +1231,30 @@ export function useSubmitIntent<T extends string>(pending: boolean) {
   };
 }
 ```
-Run el test → PASS (2).
+Run el test → PASS.
+
+**Ojo con el `redirect()`:** en Next 16 una Server Action que redirige **rechaza** la promesa en el
+cliente (`server-action-reducer.js`: `reject(createRedirectErrorForAction(...))`, digest
+`NEXT_REDIRECT;…`). Sin el guard de `isRedirectError`, «Eliminar borrador», «Eliminar presupuesto» y
+cualquier acción que caiga en el `redirect("/login")` de la sesión vencida dejan un toast de error
+permanente con el texto `NEXT_REDIRECT`. De ahí `src/lib/action-result.ts`:
+
+```ts
+/** Resultado de una Server Action de un clic: nada si salió bien, o un error legible en español. */
+export type ActionResult = void | { error: string };
+/** Una acción que redirige rechaza la promesa en el cliente (server-action-reducer.js): la navegación
+ *  ya está en marcha y el aviso lo da el ?flash= del destino. No es un error. */
+export function isRedirectError(e: unknown): boolean {
+  return typeof e === "object" && e !== null && "digest" in e
+    && typeof (e as { digest: unknown }).digest === "string"
+    && (e as { digest: string }).digest.startsWith("NEXT_REDIRECT");
+}
+```
+
+Y por eso las siete acciones devuelven `Promise<ActionResult>`: el permiso denegado deja de fingir
+éxito (`return { error: "No tienes permiso para esta acción." }`) y la mutación se envuelve en
+`try/catch` para que su mensaje de dominio en español («Anula primero los cobros de esta venta»)
+llegue al toast. El `redirect(withFlash(...))` va **fuera** del `try`.
 
 - [ ] **Step 3: Aplicar en `sale-builder.tsx`**
 
@@ -1096,30 +1302,40 @@ git commit -m "fix(builders): solo el botón pulsado muestra estado pendiente"
 `src/components/ui/toast.test.tsx`:
 ```tsx
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { render, screen, fireEvent, act, cleanup } from "@testing-library/react";
 import { ToastProvider, useToast } from "./toast";
 
-function Demo() {
+afterEach(() => { cleanup(); vi.useRealTimers(); });
+
+function Demo({ href }: { href?: string }) {
   const { toast } = useToast();
-  return <button onClick={() => toast({ title: "Venta #4 emitida", href: "/operaciones/facturacion/x" })}>go</button>;
+  return <button onClick={() => toast({ title: "Venta #4 emitida", href })}>go</button>;
 }
 
 describe("Toast", () => {
   it("muestra el título, un enlace Ver y se puede cerrar", () => {
-    render(<ToastProvider><Demo /></ToastProvider>);
+    render(<ToastProvider><Demo href="/operaciones/facturacion/x" /></ToastProvider>);
     fireEvent.click(screen.getByText("go"));
     expect(screen.getByText("Venta #4 emitida")).toBeTruthy();
     expect(screen.getByText("Ver").getAttribute("href")).toBe("/operaciones/facturacion/x");
     fireEvent.click(screen.getByLabelText("Cerrar aviso"));
     expect(screen.queryByText("Venta #4 emitida")).toBeNull();
   });
-  it("se cierra solo a los 4 segundos", async () => {
+  it("sin enlace se cierra solo a los 4 segundos", () => {
+    vi.useFakeTimers();
     render(<ToastProvider><Demo /></ToastProvider>);
     fireEvent.click(screen.getByText("go"));
-    await act(async () => { await new Promise((r) => setTimeout(r, 4300)); });
+    act(() => { vi.advanceTimersByTime(4500); });
     expect(screen.queryByText("Venta #4 emitida")).toBeNull();
-  }, 10000);
+  });
+  it("con enlace no se cierra solo: hay que darle tiempo de pulsar Ver", () => {
+    vi.useFakeTimers();
+    render(<ToastProvider><Demo href="/operaciones/facturacion/x" /></ToastProvider>);
+    fireEvent.click(screen.getByText("go"));
+    act(() => { vi.advanceTimersByTime(4500); });
+    expect(screen.getByText("Venta #4 emitida")).toBeTruthy();
+  });
 });
 ```
 Run: `npx vitest run src/components/ui/toast.test.tsx` → FAIL.
@@ -1128,7 +1344,7 @@ Run: `npx vitest run src/components/ui/toast.test.tsx` → FAIL.
 
 ```tsx
 "use client";
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { CircleCheck, TriangleAlert, X } from "lucide-react";
 
@@ -1142,26 +1358,34 @@ const DURATION_MS = 4000;
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Toast[]>([]);
   const seq = useRef(0);
-  const dismiss = useCallback((id: number) => setItems((xs) => xs.filter((x) => x.id !== id)), []);
+  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+  const dismiss = useCallback((id: number) => {
+    const t = timers.current.get(id);
+    if (t) { clearTimeout(t); timers.current.delete(id); }
+    setItems((xs) => xs.filter((x) => x.id !== id));
+  }, []);
   const toast = useCallback((t: ToastInput) => {
     const id = ++seq.current;
     setItems((xs) => [...xs.slice(-2), { ...t, id }]); // máximo 3 visibles
-    setTimeout(() => dismiss(id), DURATION_MS);
+    // No se van solos: el aviso con enlace (hay que poder pulsar «Ver») ni el de error.
+    if (!t.href && t.tone !== "error") timers.current.set(id, setTimeout(() => dismiss(id), DURATION_MS));
   }, [dismiss]);
+  // Al desmontar, ningún temporizador queda vivo tocando estado de un árbol que ya no existe.
+  useEffect(() => () => { for (const t of timers.current.values()) clearTimeout(t); timers.current.clear(); }, []);
   const value = useMemo(() => ({ toast }), [toast]);
   return (
     <ToastCtx.Provider value={value}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-3 bottom-20 z-[60] flex flex-col items-center gap-2 lg:inset-x-auto lg:bottom-6 lg:right-6 lg:items-end">
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-3 bottom-20 z-[60] flex flex-col items-center gap-2 lg:inset-x-auto lg:bottom-24 lg:right-6 lg:items-end">  {/* bottom-24: libra el FAB de Vender */}
         {items.map((t) => (
-          <div key={t.id} role="status"
+          <div key={t.id} role={t.tone === "error" ? "alert" : undefined}
             className="pointer-events-auto flex w-full max-w-sm items-start gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm shadow-lg">
             {t.tone === "error"
               ? <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#dc2626]" strokeWidth={2} aria-hidden="true" />
               : <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#0f766e] dark:text-[#6ee7b7]" strokeWidth={2} aria-hidden="true" />}
             <div className="min-w-0 flex-1">
-              <p className="font-semibold text-[var(--text)]">{t.title}</p>
-              {t.description && <p className="text-xs text-[var(--text-soft)]">{t.description}</p>}
+              <p className="break-words font-semibold text-[var(--text)]">{t.title}</p>
+              {t.description && <p className="break-words text-xs text-[var(--text-soft)]">{t.description}</p>}
               {t.href && <Link href={t.href} onClick={() => dismiss(t.id)} className="mt-1 inline-block text-xs font-semibold text-[#0e7490] dark:text-[#5eead4]">{t.hrefLabel ?? "Ver"}</Link>}
             </div>
             <button type="button" aria-label="Cerrar aviso" onClick={() => dismiss(t.id)}
@@ -1181,14 +1405,14 @@ export function useToast(): Ctx {
   return ctx;
 }
 ```
-Run el test → PASS (2).
+Run el test → PASS (4).
 
 - [ ] **Step 3: Test de flash (falla)**
 
 `tests/flash.test.ts`:
 ```ts
 import { describe, it, expect } from "vitest";
-import { withFlash, flashMessage } from "@/lib/flash";
+import { withFlash, flashMessage, flashFor } from "@/lib/flash";
 
 describe("flash", () => {
   it("withFlash añade la clave (y el argumento) a la URL", () => {
@@ -1199,6 +1423,13 @@ describe("flash", () => {
     expect(flashMessage("venta-emitida", "4")).toEqual({ title: "Venta #4 emitida", description: "Se asignó el número y se descontó el stock." });
     expect(flashMessage("cliente-creado", null)?.title).toBe("Cliente creado");
     expect(flashMessage("lo-que-sea", null)).toBeNull();
+  });
+  it("un arg que no es un número se descarta (viene de la URL)", () => {
+    expect(flashMessage("venta-emitida", "0 — llame al 0800")?.title).toBe("Venta emitida");
+  });
+  it("flashFor no necesita `!`: la clave es conocida", () => {
+    expect(flashFor("abono-registrado").title).toBe("Abono registrado");
+    expect(flashFor("venta-emitida", 12).title).toBe("Venta #12 emitida");
   });
 });
 ```
@@ -1247,12 +1478,22 @@ export function withFlash(path: string, key: FlashKey, arg?: string | number | n
   return `${path}${sep}flash=${key}${a}`;
 }
 
+// El `arg` llega de la URL: solo se acepta un número corto (es un número de documento).
+// Solo números (los correlativos de venta/presupuesto). Una serie con prefijo (p. ej. "A-0001")
+// degradaría al texto sin número: ampliar aquí si llega ese caso.
+const ARG_OK = /^\d{1,9}$/;
+
 export function flashMessage(key: string, arg: string | null): { title: string; description?: string } | null {
   const fn = (MESSAGES as Record<string, (a: string | null) => { title: string; description?: string }>)[key];
-  return fn ? fn(arg) : null;
+  return fn ? fn(arg && ARG_OK.test(arg) ? arg : null) : null;
+}
+
+/** Para llamadas internas con clave conocida (sin `!`). */
+export function flashFor(key: FlashKey, arg: string | number | null = null): { title: string; description?: string } {
+  return MESSAGES[key](arg == null ? null : String(arg));
 }
 ```
-Run el test → PASS (2).
+Run el test → PASS (4).
 
 - [ ] **Step 5: `FlashToast` y montaje en el shell**
 
@@ -1260,31 +1501,37 @@ Run el test → PASS (2).
 ```tsx
 "use client";
 import { useEffect } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { flashMessage } from "@/lib/flash";
 
-/** Lee ?flash=clave&arg=… tras un redirect, muestra el toast y limpia la URL (sin recargar). */
+/** Lee ?flash=clave&arg=… tras un redirect, muestra el toast y limpia la URL sin navegar
+ *  (history.replaceState se integra con el router de Next y evita un segundo render del servidor). */
 export function FlashToast() {
   const sp = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
   const key = sp.get("flash");
   const arg = sp.get("arg");
+  const shown = useRef<string | null>(null);
   useEffect(() => {
-    if (!key) return;
+    if (!key) { shown.current = null; return; } // la URL ya está limpia: listo para el próximo aviso
+    const token = `${key}|${arg ?? ""}`;
+    if (shown.current === token) return; // StrictMode re-ejecuta el efecto con las mismas props
+    shown.current = token;
     const msg = flashMessage(key, arg);
     if (msg) toast(msg);
     const next = new URLSearchParams(sp.toString());
     next.delete("flash"); next.delete("arg");
     const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, arg]);
+    window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
+  }, [key, arg, sp, pathname, toast]);
   return null;
 }
 ```
+Cubrir `FlashToast` en `src/components/shell/flash-toast.test.tsx` (jsdom, `vi.mock("next/navigation")` con unos params controlables): el aviso sale y la URL se limpia sin navegar; **la misma clave dos veces en la sesión avisa las dos veces** (el guard se libera al pasar por la URL limpia); en `StrictMode` sale una sola vez. Ojo: `rerender` necesita un elemento NUEVO (React descarta el re-render si la referencia es idéntica).
+
 `src/components/shell/app-shell.tsx`: envolver el árbol en el provider y montar el lector:
 ```tsx
 import { Suspense } from "react";
@@ -1311,15 +1558,16 @@ import { FlashToast } from "@/components/shell/flash-toast";
 `src/app/(app)/operaciones/facturacion/actions.ts`:
 - `submitSaleAction`: antes del `redirect` final, obtener el número si emitió: 
   ```ts
+  // `emitSale` devuelve el número asignado (su update ya hace select("id, number")): sin consulta extra.
   let number: number | null = null;
-  if (intent === "emit") { const { data } = await sb.from("sales").select("number").eq("id", saleId).maybeSingle(); number = data?.number ?? null; }
+  if (intent === "emit") number = await m.emitSale(sb, saleId, pay.data, todayISO(timezone));
   redirect(withFlash(`${LIST}/${saleId}`, intent === "emit" ? "venta-emitida" : "venta-borrador", number));
   ```
 - `deleteDraftAction`: `redirect(withFlash(LIST, "venta-borrador-eliminado"))`.
 - `voidSaleAction` no redirige: el toast lo dispara el `ConfirmDialog` (Task 10).
 
 `src/app/(app)/operaciones/presupuestos/actions.ts`:
-- `submitQuoteAction`: igual que ventas con `"presupuesto-enviado"` (número vía `select("number")` de `quotes`) / `"presupuesto-borrador"`.
+- `submitQuoteAction`: igual que ventas con `"presupuesto-enviado"` (número devuelto por `sendQuote`) / `"presupuesto-borrador"`.
 - `deleteQuoteAction`: `withFlash(LIST, "presupuesto-eliminado")`.
 - `convertQuoteAction`: `redirect(withFlash(`/operaciones/facturacion/${saleId}/editar`, "presupuesto-convertido"))`.
 - `setQuoteStatusAction` no redirige: toast desde el cliente (Task 10).
@@ -1328,9 +1576,9 @@ import { FlashToast } from "@/components/shell/flash-toast";
 
 `src/components/cobros/payment-form.tsx`: `const { toast } = useToast();` y el efecto:
 ```ts
-useEffect(() => { if (state.ok) { setOpen(false); toast(flashMessage("abono-registrado", null)!); } }, [state]);
+useEffect(() => { if (state.ok) { setOpen(false); toast(flashFor("abono-registrado")); } }, [state]);
 ```
-(imports: `useToast` de `@/components/ui/toast`, `flashMessage` de `@/lib/flash`.)
+(imports: `useToast` de `@/components/ui/toast`, `flashFor` de `@/lib/flash` — tipado, sin `!`.)
 
 `src/components/inventario/stock-adjust-form.tsx`: igual con `"stock-ajustado"`.
 
@@ -1340,7 +1588,7 @@ useEffect(() => { if (state.ok) { setOpen(false); toast(flashMessage("abono-regi
 import { useTransition } from "react";
 import { setDueDateAction } from "@/app/(app)/finanzas/cuentas-por-cobrar/actions";
 import { useToast } from "@/components/ui/toast";
-import { flashMessage } from "@/lib/flash";
+import { flashFor } from "@/lib/flash";
 import { formatDateOnly } from "@/lib/format";
 
 export function DueDateField({ saleId, dueDate, canEdit }: { saleId: string; dueDate: string | null; canEdit: boolean }) {
@@ -1353,7 +1601,7 @@ export function DueDateField({ saleId, dueDate, canEdit }: { saleId: string; due
   );
   return (
     <form className="flex items-center gap-2"
-      onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); start(async () => { await setDueDateAction(fd); toast(flashMessage("vencimiento-guardado", null)!); }); }}>
+      onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); start(async () => { try { await setDueDateAction(fd); toast(flashFor("vencimiento-guardado")); } catch { toast({ title: "No se pudo guardar el vencimiento", tone: "error" }); } }); }}>
       <input type="hidden" name="saleId" value={saleId} />
       <label htmlFor={`due-${saleId}`} className="text-sm text-[var(--text-soft)]">Vencimiento</label>
       <input id={`due-${saleId}`} type="date" name="dueDate" defaultValue={dueDate ?? ""} className={inputCls} />
@@ -1377,8 +1625,12 @@ git commit -m "feat(ui): toasts de éxito tras guardar/emitir/abonar (provider p
 
 **Files:**
 - Create: `src/components/ui/confirm-dialog.tsx`, `src/components/ui/confirm-dialog.test.tsx`
+- Create: `src/components/ui/action-button.tsx`, `src/components/ui/action-button.test.tsx` (las acciones de un clic que no destruyen nada pero sí avisan: reactivar, marcar aceptado)
+- Create: `src/lib/action-result.ts` (`ActionResult` + `isRedirectError`)
 - Modify: `src/app/(app)/clientes/[id]/page.tsx`, `src/app/(app)/operaciones/productos/[id]/page.tsx`, `src/app/(app)/operaciones/presupuestos/[id]/page.tsx`, `src/app/(app)/operaciones/facturacion/[id]/page.tsx`, `src/components/cobros/payments-history.tsx`
-- Modify: `src/app/(app)/clientes/actions.ts`, `src/app/(app)/operaciones/productos/actions.ts` (devolver flash para el toast)
+- Modify las siete acciones de un clic para que devuelvan `ActionResult` (error en español en vez de lanzar o volver en silencio): `archiveClientAction` (`src/app/(app)/clientes/actions.ts`), `archiveProductAction` (`src/app/(app)/operaciones/productos/actions.ts`), `deleteDraftAction` y `voidSaleAction` (`src/app/(app)/operaciones/facturacion/actions.ts`), `deleteQuoteAction` y `setQuoteStatusAction` (`src/app/(app)/operaciones/presupuestos/actions.ts`), `voidPaymentAction` (`src/app/(app)/finanzas/cuentas-por-cobrar/actions.ts`)
+- Modify: `src/components/shell/app-shell.tsx` (`tabIndex={-1}` en `<main>`: destino de foco al cerrar un diálogo cuyo disparador ya no existe)
+- Modify: `src/components/ui/toast.tsx` — aquí se partió la pila en dos regiones vivas hermanas, `aria-live="polite"` para los éxitos y `aria-live="assertive"` para los errores (antes era una sola región y `role="alert"` por aviso). Radix Dialog (`hideOthers`) exime `[aria-live]` del `aria-hidden`, así los avisos que nacen dentro del diálogo siguen anunciándose.
 
 - [ ] **Step 1: Test jsdom (falla)**
 
@@ -1433,12 +1685,15 @@ import { useState, useTransition, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { TriangleAlert } from "lucide-react";
 import { useToast, type ToastInput } from "@/components/ui/toast";
+import { isRedirectError, type ActionResult } from "@/lib/action-result";
+
+const GENERIC_ERROR = "Vuelve a intentarlo; si persiste, avisa a soporte.";
 
 /** Confirmación antes de una acción irreversible. Reemplaza <form action={…}> + botón directo.
  *  - `action` es una Server Action (fd: FormData) => Promise<void>; `payload` son sus campos ocultos.
  *  - Nunca usar confirm() nativo: la PWA lo suprime en silencio. */
 export function ConfirmDialog({ action, payload, title, description, confirmLabel, tone = "danger", successToast, triggerClassName, children }: {
-  action: (fd: FormData) => Promise<void>; payload: Record<string, string>;
+  action: (fd: FormData) => Promise<ActionResult>; payload: Record<string, string>;
   title: string; description: string; confirmLabel: string; tone?: "danger" | "primary";
   successToast?: ToastInput; triggerClassName?: string; children: ReactNode;
 }) {
@@ -1450,10 +1705,20 @@ export function ConfirmDialog({ action, payload, title, description, confirmLabe
     const fd = new FormData();
     for (const [k, v] of Object.entries(payload)) fd.append(k, v);
     start(async () => {
-      await action(fd);
-      if (successToast) toast(successToast);
-      setOpen(false);
+      try {
+        const r = await action(fd);
+        if (r && "error" in r) { fail(r.error); return; }   // error de dominio: el diálogo queda abierto
+        if (successToast) toast(successToast);
+        setOpen(false);
+      } catch (e) {
+        if (isRedirectError(e)) return; // navegando: el destino muestra su propio aviso
+        fail(GENERIC_ERROR);            // NO usar (e as Error).message: en producción React lo reemplaza por un texto en inglés
+      }
     });
+  }
+
+  function fail(description: string) {
+    toast({ title: "No se pudo completar la acción", description, tone: "error" });
   }
 
   const confirmCls = tone === "danger"
@@ -1557,7 +1822,12 @@ Mismo cambio en `src/app/(app)/operaciones/productos/[id]/page.tsx` con `archive
   Marcar rechazado
 </ConfirmDialog>
 ```
-«Marcar aceptado» sigue como form directo pero gana toast: envolverlo igual que `DueDateField` (cliente con `useTransition`) o, más simple, dejarlo como está (sin toast) — **decisión: dejarlo como está**; el cambio de chip a «Aceptado» ya es feedback visible.
+«Marcar aceptado» también gana feedback — **decisión revisada:** pasa a `ActionButton`
+(`successToast={flashFor("presupuesto-aceptado")} pendingLabel="Guardando…"`), igual que los dos
+«Reactivar» de cliente y producto (`cliente-reactivado` / `producto-reactivado`). Son acciones de un
+clic que no destruyen nada: no merecen diálogo, pero sí un aviso y un estado de «ocupado».
+Los dos diálogos de archivar llevan `tone="primary"`, no `danger`: su propio texto dice que son
+reversibles.
 
 - [ ] **Step 7: Verificación manual en el navegador**
 
@@ -1635,92 +1905,42 @@ describe("attentionItems", () => {
   });
 });
 ```
-Si `emitSale` con `paymentType: "credito"` exige `paymentMethod`, pasar `paymentMethod: undefined`. Si `stock_movements` exige `created_by` distinto, mirar `tests/inventario.test.ts` y copiar su forma de insertar.
+Si `emitSale` con `paymentType: "credito"` exige `paymentMethod`, pasar `paymentMethod: undefined`. Para dar existencias usar `registerAdjustment` como hace `tests/inventario.test.ts` (su insert en `stock_movements` ya trae `created_by`). Cubrir también: el cupo (7 vencidas + 1 agotado → 5 + 1, las vencidas más antiguas primero), `attentionItems(client, "basura")` → rechaza con /Fecha local inválida/, y un producto con `min_stock: 0` y sin existencias que NO se lista.
 Run: `npx vitest run tests/attention.test.ts` → FAIL (módulo inexistente).
 
 - [ ] **Step 2: Implementar `src/lib/dashboard/attention.ts`**
 
-```ts
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { round2 } from "@/lib/ventas/totals";
-import { formatMoney, formatDateOnly } from "@/lib/format";
-import { listStock } from "@/lib/inventario/queries";
+Exporta `AttentionItem` (`kind: "vencida" | "agotado" | "bajo"`, `tone: "danger" | "warn"`, `title`,
+`detail`, `href`), `MAX = 8` y `attentionItems(sb, today)`:
 
-export type AttentionItem = {
-  kind: "vencida" | "agotado" | "bajo";
-  tone: "danger" | "warn"; title: string; detail: string; href: string;
-};
-const MAX = 8;
+- **Guard primero, fuera de cualquier try:** `if (!isDateISO(today)) throw new Error(\`Fecha local inválida: ${today}\`)`,
+  como en las consultas de cobros y ventas. Una fecha mala es un error del llamador, no una lista vacía.
+- **Ventas vencidas:** `sales` con `status = "issued"`, `balance > 0`, `due_date < today`, `order("due_date")`
+  (más antiguas primero) y `.limit(5)`. Desestructurar `{ data, error }` y, si hay `error`,
+  `console.error("attentionItems", error)` + `return []`: media lista es peor que ninguna, porque el panel
+  diría «todo en orden» con ventas vencidas detrás.
+  `title`: `Venta #N vencida`; `detail`: cliente (`Consumidor final` si no hay) · saldo (`formatMoney` + `round2`)
+  · `venció el ${formatDateOnly(due_date)}`; `href`: `/operaciones/facturacion/${id}`.
+- **Inventario:** `listStock(sb)` filtrado a `minStock > 0` — el mínimo declarado es la señal explícita de
+  «esto me importa»; un producto que nunca se stockea con mínimo 0 no es una alarma. Primero los `agotado`
+  (`danger`, `«X agotado»`), después los `bajo` (`warn`, `«X con stock bajo»`); `detail` en ambos
+  `Existencia N · mínimo M`; `href` `/operaciones/inventario?status=agotado` / `?status=bajo`
+  (la pantalla ya acepta `status`).
+- **Cupo por categoría:** 5 vencidas como tope y el total cortado en `MAX = 8`, así que el inventario tiene
+  siempre al menos 3 huecos y las vencidas no lo tapan.
 
-/** Ventas vencidas (más antiguas primero), productos agotados y bajo mínimo. Degrada a [] ante error. */
-export async function attentionItems(sb: SupabaseClient, today: string): Promise<AttentionItem[]> {
-  try {
-    const out: AttentionItem[] = [];
-    const { data: sales } = await sb.from("sales").select("id, number, balance, due_date, currency, clients(name)")
-      .eq("status", "issued").gt("balance", 0).lt("due_date", today).order("due_date").limit(MAX);
-    for (const s of (sales ?? []) as any[]) {
-      out.push({
-        kind: "vencida", tone: "danger",
-        title: `Venta #${s.number} vencida`,
-        detail: `${s.clients?.name ?? "Consumidor final"} · saldo ${formatMoney(round2(Number(s.balance)), s.currency)} · venció el ${formatDateOnly(s.due_date)}`,
-        href: `/operaciones/facturacion/${s.id}`,
-      });
-    }
-    const stock = await listStock(sb);
-    for (const r of stock.filter((x) => x.status === "agotado")) {
-      if (out.length >= MAX) break;
-      out.push({ kind: "agotado", tone: "danger", title: `${r.name} agotado`, detail: `Existencia ${r.qty} · mínimo ${r.minStock}`, href: "/operaciones/inventario" });
-    }
-    for (const r of stock.filter((x) => x.status === "bajo")) {
-      if (out.length >= MAX) break;
-      out.push({ kind: "bajo", tone: "warn", title: `${r.name} con stock bajo`, detail: `Existencia ${r.qty} · mínimo ${r.minStock}`, href: "/operaciones/inventario" });
-    }
-    return out;
-  } catch { return []; }
-}
-```
-Run el test → PASS (2). Si el orden entre «agotado» y «bajo» sale invertido por `listStock` (ordena por nombre), el filtro por estado ya lo separa; si falla por `minStock` en `detail`, revisar que `listStock` devuelve `minStock` numérico.
+Run el test → PASS.
 
-- [ ] **Step 3: `AttentionList` con enlace y tono**
+- [ ] **Step 3: `AttentionList` con enlace, tono y «ver todas»**
 
-`src/components/dashboard/attention-list.tsx`:
-```tsx
-import Link from "next/link";
-import { CircleCheck, TriangleAlert, CircleAlert } from "lucide-react";
-import { EmptyState } from "@/components/shared/empty-state";
-import type { AttentionItem } from "@/lib/dashboard/attention";
+`src/components/dashboard/attention-list.tsx`: cada fila es un `<Link href={it.href}>` con `CircleAlert`
+`text-[#dc2626]` si `tone === "danger"` y `TriangleAlert` `text-[#b45309] dark:text-[#fbbf24]` si `warn`
+(icono `aria-hidden`, `hover:bg-[var(--bg)]`). Vacío: `EmptyState` con `CircleCheck`, «Todo en orden» /
+«No hay ventas vencidas ni productos por reponer.». Reexporta el tipo: `export type { AttentionItem }`.
 
-export type { AttentionItem };
+Como el cupo es corto, cuando `items.some((i) => i.kind === "vencida")` añade al pie un enlace alineado a la
+derecha, `text-xs` teal: `<Link href="/finanzas/cuentas-por-cobrar?filter=vencidos">Ver todas las vencidas</Link>`.
 
-export function AttentionList({ items }: { items: AttentionItem[] }) {
-  return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
-      <p className="mb-2 text-sm font-bold text-[var(--text)]">Requieren atención</p>
-      {items.length === 0 ? (
-        <EmptyState icon={CircleCheck} title="Todo en orden" hint="No hay ventas vencidas ni productos por reponer." />
-      ) : (
-        <ul className="space-y-2">
-          {items.map((it, i) => {
-            const Icon = it.tone === "danger" ? CircleAlert : TriangleAlert;
-            const color = it.tone === "danger" ? "text-[#dc2626]" : "text-[#b45309] dark:text-[#fbbf24]";
-            return (
-              <li key={i}>
-                <Link href={it.href} className="flex items-start gap-2 rounded-lg border border-[var(--border)] p-2.5 hover:bg-[var(--bg)]">
-                  <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${color}`} strokeWidth={2} aria-hidden="true" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[var(--text)]">{it.title}</p>
-                    <p className="text-xs text-[var(--text-soft)]">{it.detail}</p>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
-  );
-}
-```
 
 - [ ] **Step 4: Dashboard la alimenta**
 
@@ -1789,5 +2009,6 @@ git push origin master
 | Zona horaria por empresa (B2) | Tasks 1–6 |
 | Vencimiento solo con saldo (hallazgo menor) | Task 7 Step 9 |
 | Columna DATE corrida un día (hallazgo de la implementación) | Task 4 + Task 6 |
+| Escritura de paid_at y regla «no futura» con el día de la empresa (hallazgo de la revisión de Task 5) | Task 6b |
 
 Fuera de alcance (Fases B/C): ModuleHeader, EmptyState v2, FieldHelp, GettingStarted, renombre Facturación→Ventas, buscador global, móvil de líneas de venta, contraste `--text-soft`.

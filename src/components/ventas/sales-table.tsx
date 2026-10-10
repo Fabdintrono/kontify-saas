@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { SaleListRow } from "@/lib/ventas/queries";
-import { formatMoney } from "@/lib/format";
-import { SaleStatusBadge } from "./status-badge";
+import { formatMoney, formatDate } from "@/lib/format";
+import { SaleStatusBadge, DANGER_TEXT } from "./status-badge";
 
-export function SalesTable({ rows }: { rows: SaleListRow[] }) {
+export function SalesTable({ rows, tz }: { rows: SaleListRow[]; tz: string }) {
   return (
     <table className="hidden w-full text-sm lg:table">
       <thead>
@@ -20,11 +20,13 @@ export function SalesTable({ rows }: { rows: SaleListRow[] }) {
                 {r.number != null ? `#${r.number}` : "—"}
               </Link>
             </td>
-            <td className="text-[var(--text-soft)]">{new Date(r.issuedAt ?? r.createdAt).toLocaleDateString("es-VE")}</td>
+            <td className="text-[var(--text-soft)]">{formatDate(r.issuedAt ?? r.createdAt, tz)}</td>
             <td className="text-[var(--text)]">{r.clientName ?? "Consumidor final"}</td>
             <td className="text-[var(--text)]">{formatMoney(r.total, r.currency)}</td>
-            <td className={r.balance > 0 ? "text-[#dc2626]" : "text-[var(--text-soft)]"}>{formatMoney(r.balance, r.currency)}</td>
-            <td><SaleStatusBadge status={r.status} /></td>
+            <td className={r.paymentStatus === "vencida" ? DANGER_TEXT : "text-[var(--text-soft)]"}>
+              {r.status === "issued" && r.paymentStatus !== "pagada" ? formatMoney(r.balance, r.currency) : "—"}
+            </td>
+            <td><SaleStatusBadge status={r.status} paymentStatus={r.paymentStatus} /></td>
           </tr>
         ))}
       </tbody>

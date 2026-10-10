@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SaleSaveInput, EmitInput } from "@/lib/ventas/schema";
 import { computeSaleTotals } from "@/lib/ventas/totals";
 import { applySaleStockOut, reverseSaleStock } from "@/lib/inventario/mutations";
+import { assertDateISO } from "@/lib/tz";
 
 function headerTotals(input: SaleSaveInput) {
   const t = computeSaleTotals(
@@ -62,7 +63,11 @@ export async function deleteDraft(sb: SupabaseClient, id: string): Promise<void>
   if (!data || data.length === 0) throw new Error("Solo se pueden borrar borradores");
 }
 
-export async function emitSale(sb: SupabaseClient, id: string, payment: EmitInput): Promise<void> {
+/** `today` = "YYYY-MM-DD" en la zona de la empresa (fecha del cobro al contado). */
+export async function emitSale(
+  sb: SupabaseClient, id: string, payment: EmitInput, today: string,
+): Promise<number> {
+  assertDateISO(today);
   const { data: sale, error: readErr } = await sb.from("sales")
     .select("id, status, total, tenant_id, created_by").eq("id", id).maybeSingle();
   if (readErr) throw readErr;
@@ -77,15 +82,16 @@ export async function emitSale(sb: SupabaseClient, id: string, payment: EmitInpu
     payment_method: payment.paymentType === "contado" ? (payment.paymentMethod ?? null) : null,
     due_date: payment.paymentType === "credito" ? (payment.dueDate ?? null) : null,
     updated_at: new Date().toISOString(),
-  }).eq("id", id).eq("status", "draft").select("id");
+  }).eq("id", id).eq("status", "draft").select("id, number");
   if (error) throw error;
   if (!data || data.length === 0) throw new Error("La venta ya no es un borrador");
+  const number = Number(data[0].number);
 
   // El contado se registra como un cobro por el total → el trigger fija paid_amount.
   if (payment.paymentType === "contado") {
     const { error: payErr } = await sb.from("payments").insert({
       tenant_id: sale.tenant_id, sale_id: id, amount: Number(sale.total),
-      method: payment.paymentMethod ?? null, paid_at: new Date().toISOString().slice(0, 10),
+      method: payment.paymentMethod ?? null, paid_at: today,
       created_by: sale.created_by,
     });
     if (payErr) throw payErr;
@@ -93,6 +99,7 @@ export async function emitSale(sb: SupabaseClient, id: string, payment: EmitInpu
 
   // Descuenta stock de los ítems 'good' de la venta (permite negativo).
   await applySaleStockOut(sb, id);
+  return number;
 }
 
 export async function voidSale(sb: SupabaseClient, id: string): Promise<void> {

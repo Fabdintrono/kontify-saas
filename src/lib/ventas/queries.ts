@@ -1,29 +1,34 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeSaleTotals, round2 } from "@/lib/ventas/totals";
+import { monthRange } from "@/lib/reportes/ranges";
+import { assertDateISO, rangeToInstants } from "@/lib/tz";
+import { paymentStatusOf, type PaymentStatus } from "@/lib/cobros/status";
 
 export type SaleStatusFilter = "borradores" | "emitidas" | "anuladas" | "todas";
-export type SalePaymentFilter = "pendientes" | "todas";
+export type SalePaymentFilter = "pendientes" | "vencidas" | "todas";
 export type SaleListRow = {
   id: string; number: number | null; status: "draft" | "issued" | "void";
   clientName: string | null; branchName: string | null;
   total: number; balance: number; currency: string; issuedAt: string | null; createdAt: string;
+  dueDate: string | null; paymentStatus: PaymentStatus | null;
 };
 
 const STATUS_MAP: Record<string, string> = { borradores: "draft", emitidas: "issued", anuladas: "void" };
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 function sanitize(term: string): string { return term.replace(/[%,()*]/g, " ").trim(); }
-function monthStartISO(): string { const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d.toISOString(); }
 
 export async function listSales(sb: SupabaseClient, opts: {
-  search?: string; status?: SaleStatusFilter; payment?: SalePaymentFilter; page?: number; pageSize?: number;
-} = {}): Promise<{ rows: SaleListRow[]; total: number; page: number; pageSize: number }> {
-  const { search = "", status = "todas", payment = "todas", page = 1, pageSize = 20 } = opts;
+  search?: string; status?: SaleStatusFilter; payment?: SalePaymentFilter; page?: number; pageSize?: number; today: string;
+}): Promise<{ rows: SaleListRow[]; total: number; page: number; pageSize: number }> {
+  const { search = "", status = "todas", payment = "todas", page = 1, pageSize = 20, today } = opts;
+  assertDateISO(today);
   let q = sb.from("sales").select(
-    "id, number, status, total, paid_amount, currency, issued_at, created_at, clients(name), branches(name)",
+    "id, number, status, total, paid_amount, currency, issued_at, created_at, due_date, clients(name), branches(name)",
     { count: "exact" },
   );
   if (STATUS_MAP[status]) q = q.eq("status", STATUS_MAP[status]);
   if (payment === "pendientes") q = q.eq("status", "issued").gt("balance", 0);
+  if (payment === "vencidas") q = q.eq("status", "issued").gt("balance", 0).lt("due_date", today);
   const s = sanitize(search);
   if (s) {
     if (/^\d+$/.test(s)) {
@@ -43,6 +48,8 @@ export async function listSales(sb: SupabaseClient, opts: {
     clientName: r.clients?.name ?? null, branchName: r.branches?.name ?? null,
     total: Number(r.total), balance: round2(Number(r.total) - Number(r.paid_amount)),
     currency: r.currency, issuedAt: r.issued_at, createdAt: r.created_at,
+    dueDate: r.due_date ?? null,
+    paymentStatus: paymentStatusOf({ status: r.status, total: Number(r.total), paidAmount: Number(r.paid_amount), dueDate: r.due_date ?? null }, today),
   }));
   return { rows, total: count ?? 0, page, pageSize };
 }
@@ -62,13 +69,15 @@ export async function getSale(sb: SupabaseClient, id: string) {
   return { ...(data as any), items: items ?? [], computed };
 }
 
-export async function salesKpi(sb: SupabaseClient): Promise<{ monthTotal: number; avgTicket: number }> {
+export async function salesKpi(sb: SupabaseClient, tz: string): Promise<{ monthTotal: number; avgTicket: number }> {
   try {
-    const { data, error } = await sb.from("sales").select("total").eq("status", "issued").gte("issued_at", monthStartISO());
+    const { fromInstant, toInstant } = rangeToInstants(monthRange(new Date(), tz), tz);
+    const { data, error } = await sb.from("sales").select("total").eq("status", "issued")
+      .gte("issued_at", fromInstant).lt("issued_at", toInstant);
     if (error || !data) return { monthTotal: 0, avgTicket: 0 };
     const monthTotal = data.reduce((s: number, r: any) => s + Number(r.total), 0);
     return { monthTotal: round2(monthTotal), avgTicket: data.length ? round2(monthTotal / data.length) : 0 };
-  } catch { return { monthTotal: 0, avgTicket: 0 }; }
+  } catch (e) { console.error("salesKpi", e); return { monthTotal: 0, avgTicket: 0 }; }
 }
 
 export async function receivablesTotal(sb: SupabaseClient): Promise<{ total: number }> {
@@ -76,7 +85,7 @@ export async function receivablesTotal(sb: SupabaseClient): Promise<{ total: num
     const { data, error } = await sb.from("sales").select("total, paid_amount").eq("status", "issued");
     if (error || !data) return { total: 0 };
     return { total: round2(data.reduce((s: number, r: any) => s + (Number(r.total) - Number(r.paid_amount)), 0)) };
-  } catch { return { total: 0 }; }
+  } catch (e) { console.error("receivablesTotal", e); return { total: 0 }; }
 }
 
 export async function salesByClient(sb: SupabaseClient, clientId: string): Promise<{

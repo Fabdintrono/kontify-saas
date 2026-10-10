@@ -7,6 +7,8 @@ import { SalesToolbar } from "@/components/ventas/sales-toolbar";
 import { SalesTable } from "@/components/ventas/sales-table";
 import { SaleRowCard } from "@/components/ventas/sale-row-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function FacturacionPage({ searchParams }: {
@@ -19,9 +21,10 @@ export default async function FacturacionPage({ searchParams }: {
   const role = (mem?.role ?? "vendedor") as Role;
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const status = (["borradores", "emitidas", "anuladas", "todas"].includes(sp.status ?? "") ? sp.status : "todas") as SaleStatusFilter;
-  const payment = (["pendientes", "todas"].includes(sp.payment ?? "") ? sp.payment : "todas") as SalePaymentFilter;
+  const payment = (["pendientes", "vencidas", "todas"].includes(sp.payment ?? "") ? sp.payment : "todas") as SalePaymentFilter;
 
-  const list = await listSales(sb, { search: sp.q ?? "", status, payment, page });
+  const { timezone: tz } = await getTenantSettings(sb);
+  const list = await listSales(sb, { search: sp.q ?? "", status, payment, page, today: todayISO(tz) });
   const pages = Math.max(1, Math.ceil(list.total / list.pageSize));
 
   return (
@@ -44,8 +47,8 @@ export default async function FacturacionPage({ searchParams }: {
         </div>
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 lg:p-4">
-          <SalesTable rows={list.rows} />
-          <div className="space-y-2 lg:hidden">{list.rows.map((r) => <SaleRowCard key={r.id} r={r} />)}</div>
+          <SalesTable rows={list.rows} tz={tz} />
+          <div className="space-y-2 lg:hidden">{list.rows.map((r) => <SaleRowCard key={r.id} r={r} tz={tz} />)}</div>
         </div>
       )}
 

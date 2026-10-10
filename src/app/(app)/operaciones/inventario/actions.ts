@@ -5,6 +5,7 @@ import { createClient as serverSupabase } from "@/lib/supabase/server";
 import { adjustmentSchema } from "@/lib/inventario/schema";
 import { canManageStock } from "@/lib/inventario/permissions";
 import { registerAdjustment } from "@/lib/inventario/mutations";
+import { actionError } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 import { redirect } from "next/navigation";
 
@@ -27,14 +28,14 @@ async function ctx() {
 
 export async function registerAdjustmentAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const { sb, userId, role, tenantId } = await ctx();
-  if (!canManageStock(role)) return { ok: false, error: "Sin permiso" };
+  if (!canManageStock(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const parsed = adjustmentSchema.safeParse({
     productId: fd.get("productId"), branchId: fd.get("branchId"),
     direction: fd.get("direction"), quantity: fd.get("quantity"), reason: fd.get("reason"),
   });
   if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
   try { await registerAdjustment(sb, tenantId, userId, parsed.data); }
-  catch (e) { return { ok: false, error: (e as Error).message }; }
+  catch (e) { return { ok: false, ...actionError(e) }; }
   revalidatePath("/operaciones/inventario");
   revalidatePath(`/operaciones/productos/${parsed.data.productId}`);
   revalidatePath("/dashboard");

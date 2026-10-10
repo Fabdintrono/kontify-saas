@@ -5,8 +5,8 @@ import { MovementsHistory } from "./movements-history";
 import { StockAdjustForm } from "./stock-adjust-form";
 import type { Role } from "@/lib/auth/roles";
 
-export async function ProductStockPanel({ productId, kind, role, userBranchId }: {
-  productId: string; kind: "good" | "service"; role: Role; userBranchId: string | null;
+export async function ProductStockPanel({ productId, kind, role, userBranchId, tz }: {
+  productId: string; kind: "good" | "service"; role: Role; userBranchId: string | null; tz: string;
 }) {
   if (kind === "service") {
     return (
@@ -46,7 +46,7 @@ export async function ProductStockPanel({ productId, kind, role, userBranchId }:
       )}
       <div>
         <p className="mb-1 text-xs font-medium text-[var(--text-soft)]">Últimos movimientos</p>
-        <MovementsHistory movements={movements} />
+        <MovementsHistory movements={movements} tz={tz} />
       </div>
     </div>
   );

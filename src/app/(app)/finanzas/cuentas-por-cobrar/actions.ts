@@ -3,9 +3,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient as serverSupabase } from "@/lib/supabase/server";
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
 import { paymentCreateSchema, dueDateSchema } from "@/lib/cobros/schema";
 import { canRegisterPayment, canVoidPayment, canEditDueDate } from "@/lib/cobros/permissions";
 import * as m from "@/lib/cobros/mutations";
+import { actionError, type ActionResult } from "@/lib/action-result";
 import type { Role } from "@/lib/auth/roles";
 
 export type FormState = { ok: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -40,32 +43,37 @@ async function revalidateFor(sb: any, saleId: string, clientId?: string | null) 
 
 export async function registerPaymentAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const { sb, userId, role, tenantId } = await ctx();
-  if (!canRegisterPayment(role)) return { ok: false, error: "Sin permiso" };
+  if (!canRegisterPayment(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const parsed = paymentCreateSchema.safeParse({
     saleId: fd.get("saleId"), amount: fd.get("amount"), method: fd.get("method"),
     reference: fd.get("reference"), paidAt: fd.get("paidAt"), notes: fd.get("notes"),
   });
   if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
-  try { await m.registerPayment(sb, tenantId, userId, parsed.data); }
-  catch (e) { return { ok: false, error: (e as Error).message }; }
+  const today = todayISO((await getTenantSettings(sb)).timezone);
+  if (parsed.data.paidAt && parsed.data.paidAt > today) return { ok: false, fieldErrors: { paidAt: "La fecha no puede ser futura" } };
+  try { await m.registerPayment(sb, tenantId, userId, parsed.data, today); }
+  catch (e) { return { ok: false, ...actionError(e) }; }
   await revalidateFor(sb, parsed.data.saleId);
   return { ok: true };
 }
 
-export async function voidPaymentAction(fd: FormData): Promise<void> {
+export async function voidPaymentAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canVoidPayment(role)) return;
+  if (!canVoidPayment(role)) return { error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
   const saleId = String(fd.get("saleId") ?? "");
-  await m.voidPayment(sb, id);
+  try { await m.voidPayment(sb, id); }
+  catch (e) { return actionError(e); }
   await revalidateFor(sb, saleId);
 }
 
-export async function setDueDateAction(fd: FormData): Promise<void> {
+export async function setDueDateAction(fd: FormData): Promise<ActionResult> {
   const { sb, role } = await ctx();
-  if (!canEditDueDate(role)) return;
+  // El campo no se muestra a quien no puede editarlo; si llega igual, que lo sepa.
+  if (!canEditDueDate(role)) return { error: "No tienes permiso para esta acción." };
   const parsed = dueDateSchema.safeParse({ saleId: fd.get("saleId"), dueDate: fd.get("dueDate") });
-  if (!parsed.success) return;
-  await m.setDueDate(sb, parsed.data.saleId, parsed.data.dueDate);
+  if (!parsed.success) return { error: "Esa fecha de vencimiento no es válida." };
+  try { await m.setDueDate(sb, parsed.data.saleId, parsed.data.dueDate); }
+  catch (e) { return actionError(e); }
   await revalidateFor(sb, parsed.data.saleId);
 }

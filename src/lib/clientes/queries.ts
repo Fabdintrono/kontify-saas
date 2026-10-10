@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { monthRange } from "@/lib/reportes/ranges";
+import { startOfDayUTC } from "@/lib/tz";
 
 export type ClientListRow = {
   id: string; name: string; kind: "person" | "company";
@@ -49,15 +51,15 @@ export async function listClientTypes(sb: SupabaseClient, opts: { includeInactiv
 
 // Consumidas por el dashboard, que también ven roles SIN acceso a Clientes (cajero/almacén):
 // ante error/permiso denegado devuelven vacío, nunca lanzan, para no crashear el dashboard.
-export async function clientsKpi(sb: SupabaseClient): Promise<{ total: number; newThisMonth: number }> {
+export async function clientsKpi(sb: SupabaseClient, tz: string): Promise<{ total: number; newThisMonth: number }> {
   try {
-    const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+    const fromInstant = startOfDayUTC(monthRange(new Date(), tz).from, tz);
     const total = await sb.from("clients").select("id", { count: "exact", head: true }).eq("active", true);
     const fresh = await sb.from("clients").select("id", { count: "exact", head: true })
-      .eq("active", true).gte("created_at", monthStart.toISOString());
+      .eq("active", true).gte("created_at", fromInstant);
     if (total.error || fresh.error) return { total: 0, newThisMonth: 0 };
     return { total: total.count ?? 0, newThisMonth: fresh.count ?? 0 };
-  } catch { return { total: 0, newThisMonth: 0 }; }
+  } catch (e) { console.error("clientsKpi", e); return { total: 0, newThisMonth: 0 }; }
 }
 
 export async function clientsByType(sb: SupabaseClient): Promise<{ typeId: string | null; name: string; count: number }[]> {

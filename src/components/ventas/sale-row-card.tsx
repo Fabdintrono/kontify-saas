@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { SaleListRow } from "@/lib/ventas/queries";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatDate } from "@/lib/format";
 import { SaleStatusBadge } from "./status-badge";
 
-export function SaleRowCard({ r }: { r: SaleListRow }) {
+export function SaleRowCard({ r, tz }: { r: SaleListRow; tz: string }) {
   return (
     <Link href={`/operaciones/facturacion/${r.id}`}
       className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 lg:hidden">
@@ -12,10 +12,12 @@ export function SaleRowCard({ r }: { r: SaleListRow }) {
           {r.number != null ? `#${r.number}` : "Borrador"} · {r.clientName ?? "Consumidor final"}
         </p>
         <p className="truncate text-xs text-[var(--text-soft)]">
-          {formatMoney(r.total, r.currency)}{r.balance > 0 ? ` · saldo ${formatMoney(r.balance, r.currency)}` : ""}
+          {formatMoney(r.total, r.currency)}
+          {r.status === "issued" && r.balance > 0 ? ` · saldo ${formatMoney(r.balance, r.currency)}` : ""}
+          {` · ${formatDate(r.issuedAt ?? r.createdAt, tz)}`}
         </p>
       </div>
-      <SaleStatusBadge status={r.status} />
+      <SaleStatusBadge status={r.status} paymentStatus={r.paymentStatus} />
     </Link>
   );
 }

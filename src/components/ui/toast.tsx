@@ -24,8 +24,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const toast = useCallback((t: ToastInput) => {
     const id = ++seq.current;
     setItems((xs) => [...xs.slice(-2), { ...t, id }]); // máximo 3 visibles
-    // Un aviso con enlace no se va solo: el usuario necesita tiempo para pulsar «Ver».
-    if (!t.href) timers.current.set(id, setTimeout(() => dismiss(id), DURATION_MS));
+    // No se van solos: el aviso con enlace (hay que poder pulsar «Ver») ni el de error.
+    if (!t.href && t.tone !== "error") timers.current.set(id, setTimeout(() => dismiss(id), DURATION_MS));
   }, [dismiss]);
 
   // Al desmontar, ningún temporizador queda vivo tocando estado de un árbol que ya no existe.
@@ -41,7 +41,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {/* lg:bottom-24 deja libre el FAB de Vender (bottom-6 right-6). */}
       <div aria-live="polite" className="pointer-events-none fixed inset-x-3 bottom-20 z-[60] flex flex-col items-center gap-2 lg:inset-x-auto lg:bottom-24 lg:right-6 lg:items-end">
         {items.map((t) => (
-          <div key={t.id}
+          <div key={t.id} role={t.tone === "error" ? "alert" : undefined}
             className="pointer-events-auto flex w-full max-w-sm items-start gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm shadow-lg">
             {t.tone === "error"
               ? <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#dc2626]" strokeWidth={2} aria-hidden="true" />

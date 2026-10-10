@@ -1344,8 +1344,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const toast = useCallback((t: ToastInput) => {
     const id = ++seq.current;
     setItems((xs) => [...xs.slice(-2), { ...t, id }]); // máximo 3 visibles
-    // Un aviso con enlace no se va solo: el usuario necesita tiempo para pulsar «Ver».
-    if (!t.href) timers.current.set(id, setTimeout(() => dismiss(id), DURATION_MS));
+    // No se van solos: el aviso con enlace (hay que poder pulsar «Ver») ni el de error.
+    if (!t.href && t.tone !== "error") timers.current.set(id, setTimeout(() => dismiss(id), DURATION_MS));
   }, [dismiss]);
   // Al desmontar, ningún temporizador queda vivo tocando estado de un árbol que ya no existe.
   useEffect(() => () => { for (const t of timers.current.values()) clearTimeout(t); timers.current.clear(); }, []);
@@ -1355,7 +1355,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div aria-live="polite" className="pointer-events-none fixed inset-x-3 bottom-20 z-[60] flex flex-col items-center gap-2 lg:inset-x-auto lg:bottom-24 lg:right-6 lg:items-end">  {/* bottom-24: libra el FAB de Vender */}
         {items.map((t) => (
-          <div key={t.id}
+          <div key={t.id} role={t.tone === "error" ? "alert" : undefined}
             className="pointer-events-auto flex w-full max-w-sm items-start gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm shadow-lg">
             {t.tone === "error"
               ? <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#dc2626]" strokeWidth={2} aria-hidden="true" />
@@ -1382,7 +1382,7 @@ export function useToast(): Ctx {
   return ctx;
 }
 ```
-Run el test → PASS (3).
+Run el test → PASS (4).
 
 - [ ] **Step 3: Test de flash (falla)**
 
@@ -1456,6 +1456,8 @@ export function withFlash(path: string, key: FlashKey, arg?: string | number | n
 }
 
 // El `arg` llega de la URL: solo se acepta un número corto (es un número de documento).
+// Solo números (los correlativos de venta/presupuesto). Una serie con prefijo (p. ej. "A-0001")
+// degradaría al texto sin número: ampliar aquí si llega ese caso.
 const ARG_OK = /^\d{1,9}$/;
 
 export function flashMessage(key: string, arg: string | null): { title: string; description?: string } | null {
@@ -1491,7 +1493,7 @@ export function FlashToast() {
   const arg = sp.get("arg");
   const shown = useRef<string | null>(null);
   useEffect(() => {
-    if (!key) return;
+    if (!key) { shown.current = null; return; } // la URL ya está limpia: listo para el próximo aviso
     const token = `${key}|${arg ?? ""}`;
     if (shown.current === token) return; // StrictMode re-ejecuta el efecto con las mismas props
     shown.current = token;
@@ -1505,6 +1507,8 @@ export function FlashToast() {
   return null;
 }
 ```
+Cubrir `FlashToast` en `src/components/shell/flash-toast.test.tsx` (jsdom, `vi.mock("next/navigation")` con unos params controlables): el aviso sale y la URL se limpia sin navegar; **la misma clave dos veces en la sesión avisa las dos veces** (el guard se libera al pasar por la URL limpia); en `StrictMode` sale una sola vez. Ojo: `rerender` necesita un elemento NUEVO (React descarta el re-render si la referencia es idéntica).
+
 `src/components/shell/app-shell.tsx`: envolver el árbol en el provider y montar el lector:
 ```tsx
 import { Suspense } from "react";

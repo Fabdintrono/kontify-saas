@@ -5,9 +5,9 @@ import { ToastProvider, useToast } from "./toast";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
-function Demo({ href }: { href?: string }) {
+function Demo({ href, tone }: { href?: string; tone?: "success" | "error" }) {
   const { toast } = useToast();
-  return <button onClick={() => toast({ title: "Venta #4 emitida", href })}>go</button>;
+  return <button onClick={() => toast({ title: "Venta #4 emitida", href, tone })}>go</button>;
 }
 
 describe("Toast", () => {
@@ -31,6 +31,14 @@ describe("Toast", () => {
     vi.useFakeTimers();
     render(<ToastProvider><Demo href="/operaciones/facturacion/x" /></ToastProvider>);
     fireEvent.click(screen.getByText("go"));
+    act(() => { vi.advanceTimersByTime(4500); });
+    expect(screen.getByText("Venta #4 emitida")).toBeTruthy();
+  });
+  it("un error no se cierra solo y se anuncia en el canal assertive", () => {
+    vi.useFakeTimers();
+    render(<ToastProvider><Demo tone="error" /></ToastProvider>);
+    fireEvent.click(screen.getByText("go"));
+    expect(screen.getByRole("alert")).toBeTruthy();
     act(() => { vi.advanceTimersByTime(4500); });
     expect(screen.getByText("Venta #4 emitida")).toBeTruthy();
   });

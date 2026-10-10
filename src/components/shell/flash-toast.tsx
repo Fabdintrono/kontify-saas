@@ -14,7 +14,7 @@ export function FlashToast() {
   const arg = sp.get("arg");
   const shown = useRef<string | null>(null);
   useEffect(() => {
-    if (!key) return;
+    if (!key) { shown.current = null; return; } // la URL ya está limpia: listo para el próximo aviso
     const token = `${key}|${arg ?? ""}`;
     if (shown.current === token) return; // StrictMode re-ejecuta el efecto con las mismas props
     shown.current = token;

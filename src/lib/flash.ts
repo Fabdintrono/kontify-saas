@@ -39,6 +39,8 @@ export function withFlash(path: string, key: FlashKey, arg?: string | number | n
 }
 
 // El `arg` llega de la URL: solo se acepta un número corto (es un número de documento).
+// Solo números (los correlativos de venta/presupuesto). Una serie con prefijo (p. ej. "A-0001")
+// degradaría al texto sin número: ampliar aquí si llega ese caso.
 const ARG_OK = /^\d{1,9}$/;
 
 export function flashMessage(key: string, arg: string | null): { title: string; description?: string } | null {

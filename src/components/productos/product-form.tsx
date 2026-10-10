@@ -13,7 +13,6 @@ type Values = {
 
 const initial: FormState = { ok: false };
 const inputCls = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
-const labelCls = "mb-1 block text-xs font-medium text-[var(--text-soft)]";
 
 export function ProductForm({ action, categories, taxRates, values = {}, submitLabel }: {
   action: (prev: FormState, fd: FormData) => Promise<FormState>;
@@ -43,15 +42,15 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
       {values.id && <input type="hidden" name="id" defaultValue={values.id} />}
       <input type="hidden" name="categoryId" value={categoryId} />
       <div>
-        <label className={labelCls}>Tipo</label>
-        <select name="kind" defaultValue={values.kind ?? "good"} className={inputCls}>
+        <FieldLabel htmlFor="kind">Tipo</FieldLabel>
+        <select id="kind" name="kind" defaultValue={values.kind ?? "good"} className={inputCls}>
           <option value="good">Bien</option>
           <option value="service">Servicio</option>
         </select>
       </div>
       <div>
-        <label className={labelCls}>Nombre *</label>
-        <input name="name" defaultValue={values.name ?? ""} className={inputCls} />
+        <FieldLabel htmlFor="name">Nombre *</FieldLabel>
+        <input id="name" name="name" defaultValue={values.name ?? ""} className={inputCls} />
         {err("name") && <p className="mt-1 text-xs text-[#dc2626]">{err("name")}</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -60,8 +59,8 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelCls}>Precio *</label>
-          <input name="price" type="number" step="0.01" min="0" defaultValue={values.price ?? "0"} className={inputCls} />
+          <FieldLabel htmlFor="price">Precio *</FieldLabel>
+          <input id="price" name="price" type="number" step="0.01" min="0" defaultValue={values.price ?? "0"} className={inputCls} />
           {err("price") && <p className="mt-1 text-xs text-[#dc2626]">{err("price")}</p>}
         </div>
         <div>
@@ -85,9 +84,9 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
         </select>
       </div>
       <div>
-        <label className={labelCls}>Categoría</label>
+        <FieldLabel htmlFor="categoryId">Categoría</FieldLabel>
         <div className="flex gap-2">
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputCls}>
+          <select id="categoryId" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputCls}>
             <option value="">Sin categoría</option>
             {localCats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
@@ -105,7 +104,7 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
         )}
         {catErr && <p className="mt-1 text-xs text-[#dc2626]">{catErr}</p>}
       </div>
-      <div><label className={labelCls}>Descripción</label><textarea name="description" defaultValue={values.description ?? ""} rows={3} className={inputCls} /></div>
+      <div><FieldLabel htmlFor="description">Descripción</FieldLabel><textarea id="description" name="description" defaultValue={values.description ?? ""} rows={3} className={inputCls} /></div>
 
       {state.error && <p className="text-sm text-[#dc2626]">{state.error}</p>}
       <Button variant="primary" disabled={pending}>

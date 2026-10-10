@@ -11,7 +11,6 @@ type Branch = { id: string; name: string };
 
 const initial: FormState = { ok: false };
 const inputCls = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
-const labelCls = "mb-1 block text-xs font-medium text-[var(--text-soft)]";
 
 export function StockAdjustForm({ products, productId, branches, userBranchId, isBackOffice }: {
   products?: LiteProduct[]; productId?: string; branches: Branch[]; userBranchId: string | null; isBackOffice: boolean;
@@ -36,8 +35,8 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
         ? <input type="hidden" name="productId" value={productId} />
         : (
           <div>
-            <label className={labelCls}>Producto</label>
-            <select name="productId" className={inputCls} defaultValue="">
+            <FieldLabel htmlFor="productId">Producto</FieldLabel>
+            <select id="productId" name="productId" className={inputCls} defaultValue="">
               <option value="" disabled>Selecciona…</option>
               {(products ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -53,8 +52,8 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
           {!isBackOffice && <p className="py-2 text-sm text-[var(--text)]">{branches.find((b) => b.id === defaultBranch)?.name ?? "—"}</p>}
         </div>
         <div>
-          <label className={labelCls}>Movimiento</label>
-          <select name="direction" className={inputCls} defaultValue="in">
+          <FieldLabel htmlFor="direction">Movimiento</FieldLabel>
+          <select id="direction" name="direction" className={inputCls} defaultValue="in">
             <option value="in">Entrada (+)</option>
             <option value="out">Salida (−)</option>
           </select>
@@ -62,11 +61,11 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelCls}>Cantidad</label>
-          <input name="quantity" type="number" step="0.01" min="0" defaultValue="1" className={inputCls} />
+          <FieldLabel htmlFor="quantity">Cantidad</FieldLabel>
+          <input id="quantity" name="quantity" type="number" step="0.01" min="0" defaultValue="1" className={inputCls} />
           {err("quantity") && <p className="mt-1 text-xs text-[#dc2626]">{err("quantity")}</p>}
         </div>
-        <div><label className={labelCls}>Motivo</label><input name="reason" className={inputCls} placeholder="Carga inicial, merma…" /></div>
+        <div><FieldLabel htmlFor="reason">Motivo</FieldLabel><input id="reason" name="reason" className={inputCls} placeholder="Carga inicial, merma…" /></div>
       </div>
       {state.error && <p className="text-sm text-[#dc2626]">{state.error}</p>}
       <div className="flex gap-2">

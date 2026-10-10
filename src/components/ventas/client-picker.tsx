@@ -3,8 +3,8 @@ import { useState } from "react";
 
 export type LiteClient = { id: string; name: string };
 
-export function ClientPicker({ clients, value, onChange }: {
-  clients: LiteClient[]; value: string | null; onChange: (id: string | null) => void;
+export function ClientPicker({ clients, value, onChange, inputId }: {
+  clients: LiteClient[]; value: string | null; onChange: (id: string | null) => void; inputId?: string;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -16,7 +16,7 @@ export function ClientPicker({ clients, value, onChange }: {
 
   return (
     <div className="relative">
-      <input className={inputCls} placeholder="Consumidor final"
+      <input id={inputId} className={inputCls} placeholder="Consumidor final"
         value={open ? query : (selected?.name ?? "")}
         onFocus={() => { setOpen(true); setQuery(""); }}
         onChange={(e) => setQuery(e.target.value)}

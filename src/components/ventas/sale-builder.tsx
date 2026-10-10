@@ -17,7 +17,6 @@ type Values = { id?: string; clientId?: string | null; branchId?: string; global
 
 const initial: FormState = { ok: false };
 const inputCls = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
-const labelCls = "mb-1 block text-xs font-medium text-[var(--text-soft)]";
 const cell = "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
 
 export function SaleBuilder({ clients, products, branches, role, userBranchId, currency, values = {} }: {
@@ -54,7 +53,7 @@ export function SaleBuilder({ clients, products, branches, role, userBranchId, c
       <input type="hidden" name="paymentType" value={paymentType} />
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div><label className={labelCls}>Cliente</label><ClientPicker clients={clients} value={clientId} onChange={setClientId} /></div>
+        <div><FieldLabel htmlFor="clientId">Cliente</FieldLabel><ClientPicker inputId="clientId" clients={clients} value={clientId} onChange={setClientId} /></div>
         {isBackOffice && (
           <div><FieldLabel htmlFor="branchId" help="sucursal">Sucursal</FieldLabel>
             <select id="branchId" className={inputCls} value={branchId} onChange={(e) => setBranchId(e.target.value)}>
@@ -95,7 +94,7 @@ export function SaleBuilder({ clients, products, branches, role, userBranchId, c
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div><label className={labelCls}>Notas</label><textarea className={inputCls} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+        <div><FieldLabel htmlFor="notes">Notas</FieldLabel><textarea id="notes" className={inputCls} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm">
           <Row label="Subtotal" value={formatMoney(totals.subtotal, currency)} />
           <div className="flex items-center justify-between py-1">

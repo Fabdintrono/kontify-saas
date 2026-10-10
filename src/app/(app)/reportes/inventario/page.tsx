@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ModuleHeader } from "@/components/shared/module-header";
 import { ModuleGuide } from "@/components/shared/module-guide";
 import { GUIDES } from "@/lib/guides";
+import { Page } from "@/components/shared/page";
 
 export default async function ReporteInventarioPage() {
   const sb = await createClient();
@@ -20,7 +21,7 @@ export default async function ReporteInventarioPage() {
   const [val, currency] = await Promise.all([inventoryValuation(sb, {}), getTenantCurrency(sb)]);
 
   return (
-    <div className="space-y-4 p-6">
+    <Page>
       <ModuleHeader module="reportes_inventario" actions={
         <div className="text-sm text-[var(--text-soft)]">Total: <span className="font-semibold text-[var(--text)]">{formatMoney(val.total, currency)}</span></div>} />
 
@@ -53,6 +54,6 @@ export default async function ReporteInventarioPage() {
           </table>
         </div>
       )}
-    </div>
+    </Page>
   );
 }

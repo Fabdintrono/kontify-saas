@@ -5,6 +5,7 @@ import { getSale, listActiveClientsLite, listActiveProductsLite, listBranches } 
 import { canSell } from "@/lib/ventas/permissions";
 import { SaleBuilder } from "@/components/ventas/sale-builder";
 import type { Role } from "@/lib/auth/roles";
+import { Page } from "@/components/shared/page";
 
 export default async function EditarVentaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,12 +27,12 @@ export default async function EditarVentaPage({ params }: { params: Promise<{ id
   }));
 
   return (
-    <div className="p-6">
+    <Page>
       <h1 className="mb-4 text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Editar borrador</h1>
       <SaleBuilder clients={clients} products={products} branches={branches}
         role={role} userBranchId={mem?.branch_id ?? null} currency={currency}
         values={{ id: sale.id, clientId: sale.client_id, branchId: sale.branch_id,
           globalDiscountPct: Number(sale.global_discount_pct), notes: sale.notes ?? "", items }} />
-    </div>
+    </Page>
   );
 }

@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ModuleHeader } from "@/components/shared/module-header";
 import { ModuleGuide } from "@/components/shared/module-guide";
 import { GUIDES } from "@/lib/guides";
+import { Page } from "@/components/shared/page";
 
 export default async function ReporteVentasPage({ searchParams }: {
   searchParams: Promise<{ from?: string; to?: string; branch?: string }>;
@@ -39,7 +40,7 @@ export default async function ReporteVentasPage({ searchParams }: {
 
   const card = "rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4";
   return (
-    <div className="space-y-4 p-6">
+    <Page>
       <ModuleHeader module="reportes_ventas" />
       <PeriodSelector branches={(branches ?? []) as any} showBranch={isBackOffice} today={todayISO(tz)} from={from} to={to} />
 
@@ -82,7 +83,7 @@ export default async function ReporteVentasPage({ searchParams }: {
           </div>
         </>
       )}
-    </div>
+    </Page>
   );
 }
 

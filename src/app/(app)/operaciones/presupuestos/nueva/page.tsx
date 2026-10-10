@@ -5,6 +5,7 @@ import { listActiveClientsLite, listActiveProductsLite, listBranches } from "@/l
 import { canSell } from "@/lib/ventas/permissions";
 import { QuoteBuilder } from "@/components/presupuestos/quote-builder";
 import type { Role } from "@/lib/auth/roles";
+import { Page } from "@/components/shared/page";
 
 export default async function NuevoPresupuestoPage() {
   const sb = await createClient();
@@ -18,10 +19,10 @@ export default async function NuevoPresupuestoPage() {
   ]);
 
   return (
-    <div className="p-6">
+    <Page>
       <h1 className="mb-4 text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Nuevo presupuesto</h1>
       <QuoteBuilder clients={clients} products={products} branches={branches}
         role={role} userBranchId={mem?.branch_id ?? null} currency={currency} />
-    </div>
+    </Page>
   );
 }

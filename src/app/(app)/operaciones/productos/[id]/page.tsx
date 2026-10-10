@@ -15,6 +15,7 @@ import { flashFor } from "@/lib/flash";
 import { formatMoney } from "@/lib/format";
 import { getTenantSettings } from "@/lib/tenant";
 import type { Role } from "@/lib/auth/roles";
+import { Page } from "@/components/shared/page";
 
 export default async function ProductoDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -32,7 +33,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
   const secondaryBtn = buttonCls("secondary");
 
   return (
-    <div className="space-y-4 p-6">
+    <Page>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">{p.name}</h1>
@@ -73,6 +74,6 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
       </div>
 
       <ProductStockPanel productId={p.id} kind={p.kind} role={role} userBranchId={mem?.branch_id ?? null} tz={tz} />
-    </div>
+    </Page>
   );
 }

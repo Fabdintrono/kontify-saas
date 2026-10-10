@@ -13,6 +13,7 @@ import { flashFor } from "@/lib/flash";
 import { getTenantSettings } from "@/lib/tenant";
 import { todayISO } from "@/lib/tz";
 import type { Role } from "@/lib/auth/roles";
+import { Page } from "@/components/shared/page";
 
 export default async function PresupuestoDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,7 +31,7 @@ export default async function PresupuestoDetallePage({ params }: { params: Promi
   const primary = buttonCls("primary");
 
   return (
-    <div className="space-y-4 p-6">
+    <Page>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Link href="/operaciones/presupuestos" className="text-sm text-[var(--text-soft)] hover:text-[#0e7490]">← Presupuestos</Link>
         <div className="flex flex-wrap items-center gap-2">
@@ -75,6 +76,6 @@ export default async function PresupuestoDetallePage({ params }: { params: Promi
       </div>
 
       <QuoteDocument quote={quote as any} today={todayISO(tz)} />
-    </div>
+    </Page>
   );
 }

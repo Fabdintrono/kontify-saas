@@ -2,28 +2,43 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { ModuleHeader } from "./module-header";
+import { GUIDES } from "@/lib/guides";
 
 afterEach(cleanup);
 
 describe("ModuleHeader", () => {
-  it("muestra título, subtítulo, el enlace de ayuda y las acciones", () => {
-    render(<ModuleHeader module="clientes" actions={<a href="/clientes/nuevo">Nuevo cliente</a>} />);
-    expect(screen.getByRole("heading", { level: 1, name: "Clientes" })).toBeTruthy();
-    expect(screen.getByText(/Personas o empresas a las que vendes/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: /cómo funciona/i })).toBeTruthy();
-    expect(screen.getByText("Nuevo cliente")).toBeTruthy();
+  it("el subtítulo es solo texto: la ayuda ya no cuelga del párrafo", () => {
+    const { container } = render(<ModuleHeader module="ventas" />);
+    const parrafo = container.querySelector("p")!;
+    expect(parrafo.textContent).toBe(GUIDES.ventas.subtitle);
+    expect(parrafo.querySelector("button")).toBeNull();
   });
-  it("permite sobrescribir el título (p. ej. con un nombre de cliente)", () => {
-    render(<ModuleHeader module="cuentas_por_cobrar" title="Distribuidora El Sol" />);
-    expect(screen.getByRole("heading", { level: 1, name: "Distribuidora El Sol" })).toBeTruthy();
+
+  it("la ayuda es el primer control de la derecha, antes de la acción primaria", () => {
+    render(<ModuleHeader module="ventas" actions={<button type="button">Nueva venta</button>} />);
+    const botones = screen.getAllByRole("button");
+    expect(botones[0].getAttribute("aria-label")).toBe("Cómo funciona");
+    expect(botones[1].textContent).toBe("Nueva venta");
   });
-  it("con subtitle={null} no hay subtítulo pero sí el enlace de ayuda", () => {
-    render(<ModuleHeader module="clientes" subtitle={null} />);
-    expect(screen.queryByText(/Personas o empresas a las que vendes/)).toBeNull();
-    expect(screen.getByRole("button", { name: /cómo funciona/i })).toBeTruthy();
+
+  it("la ayuda está aunque el módulo no tenga acción primaria", () => {
+    render(<ModuleHeader module="cuentas_por_cobrar" />);
+    expect(screen.getByRole("button", { name: "Cómo funciona" })).toBeTruthy();
   });
-  it("un módulo sin pasos no muestra el enlace", () => {
-    render(<ModuleHeader module="config_tasas" />);
-    expect(screen.queryByRole("button", { name: /cómo funciona/i })).toBeNull();
+
+  it("el botón de ayuda abre un diálogo y lo declara", () => {
+    render(<ModuleHeader module="clientes" />);
+    const ayuda = screen.getByRole("button", { name: "Cómo funciona" });
+    expect(ayuda.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(ayuda.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("todos los módulos con guía ponen la ayuda en el mismo sitio", () => {
+    for (const id of Object.keys(GUIDES) as (keyof typeof GUIDES)[]) {
+      if (GUIDES[id].steps.length === 0) continue;
+      cleanup();
+      render(<ModuleHeader module={id} actions={<button type="button">X</button>} />);
+      expect(screen.getAllByRole("button")[0].getAttribute("aria-label")).toBe("Cómo funciona");
+    }
   });
 });

@@ -2,7 +2,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, ShoppingCart, Plus, Boxes, Menu } from "lucide-react";
+import { Home, Plus, Menu } from "lucide-react";
+import { MODULE_ICON } from "@/lib/module-icons";
 import { MobileMoreSheet } from "@/components/shell/mobile-more-sheet";
 import type { ShellUser } from "@/components/shell/types";
 
@@ -24,13 +25,13 @@ export function MobileBottomNav({ user }: { user: ShellUser }) {
     <>
       <nav className="fixed inset-x-0 bottom-0 z-40 flex items-end border-t border-[var(--border)] bg-[var(--surface)] px-2 lg:hidden">
         <Item href="/dashboard" icon={Home} label="Inicio" />
-        <Item href="/operaciones/facturacion" icon={ShoppingCart} label="Vender" />
+        <Item href="/operaciones/facturacion" icon={MODULE_ICON.ventas} label="Ventas" />
         <button aria-label="Vender" onClick={() => router.push("/operaciones/facturacion/nueva")}
           className="-mt-5 grid h-[46px] w-[46px] flex-none place-items-center bg-gradient-to-br from-[#0e7490] to-[#14b8a6] text-white shadow-lg"
           style={{ borderRadius: 22 }}>
           <Plus className="h-6 w-6" strokeWidth={2.5} />
         </button>
-        <Item href="/operaciones/inventario" icon={Boxes} label="Inventario" />
+        <Item href="/operaciones/inventario" icon={MODULE_ICON.inventario} label="Inventario" />
         <button onClick={() => setMoreOpen(true)} className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium text-[var(--text-soft)]">
           <Menu className="h-5 w-5" strokeWidth={2} /> Más
         </button>

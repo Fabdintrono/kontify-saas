@@ -5,6 +5,7 @@ import { listActiveClientsLite, listActiveProductsLite, listBranches } from "@/l
 import { canSell } from "@/lib/ventas/permissions";
 import { SaleBuilder } from "@/components/ventas/sale-builder";
 import type { Role } from "@/lib/auth/roles";
+import { Page } from "@/components/shared/page";
 
 export default async function NuevaVentaPage() {
   const sb = await createClient();
@@ -18,10 +19,10 @@ export default async function NuevaVentaPage() {
   ]);
 
   return (
-    <div className="p-6">
+    <Page>
       <h1 className="mb-4 text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Nueva venta</h1>
       <SaleBuilder clients={clients} products={products} branches={branches}
         role={role} userBranchId={mem?.branch_id ?? null} currency={currency} />
-    </div>
+    </Page>
   );
 }

@@ -1,37 +1,36 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Home, LayoutDashboard, Bell, Activity, Users, UserPlus, Package, FileText,
-  ClipboardList, BarChart3, Boxes, TrendingUp, Wallet, ArrowUpCircle, ArrowDownCircle,
-  Percent, Landmark, Receipt, Settings, Building2, ShieldCheck, SlidersHorizontal, Tags,
+  Home, Users, UserPlus, Package, BarChart3, Wallet, Percent, Landmark, Receipt, Settings, Building2, ShieldCheck, SlidersHorizontal, Tags,
 } from "lucide-react";
 import { canAccess, type Role, type Resource } from "@/lib/auth/roles";
+import { MODULE_ICON } from "@/lib/module-icons";
 
 export type NavLeaf = { label: string; href: string; icon: LucideIcon; resource?: Resource };
 export type NavSection = { id: string; label: string; icon: LucideIcon; resource: Resource; children: NavLeaf[] };
 
 export const NAV: NavSection[] = [
   { id: "inicio", label: "Inicio", icon: Home, resource: "operaciones", children: [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Notificaciones", href: "/notificaciones", icon: Bell },
-    { label: "Actividad", href: "/actividad", icon: Activity },
+    { label: "Dashboard", href: "/dashboard", icon: MODULE_ICON.dashboard },
+    { label: "Notificaciones", href: "/notificaciones", icon: MODULE_ICON.notificaciones },
+    { label: "Actividad", href: "/actividad", icon: MODULE_ICON.actividad },
   ]},
   { id: "clientes", label: "Clientes", icon: Users, resource: "clientes", children: [
-    { label: "Todos los clientes", href: "/clientes", icon: Users },
+    { label: "Todos los clientes", href: "/clientes", icon: MODULE_ICON.clientes },
     { label: "Nuevo cliente", href: "/clientes/nuevo", icon: UserPlus },
   ]},
   { id: "operaciones", label: "Operaciones", icon: Package, resource: "operaciones", children: [
-    { label: "Productos", href: "/operaciones/productos", icon: Package },
-    { label: "Inventario", href: "/operaciones/inventario", icon: Boxes },
-    { label: "Ventas", href: "/operaciones/facturacion", icon: FileText },
-    { label: "Presupuestos", href: "/operaciones/presupuestos", icon: ClipboardList },
+    { label: "Productos", href: "/operaciones/productos", icon: MODULE_ICON.productos },
+    { label: "Inventario", href: "/operaciones/inventario", icon: MODULE_ICON.inventario },
+    { label: "Ventas", href: "/operaciones/facturacion", icon: MODULE_ICON.ventas },
+    { label: "Presupuestos", href: "/operaciones/presupuestos", icon: MODULE_ICON.presupuestos },
   ]},
   { id: "reportes", label: "Reportes", icon: BarChart3, resource: "reportes", children: [
-    { label: "Inventario", href: "/reportes/inventario", icon: Boxes },
-    { label: "Ventas", href: "/reportes/ventas", icon: TrendingUp },
+    { label: "Inventario", href: "/reportes/inventario", icon: MODULE_ICON.reportes_inventario },
+    { label: "Ventas", href: "/reportes/ventas", icon: MODULE_ICON.reportes_ventas },
   ]},
   { id: "finanzas", label: "Finanzas", icon: Wallet, resource: "finanzas", children: [
-    { label: "Cuentas por pagar", href: "/finanzas/cuentas-por-pagar", icon: ArrowUpCircle },
-    { label: "Cuentas por cobrar", href: "/finanzas/cuentas-por-cobrar", icon: ArrowDownCircle },
+    { label: "Cuentas por pagar", href: "/finanzas/cuentas-por-pagar", icon: MODULE_ICON.cuentas_por_pagar },
+    { label: "Cuentas por cobrar", href: "/finanzas/cuentas-por-cobrar", icon: MODULE_ICON.cuentas_por_cobrar },
     { label: "Comisiones", href: "/finanzas/comisiones", icon: Percent },
     { label: "Bancos", href: "/finanzas/bancos", icon: Landmark },
     { label: "Gastos", href: "/finanzas/gastos", icon: Receipt },

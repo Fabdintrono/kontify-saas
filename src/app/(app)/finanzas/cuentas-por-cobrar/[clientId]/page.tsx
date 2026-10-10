@@ -10,6 +10,7 @@ import { PaymentForm } from "@/components/cobros/payment-form";
 import { ModuleHeader } from "@/components/shared/module-header";
 import type { Role } from "@/lib/auth/roles";
 import { DANGER_TEXT } from "@/lib/ui-tokens";
+import { Page } from "@/components/shared/page";
 
 export default async function EstadoDeCuentaPage({ params }: { params: Promise<{ clientId: string }> }) {
   const { clientId } = await params;
@@ -24,7 +25,7 @@ export default async function EstadoDeCuentaPage({ params }: { params: Promise<{
   const data = await getClientReceivable(sb, { clientId, today });
 
   return (
-    <div className="space-y-4 p-6">
+    <Page>
       <Link href="/finanzas/cuentas-por-cobrar" className="text-sm text-[var(--text-soft)] hover:text-[#0e7490]">← Cuentas por cobrar</Link>
       <ModuleHeader module="cuentas_por_cobrar" title={data.clientName ?? "Cliente"} subtitle={null} actions={
         <div className="text-sm text-[var(--text-soft)]">
@@ -54,6 +55,6 @@ export default async function EstadoDeCuentaPage({ params }: { params: Promise<{
           ))}
         </div>
       )}
-    </div>
+    </Page>
   );
 }

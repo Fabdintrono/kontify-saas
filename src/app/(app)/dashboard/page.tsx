@@ -18,6 +18,7 @@ import { gettingStartedStatus, canSeeGettingStarted, canHideGettingStarted } fro
 import { BarChart } from "@/components/reportes/bar-chart";
 import { ModuleGuide } from "@/components/shared/module-guide";
 import { GUIDES } from "@/lib/guides";
+import { Page } from "@/components/shared/page";
 import { GettingStarted } from "@/components/dashboard/getting-started";
 import { hideGettingStartedAction } from "./actions";
 import { DANGER_TEXT } from "@/lib/ui-tokens";
@@ -57,15 +58,16 @@ export default async function Dashboard() {
     : {};
 
   return (
-    <div className="space-y-5 p-6">
+    <Page>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">
             Hola{firstName ? `, ${firstName}` : ""} 👋
           </h1>
-          <p className="mt-0.5 max-w-3xl text-sm text-[var(--text-soft)]">{GUIDES.dashboard.subtitle} <ModuleGuide guide={GUIDES.dashboard} className="ml-1 align-baseline" /></p>
+          <p className="mt-1 max-w-3xl text-sm text-[var(--text-soft)]">{GUIDES.dashboard.subtitle}</p>
         </div>
-        {/* Selector de período: se reincorpora cuando los KPIs reaccionen a él (Fase C); hoy todo es "este mes". */}
+        {/* La ayuda va en el mismo sitio que en los demás módulos: primer control de la derecha. */}
+        <div className="flex shrink-0 items-center gap-2"><ModuleGuide guide={GUIDES.dashboard} variant="button" /></div>
       </div>
 
       {gs && <GettingStarted status={gs} canHide={canHideGettingStarted(role)} action={hideGettingStartedAction} />}
@@ -165,6 +167,6 @@ export default async function Dashboard() {
       </div>
 
       <AttentionList items={attention} canSeeReceivables={canRegisterPayment(role)} />
-    </div>
+    </Page>
   );
 }

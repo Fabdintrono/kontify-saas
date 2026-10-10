@@ -4,8 +4,10 @@ import { listTaxRates } from "@/lib/productos/queries";
 import { canManageTaxRates } from "@/lib/productos/permissions";
 import { createTaxRateFormAction, updateTaxRateAction } from "@/app/(app)/operaciones/productos/actions";
 import { ModuleHeader } from "@/components/shared/module-header";
+import { Page } from "@/components/shared/page";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { SettingsList, SettingsRow, SettingsCreate, SETTINGS_INPUT } from "@/components/configuracion/settings-list";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function TasasDeImpuestoPage() {
@@ -16,43 +18,48 @@ export default async function TasasDeImpuestoPage() {
   if (!canManageTaxRates(role)) redirect("/dashboard");
 
   const rates = await listTaxRates(sb, { includeInactive: true });
-  const inputCls = "h-10 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
 
   return (
-    <div className="max-w-2xl space-y-4 p-6">
+    <Page>
       <ModuleHeader module="config_tasas" />
 
-      <form action={createTaxRateFormAction} className="flex flex-wrap items-center gap-2">
-        <input name="name" placeholder="Nombre (ej. IVA 16%)" className={`${inputCls} flex-1`} />
-        <input name="rate" type="number" step="0.01" min="0" max="100" placeholder="%" className={`${inputCls} w-24`} />
-        <label className="flex items-center gap-1 text-sm text-[var(--text-soft)]">
-          <input type="checkbox" name="isDefault" value="true" /> Predet.
+      <SettingsCreate action={createTaxRateFormAction}>
+        <label htmlFor="nueva-tasa" className="sr-only">Nombre de la tasa</label>
+        <input id="nueva-tasa" name="name" placeholder="Nombre (ej. IVA 16%)" className={`${SETTINGS_INPUT} min-w-[220px] flex-1`} />
+        <label htmlFor="nueva-tasa-pct" className="sr-only">Porcentaje</label>
+        <input id="nueva-tasa-pct" name="rate" type="number" step="0.01" min="0" max="100" placeholder="%" className={`${SETTINGS_INPUT} w-24`} />
+        <label className="flex items-center gap-1.5 text-sm text-[var(--text-soft)]">
+          <input type="checkbox" name="isDefault" value="true" /> Predeterminada
         </label>
-        <Button variant="primary">Añadir</Button>
-      </form>
+        <Button variant="primary" icon="plus">Añadir</Button>
+      </SettingsCreate>
 
-      <ul className="divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
+      <SettingsList head={<><span className="flex-1">Tasa</span><span className="w-24">%</span><span>Acciones</span></>}>
         {rates.map((t) => (
-          <li key={t.id} className="flex flex-wrap items-center gap-2 p-3">
-            <form action={updateTaxRateAction} className="flex flex-1 flex-wrap items-center gap-2">
-              <input type="hidden" name="id" value={t.id} />
-              <input name="name" defaultValue={t.name} className={`${inputCls} flex-1`} />
-              <input name="rate" type="number" step="0.01" min="0" max="100" defaultValue={t.rate} className={`${inputCls} w-24`} />
-              {t.isDefault
-                ? <StatusBadge tone="info" label="Predet." />
-                : <button name="isDefault" value="true" className="rounded-[10px] border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--text-soft)]">Hacer predet.</button>}
-              <Button variant="secondary">Guardar</Button>
-            </form>
-            <form action={updateTaxRateAction}>
-              <input type="hidden" name="id" value={t.id} />
-              <input type="hidden" name="active" value={t.active ? "false" : "true"} />
-              <Button variant="secondary">
-                {t.active ? "Desactivar" : "Activar"}
-              </Button>
-            </form>
-          </li>
+          <SettingsRow key={t.id}
+            fields={
+              <form action={updateTaxRateAction} id={`tasa-${t.id}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                <input type="hidden" name="id" value={t.id} />
+                <label htmlFor={`tasa-name-${t.id}`} className="sr-only">Nombre de la tasa</label>
+                <input id={`tasa-name-${t.id}`} name="name" defaultValue={t.name} className={`${SETTINGS_INPUT} min-w-0 flex-1`} />
+                <label htmlFor={`tasa-pct-${t.id}`} className="sr-only">Porcentaje</label>
+                <input id={`tasa-pct-${t.id}`} name="rate" type="number" step="0.01" min="0" max="100" defaultValue={t.rate} className={`${SETTINGS_INPUT} w-24`} />
+                {t.isDefault
+                  ? <StatusBadge tone="info" label="Predeterminada" />
+                  : <button name="isDefault" value="true" className="rounded-[10px] border border-[var(--border)] px-2.5 py-1.5 text-xs text-[var(--text)] transition-colors hover:bg-[var(--bg)]">Hacer predeterminada</button>}
+                {!t.active && <StatusBadge tone="neutral" label="Inactiva" />}
+              </form>
+            }
+            actions={<>
+              <Button variant="secondary" form={`tasa-${t.id}`}>Guardar</Button>
+              <form action={updateTaxRateAction}>
+                <input type="hidden" name="id" value={t.id} />
+                <input type="hidden" name="active" value={t.active ? "false" : "true"} />
+                <Button variant="secondary">{t.active ? "Desactivar" : "Activar"}</Button>
+              </form>
+            </>} />
         ))}
-      </ul>
-    </div>
+      </SettingsList>
+    </Page>
   );
 }

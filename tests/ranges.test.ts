@@ -16,4 +16,21 @@ describe("presetRange con zona horaria", () => {
     expect(weekRange(REF, VE)).toEqual({ from: "2026-10-05", to: "2026-10-09" });
   });
   it("addDays sigue exportado", () => expect(addDays("2026-10-09", 1)).toBe("2026-10-10"));
+  it("semana: lunes se queda en sí mismo y domingo retrocede seis días", () => {
+    expect(presetRange("semana", new Date("2026-10-05T12:00:00Z"), "UTC")).toEqual({ from: "2026-10-05", to: "2026-10-05" });
+    expect(presetRange("semana", new Date("2026-10-11T12:00:00Z"), "UTC")).toEqual({ from: "2026-10-05", to: "2026-10-11" });
+  });
+  it("semana cruza el año: jueves 1 de enero arranca el lunes 29 de diciembre", () => {
+    expect(presetRange("semana", new Date("2026-01-01T12:00:00Z"), "UTC")).toEqual({ from: "2025-12-29", to: "2026-01-01" });
+  });
+  it("mes pasado desde enero es diciembre del año anterior", () => {
+    expect(presetRange("mes_pasado", new Date("2026-01-15T12:00:00Z"), "UTC")).toEqual({ from: "2025-12-01", to: "2025-12-31" });
+  });
+  it("mes pasado desde marzo respeta febrero bisiesto y no bisiesto", () => {
+    expect(presetRange("mes_pasado", new Date("2028-03-10T12:00:00Z"), "UTC")).toEqual({ from: "2028-02-01", to: "2028-02-29" });
+    expect(presetRange("mes_pasado", new Date("2027-03-10T12:00:00Z"), "UTC")).toEqual({ from: "2027-02-01", to: "2027-02-28" });
+  });
+  it("a las 23:00 del domingo en Caracas la semana sigue siendo la que termina ese domingo", () => {
+    expect(presetRange("semana", new Date("2026-10-12T03:00:00Z"), "America/Caracas")).toEqual({ from: "2026-10-05", to: "2026-10-11" });
+  });
 });

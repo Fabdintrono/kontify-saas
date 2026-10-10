@@ -359,32 +359,29 @@ Expected: FAIL — `presetRange("hoy", REF, VE)` devuelve la fecha del proceso, 
 - [ ] **Step 3: Reescribir `src/lib/reportes/ranges.ts`**
 
 ```ts
-import { addDaysISO, localDateISO } from "@/lib/tz";
+import { addDaysISO, localDateISO, type DateRange } from "@/lib/tz";
 
-export type DateRange = { from: string; to: string };
+export type { DateRange };
 export type Preset = "hoy" | "semana" | "mes" | "mes_pasado";
 
-const pad = (n: number) => String(n).padStart(2, "0");
-const iso = (y: number, m0: number, d: number) => {
-  const t = new Date(Date.UTC(y, m0, d));
-  return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
-};
-
-/** Mantiene la firma anterior; delega en el helper puro. */
+/** Mantiene el nombre anterior; ahora valida la entrada y lanza ante basura (ver tz.ts). */
 export const addDays = addDaysISO;
+
+const startOfMonth = (dateISO: string) => `${dateISO.slice(0, 7)}-01`;
+/** 0 = lunes … 6 = domingo, leído de la fecha local (no de la zona del proceso). */
+const mondayIndex = (dateISO: string) => (new Date(`${dateISO}T00:00:00Z`).getUTCDay() + 6) % 7;
 
 /** Preset → rango de días locales en la zona `tz`, tomando `ref` como "ahora". */
 export function presetRange(preset: Preset, ref: Date, tz: string): DateRange {
   const today = localDateISO(ref, tz);
-  const [y, m, d] = today.split("-").map(Number);
   switch (preset) {
     case "hoy": return { from: today, to: today };
-    case "semana": {
-      const dow = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7; // 0 = lunes
-      return { from: iso(y, m - 1, d - dow), to: today };
+    case "semana": return { from: addDaysISO(today, -mondayIndex(today)), to: today };
+    case "mes": return { from: startOfMonth(today), to: today };
+    case "mes_pasado": {
+      const to = addDaysISO(startOfMonth(today), -1);
+      return { from: startOfMonth(to), to };
     }
-    case "mes": return { from: iso(y, m - 1, 1), to: today };
-    case "mes_pasado": return { from: iso(y, m - 2, 1), to: iso(y, m - 1, 0) };
   }
 }
 

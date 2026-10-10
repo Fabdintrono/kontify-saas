@@ -15,7 +15,7 @@ export default async function CategoriasDeProductoPage() {
   if (!canManageCategories(role)) redirect("/dashboard");
 
   const categories = await listCategories(sb, { includeInactive: true });
-  const inputCls = "h-9 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
+  const inputCls = "h-10 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
 
   return (
     <div className="max-w-lg space-y-4 p-6">

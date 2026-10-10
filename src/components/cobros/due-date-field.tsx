@@ -10,7 +10,7 @@ import { formatDateOnly } from "@/lib/format";
 export function DueDateField({ saleId, dueDate, canEdit }: { saleId: string; dueDate: string | null; canEdit: boolean }) {
   const [pending, start] = useTransition();
   const { toast } = useToast();
-  const inputCls = "h-9 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
+  const inputCls = "h-10 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
 
   function fail(description: string) {
     toast({ title: "No se pudo guardar el vencimiento", description, tone: "error" });

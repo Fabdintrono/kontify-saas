@@ -12,10 +12,14 @@ describe("Button", () => {
       expect(buttonCls(v)).toMatch(/rounded-\[10px\]/);
     }
   });
-  it("primary lleva gradiente y texto blanco; secondary borde; danger rojo", () => {
-    expect(buttonCls("primary")).toMatch(/from-\[#0e7490\]/);
+  it("primary lleva teal sólido y texto blanco; secondary borde; danger rojo", () => {
+    expect(buttonCls("primary")).toMatch(/bg-\[#0e7490\]/);
     expect(buttonCls("secondary")).toMatch(/border/);
     expect(buttonCls("danger")).toMatch(/#b91c1c|#dc2626/);
+  });
+  // El degradado no da contraste con texto blanco (2,49:1): vive solo en elementos decorativos.
+  it("primary no usa degradado", () => {
+    expect(buttonCls("primary")).not.toMatch(/gradient/);
   });
   it("renderiza un botón accesible y respeta disabled", () => {
     render(<Button variant="primary" disabled>Guardar</Button>);

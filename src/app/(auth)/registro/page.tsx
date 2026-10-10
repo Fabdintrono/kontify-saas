@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function Registro() {
   const [form, setForm] = useState({ email: "", password: "", fullName: "", companyName: "", slug: "" });
@@ -30,9 +31,9 @@ export default function Registro() {
       <input className={input} placeholder="Tu nombre" value={form.fullName} onChange={set("fullName")} />
       <input className={input} placeholder="Email" type="email" value={form.email} onChange={set("email")} />
       <input className={input} placeholder="Contraseña" type="password" value={form.password} onChange={set("password")} />
-      <button disabled={loading} className="w-full rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+      <Button variant="primary" className="w-full" disabled={loading}>
         {loading ? "Creando…" : "Crear"}
-      </button>
+      </Button>
       {msg && <p className="text-sm text-[var(--text-soft)]">{msg}</p>}
       <p className="text-sm text-[var(--text-soft)]">¿Ya tienes cuenta? <Link href="/login" className="font-semibold text-[#0e7490] dark:text-[#5eead4]">Entrar</Link></p>
     </form>

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -26,9 +27,9 @@ export default function Login() {
       <p className="text-sm text-[var(--text-soft)]">Bienvenido de vuelta.</p>
       <input className={input} placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <input className={input} placeholder="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <button disabled={loading} className="w-full rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+      <Button variant="primary" className="w-full" disabled={loading}>
         {loading ? "Entrando…" : "Entrar"}
-      </button>
+      </Button>
       {msg && <p className="text-sm text-[#dc2626]">{msg}</p>}
       <p className="text-sm text-[var(--text-soft)]">¿No tienes cuenta? <Link href="/registro" className="font-semibold text-[#0e7490] dark:text-[#5eead4]">Crear una</Link></p>
     </form>

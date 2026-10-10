@@ -42,7 +42,7 @@ export function ConfirmDialog({ action, payload, title, description, confirmLabe
 
   const confirmCls = tone === "danger"
     ? "bg-[#dc2626] text-white hover:bg-[#b91c1c]"
-    : "bg-gradient-to-br from-[#0e7490] to-[#14b8a6] text-white";
+    : "bg-[#0e7490] text-white hover:bg-[#0c6178]";
 
   return (
     <Dialog.Root open={open} onOpenChange={(o) => { if (!pending) setOpen(o); }}>

@@ -637,7 +637,7 @@ export function FieldLabel({ htmlFor, help, children }: { htmlFor: string; help?
 
 `client-form.tsx`: `Tipo de registro` → `<FieldLabel htmlFor="kind" help="tipoRegistro">Tipo de registro</FieldLabel>` + `id="kind"` en el select; `Documento / ID` → `help="documentoId"`, `id="docId"`; `Tipo de cliente` → `help="tipoCliente"`, `id="typeId"`.
 `product-form.tsx`: `SKU / código` (`help="sku"`, `id="sku"`), `Unidad` (`unidad`, `id="unit"`), `Costo` (`costo`, `id="cost"`), `Stock mínimo` (`stockMinimo`, `id="minStock"`), `Impuesto` (`impuesto`, `id="taxRateId"`).
-`sale-builder.tsx`: `Sucursal` (`sucursal`, `id="branchId"` en el select), `Descuento global %` (`descuentoGlobal`, `id="globalDiscountPct"` en ese input; aquí la etiqueta está en una fila flex: usar `<FieldLabel …>` dentro del `<span>` izquierdo), `Método de pago (opcional)` (`metodoPago`, `id="paymentMethod"`), `Fecha de vencimiento (opcional)` (`vencimiento`, `id="dueDate"`).
+`sale-builder.tsx`: `Sucursal` (`sucursal`, `id="branchId"` en el select), `Descuento global %` (`descuentoGlobal`, `id="globalDiscountPct"` en ese input; aquí la etiqueta está en una fila flex con tipografía propia: usar `FieldHelp` directamente (fila inline), no `FieldLabel`), `Método de pago (opcional)` (`metodoPago`, `id="paymentMethod"`), `Fecha de vencimiento (opcional)` (`vencimiento`, `id="dueDate"`).
 `quote-builder.tsx`: `Sucursal` (`sucursal`, `id="branchId"`), `Válido hasta` (`validoHasta`, `id="validUntil"`).
 Las demás etiquetas se dejan como están (Fase C hará el `htmlFor` global).
 

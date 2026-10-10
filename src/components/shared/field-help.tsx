@@ -9,7 +9,7 @@ export function FieldHelp({ help, label }: { help: FieldHelpKey; label: string }
     <PO.Root>
       <PO.Trigger asChild>
         <button type="button" aria-label={`Ayuda sobre ${label}`}
-          className="grid h-4 w-4 place-items-center rounded-full text-[var(--text-soft)] hover:text-[#0e7490] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0e7490]">
+          className="grid h-6 w-6 -my-1 place-items-center rounded-full text-[var(--text-soft)] hover:text-[#0e7490] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0e7490]">
           <CircleHelp className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
         </button>
       </PO.Trigger>

@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 import { submitSaleAction, type FormState } from "@/app/(app)/operaciones/facturacion/actions";
 import { useSubmitIntent } from "@/components/shared/use-submit-intent";
 import { FieldLabel } from "@/components/shared/field-label";
+import { FieldHelp } from "@/components/shared/field-help";
 import { computeSaleTotals } from "@/lib/ventas/totals";
 import { formatMoney } from "@/lib/format";
 import { ClientPicker, type LiteClient } from "./client-picker";
@@ -97,7 +98,10 @@ export function SaleBuilder({ clients, products, branches, role, userBranchId, c
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm">
           <Row label="Subtotal" value={formatMoney(totals.subtotal, currency)} />
           <div className="flex items-center justify-between py-1">
-            <FieldLabel htmlFor="globalDiscountPct" help="descuentoGlobal">Descuento global %</FieldLabel>
+            <span className="flex items-center gap-1.5 text-[var(--text-soft)]">
+              <label htmlFor="globalDiscountPct">Descuento global %</label>
+              <FieldHelp help="descuentoGlobal" label="Descuento global %" />
+            </span>
             <input id="globalDiscountPct" className={`${cell} w-20 text-right`} type="number" step="0.01" min="0" max="100" value={globalDiscountPct} onChange={(e) => setGlobalDiscountPct(num(e.target.value))} />
           </div>
           <Row label="Descuentos" value={formatMoney(totals.discountTotal, currency)} />

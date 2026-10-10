@@ -27,4 +27,12 @@ describe("FieldLabel + FieldHelp", () => {
     render(<><FieldLabel htmlFor="n">Nombre</FieldLabel><input id="n" /></>);
     expect(screen.queryByRole("button")).toBeNull();
   });
+  it("cierra la ayuda con Escape", () => {
+    render(<><FieldLabel htmlFor="costo" help="costo">Costo</FieldLabel><input id="costo" /></>);
+    const btn = screen.getByRole("button", { name: "Ayuda sobre Costo" });
+    fireEvent.click(btn);
+    expect(screen.getByText(/Lo que te cuesta a ti/)).toBeTruthy();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(screen.queryByText(/Lo que te cuesta a ti/)).toBeNull();
+  });
 });

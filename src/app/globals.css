@@ -12,6 +12,49 @@
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Movimiento. Solo se animan opacity y transform: nunca width ni height.
+     La salida siempre más corta que la entrada. */
+  --animate-fade-in: k-fade-in 160ms ease-out;
+  --animate-fade-out: k-fade-out 120ms ease-in;
+  --animate-fade-up: k-fade-up 180ms ease-out;
+  --animate-slide-right-in: k-slide-right-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-slide-right-out: k-slide-right-out 160ms ease-in;
+  --animate-slide-up-in: k-slide-up-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-slide-up-out: k-slide-up-out 160ms ease-in;
+  --animate-scale-in: k-scale-in 140ms ease-out;
+  --animate-scale-out: k-scale-out 110ms ease-in;
+  /* El diálogo se centra con translate(-50%,-50%): su animación tiene que conservarlo
+     o salta a la esquina durante el viaje. */
+  --animate-dialog-in: k-dialog-in 160ms ease-out;
+  --animate-dialog-out: k-dialog-out 120ms ease-in;
+
+  @keyframes k-fade-in { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes k-fade-out { from { opacity: 1 } to { opacity: 0 } }
+  @keyframes k-fade-up {
+    from { opacity: 0; transform: translateY(6px) }
+    to { opacity: 1; transform: none }
+  }
+  @keyframes k-slide-right-in { from { transform: translateX(100%) } to { transform: none } }
+  @keyframes k-slide-right-out { from { transform: none } to { transform: translateX(100%) } }
+  @keyframes k-slide-up-in { from { transform: translateY(100%) } to { transform: none } }
+  @keyframes k-slide-up-out { from { transform: none } to { transform: translateY(100%) } }
+  @keyframes k-scale-in {
+    from { opacity: 0; transform: scale(0.96) }
+    to { opacity: 1; transform: none }
+  }
+  @keyframes k-scale-out {
+    from { opacity: 1; transform: none }
+    to { opacity: 0; transform: scale(0.96) }
+  }
+  @keyframes k-dialog-in {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.96) }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1) }
+  }
+  @keyframes k-dialog-out {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(1) }
+    to { opacity: 0; transform: translate(-50%, -50%) scale(0.96) }
+  }
 }
 
 /* Superficies claro/oscuro */
@@ -35,4 +78,17 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
+}
+
+/* Quien pide menos movimiento recibe los mismos estados, sin el viaje.
+   No se desactiva la animación: se acorta, para que los estados de salida de Radix
+   terminen y el elemento llegue a desmontarse. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
 }

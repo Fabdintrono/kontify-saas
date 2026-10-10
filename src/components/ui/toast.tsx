@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const item = (t: Toast) => (
     <div key={t.id}
-      className="pointer-events-auto flex w-full max-w-sm items-start gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm shadow-lg">
+      className="pointer-events-auto flex w-full max-w-sm animate-fade-up items-start gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm shadow-lg">
       {t.tone === "error"
         ? <TriangleAlert className={`mt-0.5 h-4 w-4 shrink-0 ${DANGER_TEXT}`} strokeWidth={2} aria-hidden="true" />
         : <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#0f766e] dark:text-[#6ee7b7]" strokeWidth={2} aria-hidden="true" />}
@@ -49,7 +49,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {t.href && <Link href={t.href} onClick={() => dismiss(t.id)} className="mt-1 inline-block text-xs font-semibold text-[#0e7490] dark:text-[#5eead4]">{t.hrefLabel ?? "Ver"}</Link>}
       </div>
       <button type="button" aria-label="Cerrar aviso" onClick={() => dismiss(t.id)}
-        className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-[var(--text-soft)] hover:bg-[var(--bg)]">
+        className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-[var(--text-soft)] transition-colors hover:bg-[var(--bg)]">
         <X className="h-3.5 w-3.5" strokeWidth={2} />
       </button>
     </div>

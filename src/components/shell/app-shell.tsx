@@ -1,5 +1,6 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Store, Bell } from "lucide-react";
 import { navForRole, configForRole } from "@/lib/nav";
@@ -21,6 +22,7 @@ const COLLAPSE_KEY = "kontify-panel-collapsed";
 export function AppShell({ user, children }: {
   user: ShellUser; children: ReactNode;
 }) {
+  const pathname = usePathname();
   const sections = navForRole(user.role);
   const config = configForRole(user.role);
   const [collapsed, setCollapsed] = useState(false);
@@ -58,7 +60,11 @@ export function AppShell({ user, children }: {
 
           {/* tabIndex={-1}: destino de foco cuando un diálogo se cierra y su disparador ya no existe
               (p. ej. archivar, que reemplaza el botón por «Reactivar»). Ver ConfirmDialog. */}
-          <main tabIndex={-1} className="flex-1 overflow-y-auto pb-20 outline-none lg:pb-0">{children}</main>
+          {/* `key={pathname}`: cada ruta monta de nuevo y entra con un fundido corto.
+              Es el único elemento animado de la vista. */}
+          <main tabIndex={-1} className="flex-1 overflow-y-auto pb-20 outline-none lg:pb-0">
+            <div key={pathname} className="animate-fade-up">{children}</div>
+          </main>
         </div>
 
         <FabVender />

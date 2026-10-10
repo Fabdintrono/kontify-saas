@@ -44,7 +44,7 @@ export default async function InventarioPage({ searchParams }: {
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
           <EmptyState icon={Boxes} title="Sin existencias registradas"
-            hint="Carga la existencia inicial de cada producto con «Ajustar stock»."
+            hint={canManageStock(role) ? "Carga la existencia inicial de cada producto con «Ajustar stock»." : "Pide a un administrador o a almacén que cargue las existencias."}
             secondary={<ModuleGuide guide={GUIDES.inventario} />} />
         </div>
       ) : (

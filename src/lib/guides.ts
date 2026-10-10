@@ -25,7 +25,7 @@ export const GUIDES: Record<ModuleId, Guide> = {
     steps: [
       "Los indicadores de arriba resumen el mes en curso de toda la empresa.",
       "«Requieren atención» lista ventas vencidas y productos agotados o bajo mínimo; cada fila lleva al detalle.",
-      "El selector de sucursal (arriba) cambia entre una sede y el consolidado.",
+      "Los montos son de toda la empresa y del mes en curso.",
     ],
     notDoes: ["No reemplaza a los reportes: para períodos y desgloses usa Reportes › Ventas."],
   },

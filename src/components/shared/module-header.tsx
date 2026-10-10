@@ -18,7 +18,7 @@ export function ModuleHeader({ module, title, subtitle, actions }: {
           <ModuleGuide guide={g} className="mt-0.5" />
         )}
       </div>
-      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+      {actions && <div className="flex min-w-0 max-w-full shrink-0 items-center gap-2">{actions}</div>}
     </div>
   );
 }

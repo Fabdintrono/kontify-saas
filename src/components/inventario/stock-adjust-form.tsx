@@ -29,7 +29,7 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
   );
 
   return (
-    <form action={formAction} className="max-w-md space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+    <form action={formAction} className="w-full max-w-md space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
       <p className="text-sm font-bold text-[var(--text)]">Ajustar stock</p>
       {productId
         ? <input type="hidden" name="productId" value={productId} />

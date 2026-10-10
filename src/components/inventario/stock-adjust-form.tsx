@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { flashFor } from "@/lib/flash";
 import { FieldLabel } from "@/components/shared/field-label";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 type LiteProduct = { id: string; name: string };
 type Branch = { id: string; name: string };
@@ -40,16 +41,22 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
               <option value="" disabled>Selecciona…</option>
               {(products ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            {err("productId") && <p className="mt-1 text-xs text-[#dc2626]">{err("productId")}</p>}
+            {err("productId") && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{err("productId")}</p>}
           </div>
         )}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <FieldLabel htmlFor="adjBranchId" help="sucursal">Sucursal</FieldLabel>
           {isBackOffice
-            ? <select id="adjBranchId" name="branchId" className={inputCls} defaultValue={defaultBranch}>{branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
-            : <input type="hidden" name="branchId" value={defaultBranch} />}
-          {!isBackOffice && <p className="py-2 text-sm text-[var(--text)]">{branches.find((b) => b.id === defaultBranch)?.name ?? "—"}</p>}
+            ? <>
+                <FieldLabel htmlFor="adjBranchId" help="sucursal">Sucursal</FieldLabel>
+                <select id="adjBranchId" name="branchId" className={inputCls} defaultValue={defaultBranch}>{branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
+              </>
+            : <>
+                {/* Sin control que enfocar: la sucursal viene fija, así que el rótulo no es <label>. */}
+                <p className="mb-1 text-xs font-medium text-[var(--text-soft)]">Sucursal</p>
+                <input type="hidden" name="branchId" value={defaultBranch} />
+                <p className="py-2 text-sm text-[var(--text)]">{branches.find((b) => b.id === defaultBranch)?.name ?? "—"}</p>
+              </>}
         </div>
         <div>
           <FieldLabel htmlFor="direction">Movimiento</FieldLabel>
@@ -63,11 +70,11 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
         <div>
           <FieldLabel htmlFor="quantity">Cantidad</FieldLabel>
           <input id="quantity" name="quantity" type="number" step="0.01" min="0" defaultValue="1" className={inputCls} />
-          {err("quantity") && <p className="mt-1 text-xs text-[#dc2626]">{err("quantity")}</p>}
+          {err("quantity") && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{err("quantity")}</p>}
         </div>
         <div><FieldLabel htmlFor="reason">Motivo</FieldLabel><input id="reason" name="reason" className={inputCls} placeholder="Carga inicial, merma…" /></div>
       </div>
-      {state.error && <p className="text-sm text-[#dc2626]">{state.error}</p>}
+      {state.error && <p className={`text-sm ${DANGER_TEXT}`}>{state.error}</p>}
       <div className="flex gap-2">
         <Button variant="primary" disabled={pending}>
           {pending ? "Guardando…" : "Guardar"}

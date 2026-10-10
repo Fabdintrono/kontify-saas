@@ -9,6 +9,7 @@ import { todayISO } from "@/lib/tz";
 import { PaymentForm } from "@/components/cobros/payment-form";
 import { ModuleHeader } from "@/components/shared/module-header";
 import type { Role } from "@/lib/auth/roles";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 export default async function EstadoDeCuentaPage({ params }: { params: Promise<{ clientId: string }> }) {
   const { clientId } = await params;
@@ -28,7 +29,7 @@ export default async function EstadoDeCuentaPage({ params }: { params: Promise<{
       <ModuleHeader module="cuentas_por_cobrar" title={data.clientName ?? "Cliente"} subtitle={null} actions={
         <div className="text-sm text-[var(--text-soft)]">
           Adeudado: <span className="font-semibold text-[var(--text)]">{formatMoney(data.totalDue, currency)}</span>
-          {data.overdueAmount > 0 && <> · Vencido: <span className="font-semibold text-[#dc2626]">{formatMoney(data.overdueAmount, currency)}</span></>}
+          {data.overdueAmount > 0 && <> · Vencido: <span className={`font-semibold ${DANGER_TEXT}`}>{formatMoney(data.overdueAmount, currency)}</span></>}
         </div>} />
 
       {data.rows.length === 0 ? (
@@ -46,7 +47,7 @@ export default async function EstadoDeCuentaPage({ params }: { params: Promise<{
                     {s.overdue ? " · VENCIDA" : ""}
                   </p>
                 </div>
-                <span className={`text-sm font-semibold ${s.overdue ? "text-[#dc2626]" : "text-[var(--text)]"}`}>Saldo {formatMoney(s.balance, currency)}</span>
+                <span className={`text-sm font-semibold ${s.overdue ? DANGER_TEXT : "text-[var(--text)]"}`}>Saldo {formatMoney(s.balance, currency)}</span>
               </div>
               <div className="mt-3"><PaymentForm saleId={s.saleId} balance={s.balance} currency={currency} today={today} /></div>
             </div>

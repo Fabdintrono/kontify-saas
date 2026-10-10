@@ -3,6 +3,7 @@ import { useActionState, useState } from "react";
 import { createCategoryNamed, type FormState } from "@/app/(app)/operaciones/productos/actions";
 import { FieldLabel } from "@/components/shared/field-label";
 import { Button } from "@/components/ui/button";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 type Category = { id: string; name: string };
 type TaxRate = { id: string; name: string; isDefault: boolean };
@@ -51,7 +52,7 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
       <div>
         <FieldLabel htmlFor="name">Nombre *</FieldLabel>
         <input id="name" name="name" defaultValue={values.name ?? ""} className={inputCls} />
-        {err("name") && <p className="mt-1 text-xs text-[#dc2626]">{err("name")}</p>}
+        {err("name") && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{err("name")}</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><FieldLabel htmlFor="sku" help="sku">SKU / código</FieldLabel><input id="sku" name="sku" defaultValue={values.sku ?? ""} className={inputCls} /></div>
@@ -61,19 +62,19 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
         <div>
           <FieldLabel htmlFor="price">Precio *</FieldLabel>
           <input id="price" name="price" type="number" step="0.01" min="0" defaultValue={values.price ?? "0"} className={inputCls} />
-          {err("price") && <p className="mt-1 text-xs text-[#dc2626]">{err("price")}</p>}
+          {err("price") && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{err("price")}</p>}
         </div>
         <div>
           <FieldLabel htmlFor="cost" help="costo">Costo</FieldLabel>
           <input id="cost" name="cost" type="number" step="0.01" min="0" defaultValue={values.cost ?? ""} className={inputCls} />
-          {err("cost") && <p className="mt-1 text-xs text-[#dc2626]">{err("cost")}</p>}
+          {err("cost") && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{err("cost")}</p>}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <FieldLabel htmlFor="minStock" help="stockMinimo">Stock mínimo</FieldLabel>
           <input id="minStock" name="minStock" type="number" step="0.01" min="0" defaultValue={values.minStock ?? "0"} className={inputCls} />
-          {err("minStock") && <p className="mt-1 text-xs text-[#dc2626]">{err("minStock")}</p>}
+          {err("minStock") && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{err("minStock")}</p>}
         </div>
       </div>
       <div>
@@ -102,11 +103,11 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
             </button>
           </div>
         )}
-        {catErr && <p className="mt-1 text-xs text-[#dc2626]">{catErr}</p>}
+        {catErr && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{catErr}</p>}
       </div>
       <div><FieldLabel htmlFor="description">Descripción</FieldLabel><textarea id="description" name="description" defaultValue={values.description ?? ""} rows={3} className={inputCls} /></div>
 
-      {state.error && <p className="text-sm text-[#dc2626]">{state.error}</p>}
+      {state.error && <p className={`text-sm ${DANGER_TEXT}`}>{state.error}</p>}
       <Button variant="primary" disabled={pending}>
         {pending ? "Guardando…" : submitLabel}
       </Button>

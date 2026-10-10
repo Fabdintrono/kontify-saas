@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/shared/field-label";
 import { flashFor } from "@/lib/flash";
 import { formatMoney } from "@/lib/format";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 const initial: FormState = { ok: false };
 const inputCls = "w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#0e7490]";
@@ -33,12 +34,12 @@ export function PaymentForm({ saleId, balance, currency, today }: { saleId: stri
         <div>
           <FieldLabel htmlFor={`amount-${saleId}`}>Monto</FieldLabel>
           <input id={`amount-${saleId}`} name="amount" type="number" step="0.01" min="0" max={balance} defaultValue={balance} className={inputCls} />
-          {err("amount") && <p className="mt-1 text-xs text-[#dc2626]">{err("amount")}</p>}
+          {err("amount") && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{err("amount")}</p>}
         </div>
         <div>
           <FieldLabel htmlFor={`paidAt-${saleId}`}>Fecha</FieldLabel>
           <input id={`paidAt-${saleId}`} name="paidAt" type="date" defaultValue={today} max={today} className={inputCls} />
-          {err("paidAt") && <p className="mt-1 text-xs text-[#dc2626]">{err("paidAt")}</p>}
+          {err("paidAt") && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{err("paidAt")}</p>}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -46,7 +47,7 @@ export function PaymentForm({ saleId, balance, currency, today }: { saleId: stri
         <div><FieldLabel htmlFor={`reference-${saleId}`}>Referencia</FieldLabel><input id={`reference-${saleId}`} name="reference" className={inputCls} placeholder="Nº comprobante" /></div>
       </div>
       <div><FieldLabel htmlFor={`notes-${saleId}`}>Notas</FieldLabel><input id={`notes-${saleId}`} name="notes" className={inputCls} /></div>
-      {state.error && <p className="text-sm text-[#dc2626]">{state.error}</p>}
+      {state.error && <p className={`text-sm ${DANGER_TEXT}`}>{state.error}</p>}
       <div className="flex gap-2">
         <Button variant="primary" disabled={pending}>
           {pending ? "Guardando…" : "Guardar abono"}

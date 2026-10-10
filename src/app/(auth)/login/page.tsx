@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -30,7 +31,7 @@ export default function Login() {
       <Button variant="primary" className="w-full" disabled={loading}>
         {loading ? "Entrando…" : "Entrar"}
       </Button>
-      {msg && <p className="text-sm text-[#dc2626]">{msg}</p>}
+      {msg && <p className={`text-sm ${DANGER_TEXT}`}>{msg}</p>}
       <p className="text-sm text-[var(--text-soft)]">¿No tienes cuenta? <Link href="/registro" className="font-semibold text-[#0e7490] dark:text-[#5eead4]">Crear una</Link></p>
     </form>
   );

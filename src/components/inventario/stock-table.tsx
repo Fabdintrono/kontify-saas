@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { StockRow } from "@/lib/inventario/queries";
 import { StockStatusBadge } from "./stock-status-badge";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 export function StockTable({ rows }: { rows: StockRow[] }) {
   return (
@@ -18,7 +19,7 @@ export function StockTable({ rows }: { rows: StockRow[] }) {
               <Link href={`/operaciones/productos/${r.productId}`} className="font-medium text-[var(--text)] hover:text-[#0e7490]">{r.name}</Link>
             </td>
             <td className="text-[var(--text-soft)]">{r.sku || "—"}</td>
-            <td className={r.qty <= 0 ? "text-[#dc2626]" : "text-[var(--text)]"}>{r.qty}</td>
+            <td className={r.qty <= 0 ? DANGER_TEXT : "text-[var(--text)]"}>{r.qty}</td>
             <td className="text-[var(--text-soft)]">{r.minStock}</td>
             <td><StockStatusBadge status={r.status} /></td>
           </tr>

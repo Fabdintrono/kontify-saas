@@ -4,6 +4,7 @@ import { canManageStock } from "@/lib/inventario/permissions";
 import { MovementsHistory } from "./movements-history";
 import { StockAdjustForm } from "./stock-adjust-form";
 import type { Role } from "@/lib/auth/roles";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 export async function ProductStockPanel({ productId, kind, role, userBranchId, tz }: {
   productId: string; kind: "good" | "service"; role: Role; userBranchId: string | null; tz: string;
@@ -39,7 +40,7 @@ export async function ProductStockPanel({ productId, kind, role, userBranchId, t
           {stock.levels.map((l) => (
             <li key={l.branchId} className="flex items-center justify-between text-sm">
               <span className="text-[var(--text)]">{l.branchName ?? "—"}</span>
-              <span className={`font-semibold ${l.qty <= 0 ? "text-[#dc2626]" : "text-[var(--text)]"}`}>{l.qty}</span>
+              <span className={`font-semibold ${l.qty <= 0 ? DANGER_TEXT : "text-[var(--text)]"}`}>{l.qty}</span>
             </li>
           ))}
         </ul>

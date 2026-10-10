@@ -1,6 +1,7 @@
 import { formatMoney, formatDateOnly } from "@/lib/format";
 import { QuoteStatusBadge } from "./quote-status-badge";
 import { DocumentLines } from "@/components/shared/document-lines";
+import { DANGER_TEXT_STRONG } from "@/lib/ui-tokens";
 
 type Item = { id: string; description: string; quantity: number; unit_price: number; discount_pct: number; tax_rate: number };
 type Quote = {
@@ -21,7 +22,7 @@ export function QuoteDocument({ quote, today }: { quote: Quote; today: string })
             <p className="text-sm text-[var(--text-soft)]">{quote.clients?.name ?? "Consumidor final"} · {quote.branches?.name ?? "—"}</p>
           </div>
           <div className="flex items-center gap-2">
-            {overdue && <span className="rounded-full bg-[#dc2626]/10 px-2 py-0.5 text-xs font-medium text-[#dc2626]">Vencido</span>}
+            {overdue && <span className={`rounded-full bg-[#dc2626]/10 px-2 py-0.5 text-xs ${DANGER_TEXT_STRONG}`}>Vencido</span>}
             <QuoteStatusBadge status={quote.status} />
           </div>
         </div>

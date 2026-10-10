@@ -10,6 +10,7 @@ import { computeSaleTotals } from "@/lib/ventas/totals";
 import { formatMoney } from "@/lib/format";
 import { ClientPicker, type LiteClient } from "@/components/ventas/client-picker";
 import { ProductPicker, type LiteProduct } from "@/components/ventas/product-picker";
+import { DANGER_TEXT, DANGER_TEXT_HOVER } from "@/lib/ui-tokens";
 
 type Line = { productId: string | null; description: string; quantity: number; unitPrice: number; discountPct: number; taxRate: number };
 type Branch = { id: string; name: string; is_main: boolean };
@@ -87,7 +88,7 @@ export function QuoteBuilder({ clients, products, branches, role, userBranchId, 
                 <input className={`${cell} col-span-1`} type="number" step="0.01" min="0" max="100" value={l.taxRate} onChange={(e) => setLine(i, { taxRate: num(e.target.value) })} />
                 <div className="col-span-2 flex items-center justify-end gap-2">
                   <span className="text-sm text-[var(--text)]">{formatMoney(totals.lines[i]?.neto ?? 0, currency)}</span>
-                  <button type="button" aria-label={`Quitar ${l.description || "línea"}`} onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-[var(--text-soft)] hover:text-[#dc2626]">
+                  <button type="button" aria-label={`Quitar ${l.description || "línea"}`} onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className={`text-[var(--text-soft)] ${DANGER_TEXT_HOVER}`}>
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -116,8 +117,8 @@ export function QuoteBuilder({ clients, products, branches, role, userBranchId, 
         </div>
       </div>
 
-      {state.error && <p className="text-sm text-[#dc2626]">{state.error}</p>}
-      {state.fieldErrors && <p className="text-sm text-[#dc2626]">{Object.values(state.fieldErrors)[0]}</p>}
+      {state.error && <p className={`text-sm ${DANGER_TEXT}`}>{state.error}</p>}
+      {state.fieldErrors && <p className={`text-sm ${DANGER_TEXT}`}>{Object.values(state.fieldErrors)[0]}</p>}
 
       <div className="flex flex-wrap items-center gap-2">
         <Button name="intent" value="save" variant="secondary" disabled={pending} onClick={() => submit.mark("save")}>

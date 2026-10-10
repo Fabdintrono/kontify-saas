@@ -3,9 +3,6 @@ import { PAYMENT_LABEL, type PaymentStatus } from "@/lib/cobros/status";
 
 type Spec = { label: string; tone: Tone; icon: BadgeIcon };
 
-/** Rojo de «peligro» para texto fuera del chip (saldo vencido), con el mismo contraste. */
-export const DANGER_TEXT = "font-medium text-[#b91c1c] dark:text-[#f87171]";
-
 const DOC: Record<string, Spec> = {
   draft:  { label: "Borrador", tone: "neutral", icon: "pencil" },
   // Respaldo: en la app toda emitida llega con paymentStatus; se conserva por tolerancia.

@@ -14,6 +14,7 @@ import { salesByClient } from "@/lib/ventas/queries";
 import { formatMoney, formatDate } from "@/lib/format";
 import { getTenantSettings } from "@/lib/tenant";
 import type { Role } from "@/lib/auth/roles";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 export default async function ClienteDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -94,7 +95,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <p className="mb-3 text-sm font-bold text-[var(--text)]">Por cobrar</p>
           {history.receivable > 0
-            ? <p className="text-2xl font-extrabold text-[#dc2626]">{formatMoney(history.receivable, currency)}</p>
+            ? <p className={`text-2xl font-extrabold ${DANGER_TEXT}`}>{formatMoney(history.receivable, currency)}</p>
             : <p className="py-6 text-center text-sm text-[var(--text-soft)]">Sin saldos pendientes.</p>}
         </div>
       </div>

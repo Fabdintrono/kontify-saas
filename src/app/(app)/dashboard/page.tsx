@@ -20,6 +20,7 @@ import { ModuleGuide } from "@/components/shared/module-guide";
 import { GUIDES } from "@/lib/guides";
 import { GettingStarted } from "@/components/dashboard/getting-started";
 import { hideGettingStartedAction } from "./actions";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -105,7 +106,7 @@ export default async function Dashboard() {
             <ul className="space-y-2 text-sm">
               <li className="flex items-center justify-between"><span className="text-[var(--text)]">En stock</span><span className="font-semibold text-[#0f766e] dark:text-[#6ee7b7]">{invBreakdown.inStock}</span></li>
               <li className="flex items-center justify-between"><span className="text-[var(--text)]">Bajo</span><span className="font-semibold text-[#b45309] dark:text-[#fbbf24]">{invBreakdown.low}</span></li>
-              <li className="flex items-center justify-between"><span className="text-[var(--text)]">Agotado</span><span className="font-semibold text-[#dc2626]">{invBreakdown.out}</span></li>
+              <li className="flex items-center justify-between"><span className="text-[var(--text)]">Agotado</span><span className={`font-semibold ${DANGER_TEXT}`}>{invBreakdown.out}</span></li>
             </ul>
           )}
         </div>

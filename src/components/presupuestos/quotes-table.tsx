@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { QuoteListRow } from "@/lib/presupuestos/queries";
 import { formatMoney, formatDate, formatDateOnly } from "@/lib/format";
 import { QuoteStatusBadge } from "./quote-status-badge";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 function isOverdue(r: QuoteListRow, today: string): boolean {
   return !!r.validUntil && r.validUntil < today && ["sent", "accepted"].includes(r.status);
@@ -27,7 +28,7 @@ export function QuotesTable({ rows, tz, today }: { rows: QuoteListRow[]; tz: str
             <td className="text-[var(--text-soft)]">{formatDate(r.createdAt, tz)}</td>
             <td className="text-[var(--text)]">{r.clientName ?? "Consumidor final"}</td>
             <td className="text-[var(--text)]">{formatMoney(r.total, r.currency)}</td>
-            <td className={isOverdue(r, today) ? "text-[#dc2626]" : "text-[var(--text-soft)]"}>
+            <td className={isOverdue(r, today) ? DANGER_TEXT : "text-[var(--text-soft)]"}>
               {formatDateOnly(r.validUntil)}{isOverdue(r, today) ? " · vencido" : ""}
             </td>
             <td><QuoteStatusBadge status={r.status} /></td>

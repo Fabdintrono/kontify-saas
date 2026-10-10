@@ -14,6 +14,7 @@ import { ModuleHeader } from "@/components/shared/module-header";
 import { ModuleGuide } from "@/components/shared/module-guide";
 import { GUIDES } from "@/lib/guides";
 import type { Role } from "@/lib/auth/roles";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 export default async function CuentasPorCobrarPage({ searchParams }: {
   searchParams: Promise<{ q?: string; filter?: string }>;
@@ -36,7 +37,7 @@ export default async function CuentasPorCobrarPage({ searchParams }: {
       <ModuleHeader module="cuentas_por_cobrar" actions={
         <div className="text-sm text-[var(--text-soft)]">
           Total: <span className="font-semibold text-[var(--text)]">{formatMoney(totalDue, currency)}</span>
-          {overdue > 0 && <> · Vencido: <span className="font-semibold text-[#dc2626]">{formatMoney(overdue, currency)}</span></>}
+          {overdue > 0 && <> · Vencido: <span className={`font-semibold ${DANGER_TEXT}`}>{formatMoney(overdue, currency)}</span></>}
         </div>} />
 
       <ReceivablesToolbar />

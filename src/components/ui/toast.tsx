@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { CircleCheck, TriangleAlert, X } from "lucide-react";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 export type ToastInput = { title: string; description?: string; tone?: "success" | "error"; href?: string; hrefLabel?: string };
 type Toast = ToastInput & { id: number };
@@ -40,7 +41,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <div key={t.id}
       className="pointer-events-auto flex w-full max-w-sm items-start gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm shadow-lg">
       {t.tone === "error"
-        ? <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#dc2626]" strokeWidth={2} aria-hidden="true" />
+        ? <TriangleAlert className={`mt-0.5 h-4 w-4 shrink-0 ${DANGER_TEXT}`} strokeWidth={2} aria-hidden="true" />
         : <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#0f766e] dark:text-[#6ee7b7]" strokeWidth={2} aria-hidden="true" />}
       <div className="min-w-0 flex-1">
         <p className="break-words font-semibold text-[var(--text)]">{t.title}</p>

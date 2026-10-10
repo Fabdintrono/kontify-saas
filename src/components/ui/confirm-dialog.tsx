@@ -4,6 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { TriangleAlert } from "lucide-react";
 import { useToast, type ToastInput } from "@/components/ui/toast";
 import { GENERIC_ERROR, isRedirectError, type ActionResult } from "@/lib/action-result";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 /** Confirmación antes de una acción irreversible. Reemplaza <form action={…}> + botón directo.
  *  - `action` es una Server Action (fd: FormData) => Promise<ActionResult>; `payload` son sus campos ocultos.
@@ -59,7 +60,7 @@ export function ConfirmDialog({ action, payload, title, description, confirmLabe
           }}
           className="fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-xl">
           <div className="flex items-start gap-3">
-            <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${tone === "danger" ? "bg-[#dc2626]/10 text-[#dc2626]" : "bg-[#0e7490]/10 text-[#0e7490]"}`}>
+            <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${tone === "danger" ? `bg-[#dc2626]/10 ${DANGER_TEXT}` : "bg-[#0e7490]/10 text-[#0e7490]"}`}>
               <TriangleAlert className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
             </div>
             <div className="min-w-0">

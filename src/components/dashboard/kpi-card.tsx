@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 export function KpiCard({ icon: Icon, label, value, trend, sub }: {
   icon: LucideIcon; label: string; value?: string; trend?: { dir: "up" | "down"; text: string }; sub?: string;
@@ -19,7 +20,7 @@ export function KpiCard({ icon: Icon, label, value, trend, sub }: {
       ) : (
         <div className="flex items-center gap-2 text-xs">
           {trend && (
-            <span className={`inline-flex items-center gap-0.5 font-semibold ${trend.dir === "up" ? "text-[#0f766e] dark:text-[#6ee7b7]" : "text-[#dc2626] dark:text-[#f87171]"}`}>
+            <span className={`inline-flex items-center gap-0.5 font-semibold ${trend.dir === "up" ? "text-[#0f766e] dark:text-[#6ee7b7]" : DANGER_TEXT}`}>
               {trend.dir === "up" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />} {trend.text}
             </span>
           )}

@@ -3,6 +3,7 @@ import { useActionState, useState } from "react";
 import { createClientTypeNamed, type FormState } from "@/app/(app)/clientes/actions";
 import { FieldLabel } from "@/components/shared/field-label";
 import { Button } from "@/components/ui/button";
+import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 type ClientType = { id: string; name: string };
 type Values = {
@@ -49,7 +50,7 @@ export function ClientForm({ action, types, values = {}, submitLabel }: {
       <div>
         <FieldLabel htmlFor="name">Nombre / Razón social *</FieldLabel>
         <input id="name" name="name" defaultValue={values.name ?? ""} className={inputCls} />
-        {err("name") && <p className="mt-1 text-xs text-[#dc2626]">{err("name")}</p>}
+        {err("name") && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{err("name")}</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><FieldLabel htmlFor="docId" help="documentoId">Documento / ID</FieldLabel><input id="docId" name="docId" defaultValue={values.docId ?? ""} className={inputCls} /></div>
@@ -58,7 +59,7 @@ export function ClientForm({ action, types, values = {}, submitLabel }: {
       <div>
         <FieldLabel htmlFor="email">Email</FieldLabel>
         <input id="email" name="email" type="email" defaultValue={values.email ?? ""} className={inputCls} />
-        {err("email") && <p className="mt-1 text-xs text-[#dc2626]">{err("email")}</p>}
+        {err("email") && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{err("email")}</p>}
       </div>
       <div><FieldLabel htmlFor="address">Dirección</FieldLabel><input id="address" name="address" defaultValue={values.address ?? ""} className={inputCls} /></div>
       <div><FieldLabel htmlFor="contactName">Persona de contacto</FieldLabel><input id="contactName" name="contactName" defaultValue={values.contactName ?? ""} className={inputCls} /></div>
@@ -81,11 +82,11 @@ export function ClientForm({ action, types, values = {}, submitLabel }: {
             </button>
           </div>
         )}
-        {typeErr && <p className="mt-1 text-xs text-[#dc2626]">{typeErr}</p>}
+        {typeErr && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{typeErr}</p>}
       </div>
       <div><FieldLabel htmlFor="notes">Notas</FieldLabel><textarea id="notes" name="notes" defaultValue={values.notes ?? ""} rows={3} className={inputCls} /></div>
 
-      {state.error && <p className="text-sm text-[#dc2626]">{state.error}</p>}
+      {state.error && <p className={`text-sm ${DANGER_TEXT}`}>{state.error}</p>}
       <Button variant="primary" disabled={pending}>
         {pending ? "Guardando…" : submitLabel}
       </Button>

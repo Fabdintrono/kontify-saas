@@ -6,7 +6,7 @@ type Spec = { label: string; cls: string; icon: LucideIcon };
 // Contraste AA sobre fondo claro a 12px: en light se usan los tonos oscuros; en dark, los claros.
 const GRAY = "bg-[var(--bg)] text-[#475569] dark:text-[var(--text-soft)]";
 const TEAL = "bg-[#0e7490]/10 text-[#0e7490] dark:text-[#5eead4]";
-const GREEN = "bg-[#0f766e]/10 text-[#0f766e] dark:text-[#6ee7b7]";
+const GREEN = "bg-[#0f766e]/10 text-[#115e59] dark:text-[#6ee7b7]";
 const AMBER = "bg-[#b45309]/10 text-[#92400e] dark:text-[#fbbf24]";
 const RED = "bg-[#dc2626]/10 text-[#b91c1c] dark:text-[#f87171]";
 

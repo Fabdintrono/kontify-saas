@@ -96,7 +96,7 @@ describe("ventas — flujo y correlativo", () => {
     expect(porId.get(sinFecha)!.dueDate).toBeNull();
 
     // un `today` inválido es un error de programación: falla en vez de pintar estados inventados
-    await expect(listSales(a.client, { payment: "pendientes", today: "basura" })).rejects.toThrow(/Fecha local inválida/);
+    await expect(listSales(a.client, { payment: "vencidas", today: "basura" })).rejects.toThrow(/Fecha local inválida/);
   });
 
   it("historial por cliente", async () => {

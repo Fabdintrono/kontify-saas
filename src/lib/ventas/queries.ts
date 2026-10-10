@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeSaleTotals, round2 } from "@/lib/ventas/totals";
 import { monthRange } from "@/lib/reportes/ranges";
-import { rangeToInstants } from "@/lib/tz";
+import { isDateISO, rangeToInstants } from "@/lib/tz";
 import { paymentStatusOf, type PaymentStatus } from "@/lib/cobros/status";
 
 export type SaleStatusFilter = "borradores" | "emitidas" | "anuladas" | "todas";
@@ -21,6 +21,7 @@ export async function listSales(sb: SupabaseClient, opts: {
   search?: string; status?: SaleStatusFilter; payment?: SalePaymentFilter; page?: number; pageSize?: number; today: string;
 }): Promise<{ rows: SaleListRow[]; total: number; page: number; pageSize: number }> {
   const { search = "", status = "todas", payment = "todas", page = 1, pageSize = 20, today } = opts;
+  if (!isDateISO(today)) throw new Error(`Fecha local inválida: ${today}`);
   let q = sb.from("sales").select(
     "id, number, status, total, paid_amount, currency, issued_at, created_at, due_date, clients(name), branches(name)",
     { count: "exact" },

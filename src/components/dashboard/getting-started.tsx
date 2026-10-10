@@ -11,6 +11,13 @@ export function GettingStarted({ status, canHide, action }: {
 }) {
   if (status.hidden || status.items.length === 0) return null;
   const pct = Math.round((status.done / status.total) * 100);
+  // "Todo listo" solo cuando de verdad están los cinco; con los disponibles hechos y el de equipo
+  // aún por llegar, el subtítulo lo dice en vez de prometer un 100 % que la barra no muestra.
+  const subtitulo = status.done === status.total
+    ? "Todo listo. Kontify ya está trabajando contigo."
+    : status.complete
+      ? "Lo esencial está listo. Falta invitar a tu equipo."
+      : "Cinco pasos para dejar Kontify funcionando.";
   return (
     <section aria-labelledby="primeros-pasos" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -18,7 +25,7 @@ export function GettingStarted({ status, canHide, action }: {
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#0e7490] to-[#14b8a6] text-white"><Rocket className="h-4 w-4" strokeWidth={2} aria-hidden="true" /></span>
           <div>
             <h2 id="primeros-pasos" className="text-sm font-bold text-[var(--text)]">Primeros pasos</h2>
-            <p className="text-xs text-[var(--text-soft)]">{status.complete ? "Todo listo. Kontify ya está trabajando contigo." : "Cinco pasos para dejar Kontify funcionando."}</p>
+            <p className="text-xs text-[var(--text-soft)]">{subtitulo}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">

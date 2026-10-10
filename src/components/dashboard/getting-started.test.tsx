@@ -35,4 +35,11 @@ describe("GettingStarted", () => {
     rerender(<ToastProvider><GettingStarted status={all} canHide={false} action={vi.fn(async () => {})} /></ToastProvider>);
     expect(screen.queryByRole("button", { name: /ocultar/i })).toBeNull();
   });
+
+  it("con lo esencial hecho pero el paso de equipo pendiente, el subtítulo no promete el 100 %", () => {
+    const casi = { items: [...items([true, true, true, true, false])], done: 4, total: 5, complete: true, hidden: false };
+    render(<ToastProvider><GettingStarted status={casi} canHide action={vi.fn(async () => {})} /></ToastProvider>);
+    expect(screen.getByText("Lo esencial está listo. Falta invitar a tu equipo.")).toBeTruthy();
+    expect(screen.queryByText(/Todo listo/)).toBeNull();
+  });
 });

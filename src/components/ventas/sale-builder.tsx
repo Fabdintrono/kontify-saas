@@ -64,7 +64,10 @@ export function SaleBuilder({ clients, products, branches, role, userBranchId, c
       </div>
 
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3">
-        <div className="mb-2"><ProductPicker products={products} onPick={addProduct} /></div>
+        <div className="mb-2">
+          <FieldLabel htmlFor="productPicker">Agregar producto</FieldLabel>
+          <ProductPicker inputId="productPicker" products={products} onPick={addProduct} />
+        </div>
         {lines.length === 0 ? (
           <p className="py-6 text-center text-sm text-[var(--text-soft)]">Agrega productos a la venta.</p>
         ) : (
@@ -83,7 +86,7 @@ export function SaleBuilder({ clients, products, branches, role, userBranchId, c
                 <input className={`${cell} col-span-1`} type="number" step="0.01" min="0" max="100" value={l.taxRate} onChange={(e) => setLine(i, { taxRate: num(e.target.value) })} />
                 <div className="col-span-2 flex items-center justify-end gap-2">
                   <span className="text-sm text-[var(--text)]">{formatMoney(totals.lines[i]?.neto ?? 0, currency)}</span>
-                  <button type="button" onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-[var(--text-soft)] hover:text-[#dc2626]">
+                  <button type="button" aria-label={`Quitar ${l.description || "línea"}`} onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-[var(--text-soft)] hover:text-[#dc2626]">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>

@@ -12,9 +12,12 @@ export function isRedirectError(e: unknown): boolean {
 /** Lo que se le dice al usuario cuando no tenemos un motivo concreto que mostrarle. */
 export const GENERIC_ERROR = "Vuelve a intentarlo; si persiste, avisa a soporte.";
 
-/** Solo se muestran los mensajes que escribimos nosotros. Los de Postgres/Supabase traen `code`
- *  y vienen en inglés con nombres de tablas: esos se cambian por el texto genérico. */
+/** Solo se muestran los mensajes que escribimos nosotros. Los de Postgres/Supabase vienen en inglés
+ *  y con nombres de tablas: esos se cambian por el texto genérico. Se detectan por la PRESENCIA de
+ *  `code`, no por su valor: postgrest-js manda `code: ""` cuando falla el fetch o la respuesta no es
+ *  JSON, y mirar la verdad del valor dejaría pasar ese inglés. */
 export function actionError(e: unknown): { error: string } {
-  const err = e as { message?: string; code?: string };
-  return { error: !err?.code && err?.message ? err.message : GENERIC_ERROR };
+  const fromDb = typeof e === "object" && e !== null && "code" in e;
+  const msg = (e as { message?: string })?.message;
+  return { error: !fromDb && msg ? msg : GENERIC_ERROR };
 }

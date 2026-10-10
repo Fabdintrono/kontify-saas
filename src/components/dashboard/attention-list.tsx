@@ -30,6 +30,14 @@ export function AttentionList({ items }: { items: AttentionItem[] }) {
           })}
         </ul>
       )}
+      {/* El cupo del panel es corto: si hay vencidas, la lista completa vive en Cuentas por cobrar. */}
+      {items.some((i) => i.kind === "vencida") && (
+        <p className="mt-2 text-right">
+          <Link href="/finanzas/cuentas-por-cobrar?filter=vencidos" className="text-xs font-semibold text-[#0e7490] hover:underline">
+            Ver todas las vencidas
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

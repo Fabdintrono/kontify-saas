@@ -1905,92 +1905,42 @@ describe("attentionItems", () => {
   });
 });
 ```
-Si `emitSale` con `paymentType: "credito"` exige `paymentMethod`, pasar `paymentMethod: undefined`. Si `stock_movements` exige `created_by` distinto, mirar `tests/inventario.test.ts` y copiar su forma de insertar.
+Si `emitSale` con `paymentType: "credito"` exige `paymentMethod`, pasar `paymentMethod: undefined`. Para dar existencias usar `registerAdjustment` como hace `tests/inventario.test.ts` (su insert en `stock_movements` ya trae `created_by`). Cubrir también: el cupo (7 vencidas + 1 agotado → 5 + 1, las vencidas más antiguas primero), `attentionItems(client, "basura")` → rechaza con /Fecha local inválida/, y un producto con `min_stock: 0` y sin existencias que NO se lista.
 Run: `npx vitest run tests/attention.test.ts` → FAIL (módulo inexistente).
 
 - [ ] **Step 2: Implementar `src/lib/dashboard/attention.ts`**
 
-```ts
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { round2 } from "@/lib/ventas/totals";
-import { formatMoney, formatDateOnly } from "@/lib/format";
-import { listStock } from "@/lib/inventario/queries";
+Exporta `AttentionItem` (`kind: "vencida" | "agotado" | "bajo"`, `tone: "danger" | "warn"`, `title`,
+`detail`, `href`), `MAX = 8` y `attentionItems(sb, today)`:
 
-export type AttentionItem = {
-  kind: "vencida" | "agotado" | "bajo";
-  tone: "danger" | "warn"; title: string; detail: string; href: string;
-};
-const MAX = 8;
+- **Guard primero, fuera de cualquier try:** `if (!isDateISO(today)) throw new Error(\`Fecha local inválida: ${today}\`)`,
+  como en las consultas de cobros y ventas. Una fecha mala es un error del llamador, no una lista vacía.
+- **Ventas vencidas:** `sales` con `status = "issued"`, `balance > 0`, `due_date < today`, `order("due_date")`
+  (más antiguas primero) y `.limit(5)`. Desestructurar `{ data, error }` y, si hay `error`,
+  `console.error("attentionItems", error)` + `return []`: media lista es peor que ninguna, porque el panel
+  diría «todo en orden» con ventas vencidas detrás.
+  `title`: `Venta #N vencida`; `detail`: cliente (`Consumidor final` si no hay) · saldo (`formatMoney` + `round2`)
+  · `venció el ${formatDateOnly(due_date)}`; `href`: `/operaciones/facturacion/${id}`.
+- **Inventario:** `listStock(sb)` filtrado a `minStock > 0` — el mínimo declarado es la señal explícita de
+  «esto me importa»; un producto que nunca se stockea con mínimo 0 no es una alarma. Primero los `agotado`
+  (`danger`, `«X agotado»`), después los `bajo` (`warn`, `«X con stock bajo»`); `detail` en ambos
+  `Existencia N · mínimo M`; `href` `/operaciones/inventario?status=agotado` / `?status=bajo`
+  (la pantalla ya acepta `status`).
+- **Cupo por categoría:** 5 vencidas como tope y el total cortado en `MAX = 8`, así que el inventario tiene
+  siempre al menos 3 huecos y las vencidas no lo tapan.
 
-/** Ventas vencidas (más antiguas primero), productos agotados y bajo mínimo. Degrada a [] ante error. */
-export async function attentionItems(sb: SupabaseClient, today: string): Promise<AttentionItem[]> {
-  try {
-    const out: AttentionItem[] = [];
-    const { data: sales } = await sb.from("sales").select("id, number, balance, due_date, currency, clients(name)")
-      .eq("status", "issued").gt("balance", 0).lt("due_date", today).order("due_date").limit(MAX);
-    for (const s of (sales ?? []) as any[]) {
-      out.push({
-        kind: "vencida", tone: "danger",
-        title: `Venta #${s.number} vencida`,
-        detail: `${s.clients?.name ?? "Consumidor final"} · saldo ${formatMoney(round2(Number(s.balance)), s.currency)} · venció el ${formatDateOnly(s.due_date)}`,
-        href: `/operaciones/facturacion/${s.id}`,
-      });
-    }
-    const stock = await listStock(sb);
-    for (const r of stock.filter((x) => x.status === "agotado")) {
-      if (out.length >= MAX) break;
-      out.push({ kind: "agotado", tone: "danger", title: `${r.name} agotado`, detail: `Existencia ${r.qty} · mínimo ${r.minStock}`, href: "/operaciones/inventario" });
-    }
-    for (const r of stock.filter((x) => x.status === "bajo")) {
-      if (out.length >= MAX) break;
-      out.push({ kind: "bajo", tone: "warn", title: `${r.name} con stock bajo`, detail: `Existencia ${r.qty} · mínimo ${r.minStock}`, href: "/operaciones/inventario" });
-    }
-    return out;
-  } catch { return []; }
-}
-```
-Run el test → PASS (2). Si el orden entre «agotado» y «bajo» sale invertido por `listStock` (ordena por nombre), el filtro por estado ya lo separa; si falla por `minStock` en `detail`, revisar que `listStock` devuelve `minStock` numérico.
+Run el test → PASS.
 
-- [ ] **Step 3: `AttentionList` con enlace y tono**
+- [ ] **Step 3: `AttentionList` con enlace, tono y «ver todas»**
 
-`src/components/dashboard/attention-list.tsx`:
-```tsx
-import Link from "next/link";
-import { CircleCheck, TriangleAlert, CircleAlert } from "lucide-react";
-import { EmptyState } from "@/components/shared/empty-state";
-import type { AttentionItem } from "@/lib/dashboard/attention";
+`src/components/dashboard/attention-list.tsx`: cada fila es un `<Link href={it.href}>` con `CircleAlert`
+`text-[#dc2626]` si `tone === "danger"` y `TriangleAlert` `text-[#b45309] dark:text-[#fbbf24]` si `warn`
+(icono `aria-hidden`, `hover:bg-[var(--bg)]`). Vacío: `EmptyState` con `CircleCheck`, «Todo en orden» /
+«No hay ventas vencidas ni productos por reponer.». Reexporta el tipo: `export type { AttentionItem }`.
 
-export type { AttentionItem };
+Como el cupo es corto, cuando `items.some((i) => i.kind === "vencida")` añade al pie un enlace alineado a la
+derecha, `text-xs` teal: `<Link href="/finanzas/cuentas-por-cobrar?filter=vencidos">Ver todas las vencidas</Link>`.
 
-export function AttentionList({ items }: { items: AttentionItem[] }) {
-  return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
-      <p className="mb-2 text-sm font-bold text-[var(--text)]">Requieren atención</p>
-      {items.length === 0 ? (
-        <EmptyState icon={CircleCheck} title="Todo en orden" hint="No hay ventas vencidas ni productos por reponer." />
-      ) : (
-        <ul className="space-y-2">
-          {items.map((it, i) => {
-            const Icon = it.tone === "danger" ? CircleAlert : TriangleAlert;
-            const color = it.tone === "danger" ? "text-[#dc2626]" : "text-[#b45309] dark:text-[#fbbf24]";
-            return (
-              <li key={i}>
-                <Link href={it.href} className="flex items-start gap-2 rounded-lg border border-[var(--border)] p-2.5 hover:bg-[var(--bg)]">
-                  <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${color}`} strokeWidth={2} aria-hidden="true" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[var(--text)]">{it.title}</p>
-                    <p className="text-xs text-[var(--text-soft)]">{it.detail}</p>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
-  );
-}
-```
 
 - [ ] **Step 4: Dashboard la alimenta**
 

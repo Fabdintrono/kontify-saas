@@ -15,7 +15,7 @@ export function Sheet({ open, onOpenChange, side = "bottom", title, children }: 
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
         <Dialog.Content
-          className={`fixed z-50 overflow-y-auto border border-[var(--border)] bg-[var(--surface)] p-4 ${pos} relative`}>
+          className={`fixed z-50 overflow-y-auto border border-[var(--border)] bg-[var(--surface)] p-4 ${pos}`}>
           <Dialog.Close asChild>
             <button type="button" aria-label="Cerrar"
               className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg text-[var(--text-soft)] hover:bg-[var(--bg)]">

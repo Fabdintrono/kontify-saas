@@ -1,19 +1,42 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { round2 } from "@/lib/ventas/totals";
 import { assertDateISO } from "@/lib/tz";
+import { compareBy, resolveSort, type SortSpec } from "@/lib/sorting";
 
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 function sanitize(term: string): string { return term.replace(/[%,()*]/g, " ").trim(); }
 
 export type ReceivableClientRow = { clientId: string | null; name: string; totalDue: number; overdueAmount: number; oldestDueDate: string | null };
 
+/** El orden de Cuentas por cobrar se resuelve en memoria: la lista se agrupa por cliente
+ *  después de consultar, así que no hay columna de base de datos por la que ordenar. */
+export const RECEIVABLES_SORT: SortSpec = {
+  default: { key: "totalDue", dir: "desc" },
+  columns: {
+    name: { column: "name", natural: "asc" },
+    totalDue: { column: "totalDue", natural: "desc" },
+    overdue: { column: "overdueAmount", natural: "desc" },
+    oldestDue: { column: "oldestDueDate", natural: "asc" },
+  },
+};
+
+function pickReceivable(key: string): (r: ReceivableClientRow) => string | number | null {
+  switch (key) {
+    case "name": return (r) => r.name;
+    case "overdue": return (r) => r.overdueAmount;
+    case "oldestDue": return (r) => r.oldestDueDate;
+    default: return (r) => r.totalDue;
+  }
+}
+
 // `today` es un "YYYY-MM-DD" en la zona horaria de la empresa (lo produce todayISO(tz) en las páginas):
 // comparar un DATE due_date contra el "hoy" del servidor fechaba mal los vencimientos.
 export async function listReceivablesByClient(sb: SupabaseClient, opts: {
-  search?: string; filter?: "todos" | "vencidos"; today: string;
+  search?: string; filter?: "todos" | "vencidos"; today: string; sort?: string; dir?: string;
 }): Promise<ReceivableClientRow[]> {
   try {
     const { search = "", filter = "todos", today } = opts;
+    const order = resolveSort(RECEIVABLES_SORT, opts.sort, opts.dir);
     assertDateISO(today);
     let q = sb.from("sales").select("client_id, total, paid_amount, balance, due_date, clients(name)")
       .eq("status", "issued").gt("balance", 0);
@@ -40,7 +63,7 @@ export async function listReceivablesByClient(sb: SupabaseClient, opts: {
     }
     let rows = [...map.values()].map((r) => ({ ...r, totalDue: round2(r.totalDue), overdueAmount: round2(r.overdueAmount) }));
     if (filter === "vencidos") rows = rows.filter((r) => r.overdueAmount > 0);
-    return rows.sort((a, b) => b.totalDue - a.totalDue);
+    return compareBy(rows, pickReceivable(order.key), order.ascending);
   } catch (e) { console.error("listReceivablesByClient", e); return []; }
 }
 

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { round2 } from "@/lib/ventas/totals";
+import { compareBy, resolveSort, type SortSpec } from "@/lib/sorting";
 
 export type StockStatus = "en_stock" | "bajo" | "agotado";
 export type StockRow = { productId: string; name: string; sku: string | null; qty: number; minStock: number; status: StockStatus };
@@ -11,11 +12,39 @@ function statusOf(qty: number, minStock: number): StockStatus {
 }
 function sanitize(term: string): string { return term.replace(/[%,()*]/g, " ").trim(); }
 
+/** El orden de Inventario se resuelve en memoria: la lista llega entera, sin paginar,
+ *  así que ordenarla aquí no miente sobre el total. */
+export const STOCK_SORT: SortSpec = {
+  default: { key: "name", dir: "asc" },
+  columns: {
+    name: { column: "name", natural: "asc" },
+    sku: { column: "sku", natural: "asc" },
+    qty: { column: "qty", natural: "desc" },
+    minStock: { column: "minStock", natural: "desc" },
+    status: { column: "status", natural: "asc" },
+  },
+};
+
+// «agotado» primero al ordenar ascendente: lo urgente arriba.
+const STATUS_RANK: Record<StockStatus, number> = { agotado: 0, bajo: 1, en_stock: 2 };
+
+function pickStock(key: string): (r: StockRow) => string | number | null {
+  switch (key) {
+    case "sku": return (r) => r.sku;
+    case "qty": return (r) => r.qty;
+    case "minStock": return (r) => r.minStock;
+    case "status": return (r) => STATUS_RANK[r.status];
+    default: return (r) => r.name;
+  }
+}
+
 export async function listStock(sb: SupabaseClient, opts: {
   search?: string; status?: "todos" | "bajo" | "agotado"; branchId?: string | null;
+  sort?: string; dir?: string;
 } = {}): Promise<StockRow[]> {
   try {
     const { search = "", status = "todos", branchId = null } = opts;
+    const order = resolveSort(STOCK_SORT, opts.sort, opts.dir);
     const { data: products } = await sb.from("products")
       .select("id, name, sku, min_stock").eq("kind", "good").eq("active", true).order("name");
     let lq = sb.from("stock_levels").select("product_id, branch_id, qty");
@@ -33,7 +62,7 @@ export async function listStock(sb: SupabaseClient, opts: {
     if (s) rows = rows.filter((r) => r.name.toLowerCase().includes(s) || (r.sku ?? "").toLowerCase().includes(s));
     if (status === "bajo") rows = rows.filter((r) => r.status === "bajo");
     else if (status === "agotado") rows = rows.filter((r) => r.status === "agotado");
-    return rows;
+    return compareBy(rows, pickStock(order.key), order.ascending);
   } catch { return []; }
 }
 

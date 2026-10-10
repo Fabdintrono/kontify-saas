@@ -114,21 +114,43 @@ export const GUIDES: Record<ModuleId, Guide> = {
   config_tipos_cliente: {
     title: "Tipos de cliente",
     subtitle: "Etiquetas para agrupar clientes (Mayorista, Minorista…). Los tipos inactivos no aparecen al crear clientes, pero se conservan en los existentes.",
-    steps: [],
+    steps: [
+      "Escribe el nombre arriba y pulsa «Añadir» para crear un tipo.",
+      "Cambia el nombre en su fila y pulsa «Guardar»: el cambio se ve en todos los clientes que lo usan.",
+      "«Desactivar» lo saca del formulario de clientes sin tocar a los que ya lo tienen.",
+      "Luego filtras la lista de clientes por tipo y lo ves desglosado en el inicio.",
+    ],
+    notDoes: ["Un tipo no cambia precios ni condiciones de pago: solo agrupa."],
   },
   config_categorias: {
     title: "Categorías de producto",
     subtitle: "Agrupan el catálogo. Las categorías inactivas no aparecen al crear productos, pero se conservan en los existentes.",
-    steps: [],
+    steps: [
+      "Escribe el nombre arriba y pulsa «Añadir» para crear una categoría.",
+      "Cambia el nombre en su fila y pulsa «Guardar».",
+      "«Desactivar» la saca del formulario de productos sin tocar a los que ya la tienen.",
+      "Luego filtras el catálogo por categoría y la ves desglosada en el inicio.",
+    ],
+    notDoes: ["Una categoría no anida dentro de otra: la lista es plana."],
   },
   config_tasas: {
     title: "Tasas de impuesto",
     subtitle: "Porcentajes que se aplican por producto. La predeterminada se preselecciona al crear productos; solo puede haber una.",
-    steps: [],
+    steps: [
+      "Añade la tasa con su nombre y su porcentaje (por ejemplo, IVA y 16).",
+      "Marca una como predeterminada: será la que traiga cada producto nuevo.",
+      "Cambiar el porcentaje afecta a las ventas que emitas a partir de ese momento.",
+      "«Desactivar» la saca del formulario de productos sin tocar a los que ya la tienen.",
+    ],
+    notDoes: ["No recalcula ventas ya emitidas: cada una guarda el impuesto con el que se emitió."],
   },
   config_preferencias: {
     title: "Preferencias",
     subtitle: "Ajustes de este dispositivo, como el tema claro u oscuro.",
-    steps: [],
+    steps: [
+      "Elige el tema claro u oscuro; se recuerda en este navegador.",
+      "También puedes cambiarlo desde el menú de tu cuenta, arriba a la derecha.",
+    ],
+    notDoes: ["No cambia nada para el resto del equipo: es solo de este dispositivo."],
   },
 };

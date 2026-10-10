@@ -10,7 +10,7 @@ export function Popover({ trigger, children, align = "end" }: {
       <PO.Trigger asChild>{trigger}</PO.Trigger>
       <PO.Portal>
         <PO.Content align={align} sideOffset={8}
-          className="z-50 w-80 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-lg">
+          className="z-50 w-80 origin-[var(--radix-popover-content-transform-origin)] rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-lg data-[state=open]:animate-scale-in data-[state=closed]:animate-scale-out">
           {children}
         </PO.Content>
       </PO.Portal>

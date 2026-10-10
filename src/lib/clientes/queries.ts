@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { monthRange } from "@/lib/reportes/ranges";
 import { startOfDayUTC } from "@/lib/tz";
+import { resolveSort, type SortSpec } from "@/lib/sorting";
 
 export type ClientListRow = {
   id: string; name: string; kind: "person" | "company";
@@ -9,6 +10,17 @@ export type ClientListRow = {
 };
 export type ClientStatus = "activos" | "archivados" | "todos";
 
+/** Columnas por las que puede ordenar la lista de clientes. Lo que no esté aquí
+ *  cae al orden por defecto: nada escrito por el usuario llega a `.order()`. */
+export const CLIENTS_SORT: SortSpec = {
+  default: { key: "name", dir: "asc" },
+  columns: {
+    name: { column: "name", natural: "asc" },
+    type: { column: "client_types(name)", natural: "asc", nullsFirst: false },
+    status: { column: "active", natural: "desc" },
+  },
+};
+
 // Neutraliza caracteres con significado en filtros PostgREST para evitar inyección en .or()
 function sanitize(term: string): string {
   return term.replace(/[%,()*]/g, " ").trim();
@@ -16,8 +28,10 @@ function sanitize(term: string): string {
 
 export async function listClients(sb: SupabaseClient, opts: {
   search?: string; typeId?: string | null; status?: ClientStatus; page?: number; pageSize?: number;
+  sort?: string; dir?: string;
 } = {}): Promise<{ rows: ClientListRow[]; total: number; page: number; pageSize: number }> {
   const { search = "", typeId = null, status = "activos", page = 1, pageSize = 20 } = opts;
+  const order = resolveSort(CLIENTS_SORT, opts.sort, opts.dir);
   let q = sb.from("clients").select("id, name, kind, phone, email, active, type_id, client_types(name)", { count: "exact" });
   if (status === "activos") q = q.eq("active", true);
   else if (status === "archivados") q = q.eq("active", false);
@@ -25,7 +39,12 @@ export async function listClients(sb: SupabaseClient, opts: {
   const s = sanitize(search);
   if (s) q = q.or(`name.ilike.%${s}%,phone.ilike.%${s}%,email.ilike.%${s}%,doc_id.ilike.%${s}%`);
   const from = (page - 1) * pageSize;
-  q = q.order("name").range(from, from + pageSize - 1);
+  // Los vacíos van siempre al final, ordene hacia donde ordene: igual que `compareBy`
+  // en las listas que ordenan en memoria. Postgres, por su cuenta, los pondría primero al bajar.
+  q = q.order(order.column, { ascending: order.ascending, nullsFirst: order.nullsFirst ?? false });
+  // Segundo criterio estable: sin él, dos filas con el mismo valor pueden saltar de página.
+  if (order.column !== "name") q = q.order("name", { ascending: true });
+  q = q.range(from, from + pageSize - 1);
   const { data, error, count } = await q;
   if (error) throw error;
   const rows: ClientListRow[] = (data ?? []).map((r: any) => ({

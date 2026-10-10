@@ -10,7 +10,7 @@ export function DropdownMenu({ trigger, children, align = "end" }: {
       <DM.Trigger asChild>{trigger}</DM.Trigger>
       <DM.Portal>
         <DM.Content align={align} sideOffset={8}
-          className="z-50 min-w-52 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-lg">
+          className="z-50 min-w-52 origin-[var(--radix-dropdown-menu-content-transform-origin)] rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-lg data-[state=open]:animate-scale-in data-[state=closed]:animate-scale-out">
           {children}
         </DM.Content>
       </DM.Portal>
@@ -21,7 +21,7 @@ export function DropdownMenu({ trigger, children, align = "end" }: {
 export function DropdownItem({ children, onSelect }: { children: ReactNode; onSelect?: () => void }) {
   return (
     <DM.Item onSelect={onSelect}
-      className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-[var(--text)] outline-none data-[highlighted]:bg-[var(--bg)]">
+      className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-[var(--text)] outline-none transition-colors data-[highlighted]:bg-[var(--bg)]">
       {children}
     </DM.Item>
   );

@@ -18,6 +18,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { buttonCls } from "@/components/ui/button";
 import { flashFor } from "@/lib/flash";
 import type { Role } from "@/lib/auth/roles";
+import { Page } from "@/components/shared/page";
 
 export default async function VentaDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -45,7 +46,7 @@ export default async function VentaDetallePage({ params }: { params: Promise<{ i
   const dangerBtn = buttonCls("danger");
 
   return (
-    <div className="space-y-4 p-6">
+    <Page>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Link href="/operaciones/facturacion" className="text-sm text-[var(--text-soft)] hover:text-[#0e7490]">← Ventas</Link>
         <div className="flex items-center gap-2">
@@ -85,6 +86,6 @@ export default async function VentaDetallePage({ params }: { params: Promise<{ i
           )}
         </div>
       )}
-    </div>
+    </Page>
   );
 }

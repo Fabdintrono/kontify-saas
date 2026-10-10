@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTenantSettings } from "@/lib/tenant";
+import { resolveSort, type SortSpec } from "@/lib/sorting";
 
 export type ProductListRow = {
   id: string; name: string; kind: "good" | "service";
@@ -8,6 +9,18 @@ export type ProductListRow = {
 };
 export type ProductStatus = "activos" | "archivados" | "todos";
 
+/** Columnas por las que puede ordenar el catálogo. Lista blanca: lo demás cae al defecto. */
+export const PRODUCTS_SORT: SortSpec = {
+  default: { key: "name", dir: "asc" },
+  columns: {
+    name: { column: "name", natural: "asc" },
+    sku: { column: "sku", natural: "asc", nullsFirst: false },
+    category: { column: "product_categories(name)", natural: "asc", nullsFirst: false },
+    price: { column: "price", natural: "desc" },
+    status: { column: "active", natural: "desc" },
+  },
+};
+
 // Neutraliza caracteres con significado en filtros PostgREST para evitar inyección en .or()
 function sanitize(term: string): string {
   return term.replace(/[%,()*]/g, " ").trim();
@@ -15,9 +28,10 @@ function sanitize(term: string): string {
 
 export async function listProducts(sb: SupabaseClient, opts: {
   search?: string; categoryId?: string | null; kind?: "good" | "service" | null;
-  status?: ProductStatus; page?: number; pageSize?: number;
+  status?: ProductStatus; page?: number; pageSize?: number; sort?: string; dir?: string;
 } = {}): Promise<{ rows: ProductListRow[]; total: number; page: number; pageSize: number }> {
   const { search = "", categoryId = null, kind = null, status = "activos", page = 1, pageSize = 20 } = opts;
+  const order = resolveSort(PRODUCTS_SORT, opts.sort, opts.dir);
   let q = sb.from("products").select("id, name, kind, sku, price, active, category_id, product_categories(name)", { count: "exact" });
   if (status === "activos") q = q.eq("active", true);
   else if (status === "archivados") q = q.eq("active", false);
@@ -26,7 +40,12 @@ export async function listProducts(sb: SupabaseClient, opts: {
   const s = sanitize(search);
   if (s) q = q.or(`name.ilike.%${s}%,sku.ilike.%${s}%`);
   const from = (page - 1) * pageSize;
-  q = q.order("name").range(from, from + pageSize - 1);
+  // Los vacíos van siempre al final, ordene hacia donde ordene: igual que `compareBy`
+  // en las listas que ordenan en memoria. Postgres, por su cuenta, los pondría primero al bajar.
+  q = q.order(order.column, { ascending: order.ascending, nullsFirst: order.nullsFirst ?? false });
+  // Segundo criterio estable: sin él, dos filas con el mismo valor pueden saltar de página.
+  if (order.column !== "name") q = q.order("name", { ascending: true });
+  q = q.range(from, from + pageSize - 1);
   const { data, error, count } = await q;
   if (error) throw error;
   const rows: ProductListRow[] = (data ?? []).map((r: any) => ({

@@ -1,11 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeSaleTotals } from "@/lib/ventas/totals";
+import { resolveSort, type SortSpec } from "@/lib/sorting";
 
 export type QuoteStatusFilter = "borradores" | "enviados" | "aceptados" | "rechazados" | "convertidos" | "todos";
 export type QuoteListRow = {
   id: string; number: number | null; status: string;
   clientName: string | null; branchName: string | null;
   total: number; currency: string; validUntil: string | null; createdAt: string;
+};
+
+/** Columnas por las que puede ordenar la lista de presupuestos. «Estado» queda fuera:
+ *  su etiqueta mezcla el estado guardado con el vencimiento, calculado después. */
+export const QUOTES_SORT: SortSpec = {
+  default: { key: "date", dir: "desc" },
+  columns: {
+    number: { column: "number", natural: "desc", nullsFirst: false },
+    date: { column: "created_at", natural: "desc" },
+    client: { column: "clients(name)", natural: "asc", nullsFirst: false },
+    total: { column: "total", natural: "desc" },
+    validUntil: { column: "valid_until", natural: "asc", nullsFirst: false },
+  },
 };
 
 const STATUS_MAP: Record<string, string> = {
@@ -15,9 +29,10 @@ const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 function sanitize(term: string): string { return term.replace(/[%,()*]/g, " ").trim(); }
 
 export async function listQuotes(sb: SupabaseClient, opts: {
-  search?: string; status?: QuoteStatusFilter; page?: number; pageSize?: number;
+  search?: string; status?: QuoteStatusFilter; page?: number; pageSize?: number; sort?: string; dir?: string;
 } = {}): Promise<{ rows: QuoteListRow[]; total: number; page: number; pageSize: number }> {
   const { search = "", status = "todos", page = 1, pageSize = 20 } = opts;
+  const order = resolveSort(QUOTES_SORT, opts.sort, opts.dir);
   let q = sb.from("quotes").select(
     "id, number, status, total, currency, valid_until, created_at, clients(name), branches(name)",
     { count: "exact" },
@@ -34,7 +49,12 @@ export async function listQuotes(sb: SupabaseClient, opts: {
     }
   }
   const from = (page - 1) * pageSize;
-  q = q.order("created_at", { ascending: false }).range(from, from + pageSize - 1);
+  // Los vacíos van siempre al final, ordene hacia donde ordene: igual que `compareBy`
+  // en las listas que ordenan en memoria. Postgres, por su cuenta, los pondría primero al bajar.
+  q = q.order(order.column, { ascending: order.ascending, nullsFirst: order.nullsFirst ?? false });
+  // Segundo criterio estable: sin él, dos filas con el mismo valor pueden saltar de página.
+  if (order.column !== "created_at") q = q.order("created_at", { ascending: false });
+  q = q.range(from, from + pageSize - 1);
   const { data, error, count } = await q;
   if (error) throw error;
   const rows: QuoteListRow[] = (data ?? []).map((r: any) => ({

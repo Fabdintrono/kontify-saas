@@ -6,6 +6,7 @@ import { getQuote } from "@/lib/presupuestos/queries";
 import { canSell } from "@/lib/ventas/permissions";
 import { QuoteBuilder } from "@/components/presupuestos/quote-builder";
 import type { Role } from "@/lib/auth/roles";
+import { Page } from "@/components/shared/page";
 
 export default async function EditarPresupuestoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -27,13 +28,13 @@ export default async function EditarPresupuestoPage({ params }: { params: Promis
   }));
 
   return (
-    <div className="p-6">
+    <Page>
       <h1 className="mb-4 text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Editar presupuesto</h1>
       <QuoteBuilder clients={clients} products={products} branches={branches}
         role={role} userBranchId={mem?.branch_id ?? null} currency={currency}
         values={{ id: quote.id, clientId: quote.client_id, branchId: quote.branch_id,
           globalDiscountPct: Number(quote.global_discount_pct), validUntil: quote.valid_until ?? "",
           notes: quote.notes ?? "", items }} />
-    </div>
+    </Page>
   );
 }

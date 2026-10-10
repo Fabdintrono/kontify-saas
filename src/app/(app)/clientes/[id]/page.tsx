@@ -16,6 +16,7 @@ import { formatMoney, formatDate } from "@/lib/format";
 import { getTenantSettings } from "@/lib/tenant";
 import type { Role } from "@/lib/auth/roles";
 import { DANGER_TEXT } from "@/lib/ui-tokens";
+import { Page } from "@/components/shared/page";
 
 export default async function ClienteDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,7 +36,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
   const secondaryBtn = buttonCls("secondary");
 
   return (
-    <div className="space-y-4 p-6">
+    <Page>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">{c.name}</h1>
@@ -100,6 +101,6 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             : <p className="py-6 text-center text-sm text-[var(--text-soft)]">Sin saldos pendientes.</p>}
         </div>
       </div>
-    </div>
+    </Page>
   );
 }

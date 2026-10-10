@@ -1,30 +1,25 @@
 import Link from "next/link";
 import type { StockRow } from "@/lib/inventario/queries";
+import type { SortDir } from "@/lib/sorting";
+import { DataTable, type Column } from "@/components/ui/data-table";
 import { StockStatusBadge } from "./stock-status-badge";
 import { DANGER_TEXT } from "@/lib/ui-tokens";
 
-export function StockTable({ rows }: { rows: StockRow[] }) {
-  return (
-    <table className="hidden w-full text-sm lg:table">
-      <thead>
-        <tr className="border-b border-[var(--border)] text-left text-xs text-[var(--text-soft)]">
-          <th className="py-2 font-medium">Producto</th><th className="font-medium">SKU</th>
-          <th className="font-medium">Existencia</th><th className="font-medium">Mínimo</th><th className="font-medium">Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.productId} className="border-b border-[var(--border)] hover:bg-[var(--bg)]">
-            <td className="py-2.5">
-              <Link href={`/operaciones/productos/${r.productId}`} className="font-medium text-[var(--text)] hover:text-[#0e7490]">{r.name}</Link>
-            </td>
-            <td className="text-[var(--text-soft)]">{r.sku || "—"}</td>
-            <td className={r.qty <= 0 ? DANGER_TEXT : "text-[var(--text)]"}>{r.qty}</td>
-            <td className="text-[var(--text-soft)]">{r.minStock}</td>
-            <td><StockStatusBadge status={r.status} /></td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+const COLUMNS: Column<StockRow>[] = [
+  {
+    key: "name", label: "Producto", width: "38%", sortable: true, natural: "asc",
+    cell: (r) => (
+      <Link href={`/operaciones/productos/${r.productId}`} className="font-medium text-[var(--text)] transition-colors hover:text-[#0e7490] dark:hover:text-[#5eead4]">{r.name}</Link>
+    ),
+  },
+  { key: "sku", label: "SKU", width: "18%", sortable: true, natural: "asc", cell: (r) => <span className="text-[var(--text-soft)]">{r.sku || "—"}</span> },
+  { key: "qty", label: "Existencia", width: "14%", align: "right", sortable: true, natural: "desc", cell: (r) => <span className={r.qty <= 0 ? DANGER_TEXT : "text-[var(--text)]"}>{r.qty}</span> },
+  { key: "minStock", label: "Mínimo", width: "14%", align: "right", sortable: true, natural: "desc", cell: (r) => <span className="text-[var(--text-soft)]">{r.minStock}</span> },
+  { key: "status", label: "Estado", width: "16%", sortable: true, natural: "asc", cell: (r) => <StockStatusBadge status={r.status} /> },
+];
+
+export const STOCK_COL_WIDTHS = COLUMNS.map((c) => c.width);
+
+export function StockTable({ rows, sort }: { rows: StockRow[]; sort: { key: string; dir: SortDir } }) {
+  return <DataTable rows={rows} columns={COLUMNS} rowKey={(r) => r.productId} sort={sort} caption="Existencias por producto" />;
 }

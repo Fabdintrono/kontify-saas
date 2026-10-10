@@ -3,11 +3,11 @@ import { z } from "zod";
 export const CLIENT_KINDS = ["person", "company"] as const;
 
 const optStr = (max: number) =>
-  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z.preprocess((v) => (v == null || (typeof v === "string" && v.trim() === "") ? undefined : v),
     z.string().trim().max(max).optional());
 
 const optEmail =
-  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z.preprocess((v) => (v == null || (typeof v === "string" && v.trim() === "") ? undefined : v),
     z.string().trim().email("Email inválido").max(120).optional());
 
 const optTypeId =

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const optStr = (max: number) =>
-  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z.preprocess((v) => (v == null || (typeof v === "string" && v.trim() === "") ? undefined : v),
     z.string().trim().max(max).optional());
 
 export const adjustmentSchema = z.object({

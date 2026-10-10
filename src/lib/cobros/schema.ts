@@ -1,14 +1,14 @@
 import { z } from "zod";
 
 const optStr = (max: number) =>
-  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z.preprocess((v) => (v == null || (typeof v === "string" && v.trim() === "") ? undefined : v),
     z.string().trim().max(max).optional());
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const optDate =
-  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z.preprocess((v) => (v == null || (typeof v === "string" && v.trim() === "") ? undefined : v),
     z.string().regex(DATE_RE, "Fecha inválida").optional());
 
 export const paymentCreateSchema = z.object({

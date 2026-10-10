@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { flashFor } from "@/lib/flash";
 import { FieldLabel } from "@/components/shared/field-label";
+import { FieldHelp } from "@/components/shared/field-help";
 import { DANGER_TEXT } from "@/lib/ui-tokens";
 
 type LiteProduct = { id: string; name: string };
@@ -53,7 +54,10 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
               </>
             : <>
                 {/* Sin control que enfocar: la sucursal viene fija, así que el rótulo no es <label>. */}
-                <p className="mb-1 text-xs font-medium text-[var(--text-soft)]">Sucursal</p>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <p className="text-xs font-medium text-[var(--text-soft)]">Sucursal</p>
+                  <FieldHelp help="sucursal" label="Sucursal" />
+                </div>
                 <input type="hidden" name="branchId" value={defaultBranch} />
                 <p className="py-2 text-sm text-[var(--text)]">{branches.find((b) => b.id === defaultBranch)?.name ?? "—"}</p>
               </>}

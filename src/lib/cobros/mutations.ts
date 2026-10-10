@@ -6,7 +6,7 @@ import { isDateISO } from "@/lib/tz";
 export async function registerPayment(
   sb: SupabaseClient, tenantId: string, userId: string, input: PaymentInput, today: string,
 ): Promise<string> {
-  if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
+  if (!isDateISO(today)) throw new Error(`Fecha local inválida: ${today}`);
   if (input.paidAt && input.paidAt > today) throw new Error("La fecha no puede ser futura");
   const { data: sale, error: readErr } = await sb.from("sales")
     .select("id, status, balance").eq("id", input.saleId).maybeSingle();

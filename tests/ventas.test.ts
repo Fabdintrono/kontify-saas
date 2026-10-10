@@ -3,6 +3,9 @@ import { newUserClient } from "./setup";
 import type { SaleSaveInput } from "@/lib/ventas/schema";
 import { createDraft, emitSale, voidSale, deleteDraft } from "@/lib/ventas/mutations";
 import { listSales, salesKpi, receivablesTotal, salesByClient } from "@/lib/ventas/queries";
+import { todayISO } from "@/lib/tz";
+
+const HOY = todayISO("UTC");
 
 async function makeTenant(name: string) {
   const u = await newUserClient();
@@ -32,8 +35,8 @@ describe("ventas — flujo y correlativo", () => {
     const b = await mainBranch(a);
     const id1 = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b));
     const id2 = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b));
-    await emitSale(a.client, id1, { paymentType: "contado", paymentMethod: "efectivo" });
-    await emitSale(a.client, id2, { paymentType: "credito" });
+    await emitSale(a.client, id1, { paymentType: "contado", paymentMethod: "efectivo" }, HOY);
+    await emitSale(a.client, id2, { paymentType: "credito" }, HOY);
 
     const emitidas = await listSales(a.client, { status: "emitidas" });
     const nums = emitidas.rows.map((r) => r.number).sort((x, y) => (x! - y!));
@@ -50,7 +53,7 @@ describe("ventas — flujo y correlativo", () => {
     const a = await makeTenant("kpi");
     const b = await mainBranch(a);
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b, { items: [{ productId: null, description: "X", quantity: 1, unitPrice: 100, discountPct: 0, taxRate: 0 }] }));
-    await emitSale(a.client, id, { paymentType: "credito" });
+    await emitSale(a.client, id, { paymentType: "credito" }, HOY);
     expect((await salesKpi(a.client, "UTC")).monthTotal).toBe(100);
     expect((await receivablesTotal(a.client)).total).toBe(100);
     await voidSale(a.client, id);
@@ -72,7 +75,7 @@ describe("ventas — flujo y correlativo", () => {
     const b = await mainBranch(a);
     const { data: cli } = await a.client.from("clients").insert({ tenant_id: a.tenantId, kind: "person", name: "Ana" }).select("id").single();
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b, { clientId: cli!.id }));
-    await emitSale(a.client, id, { paymentType: "credito" });
+    await emitSale(a.client, id, { paymentType: "credito" }, HOY);
     const h = await salesByClient(a.client, cli!.id);
     expect(h.list).toHaveLength(1);
     expect(h.purchasedTotal).toBe(23.2);

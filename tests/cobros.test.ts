@@ -43,7 +43,7 @@ describe("cobros — flujo con trigger", () => {
   it("emitir contado crea un cobro y deja la venta pagada", async () => {
     const a = await makeTenant("con");
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a), null, 100));
-    await emitSale(a.client, id, { paymentType: "contado", paymentMethod: "efectivo" });
+    await emitSale(a.client, id, { paymentType: "contado", paymentMethod: "efectivo" }, HOY);
     expect((await balanceOf(a, id)).balance).toBe(0);
     const pays = await listPayments(a.client, id);
     expect(pays).toHaveLength(1);
@@ -54,7 +54,7 @@ describe("cobros — flujo con trigger", () => {
     const a = await makeTenant("par");
     const cli = await makeClient(a, "Ana");
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a), cli, 100));
-    await emitSale(a.client, id, { paymentType: "credito" });
+    await emitSale(a.client, id, { paymentType: "credito" }, HOY);
     expect((await balanceOf(a, id)).balance).toBe(100);
     await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 40 }, HOY);
     expect((await balanceOf(a, id)).balance).toBe(60);
@@ -65,14 +65,14 @@ describe("cobros — flujo con trigger", () => {
   it("un abono mayor al saldo es rechazado", async () => {
     const a = await makeTenant("ovr");
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a), null, 50));
-    await emitSale(a.client, id, { paymentType: "credito" });
+    await emitSale(a.client, id, { paymentType: "credito" }, HOY);
     await expect(registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 51 }, HOY)).rejects.toBeTruthy();
   });
 
   it("anular un cobro restaura el saldo (trigger)", async () => {
     const a = await makeTenant("vd");
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a), null, 100));
-    await emitSale(a.client, id, { paymentType: "credito" });
+    await emitSale(a.client, id, { paymentType: "credito" }, HOY);
     const pid = await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 100 }, HOY);
     expect((await balanceOf(a, id)).balance).toBe(0);
     await voidPayment(a.client, pid);
@@ -82,7 +82,7 @@ describe("cobros — flujo con trigger", () => {
   it("no se puede anular una venta con cobros activos", async () => {
     const a = await makeTenant("blk");
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a), null, 100));
-    await emitSale(a.client, id, { paymentType: "credito" });
+    await emitSale(a.client, id, { paymentType: "credito" }, HOY);
     const pid = await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 30 }, HOY);
     await expect(voidSale(a.client, id)).rejects.toBeTruthy();
     await voidPayment(a.client, pid);
@@ -96,9 +96,9 @@ describe("cobros — Cuentas por Cobrar", () => {
     const cli = await makeClient(a, "Zoe");
     const branch = await mainBranch(a);
     const id1 = await createDraft(a.client, a.tenantId, a.id, "USD", sale(branch, cli, 100));
-    await emitSale(a.client, id1, { paymentType: "credito", dueDate: "2020-01-01" }); // vencida
+    await emitSale(a.client, id1, { paymentType: "credito", dueDate: "2020-01-01" }, HOY); // vencida
     const id2 = await createDraft(a.client, a.tenantId, a.id, "USD", sale(branch, cli, 50));
-    await emitSale(a.client, id2, { paymentType: "credito" }); // sin vencimiento
+    await emitSale(a.client, id2, { paymentType: "credito" }, HOY); // sin vencimiento
 
     const byClient = await listReceivablesByClient(a.client, { today: HOY });
     const row = byClient.find((r) => r.clientId === cli);
@@ -118,7 +118,7 @@ describe("cobros — Cuentas por Cobrar", () => {
     const a = await makeTenant("bord");
     const cli = await makeClient(a, "Borde");
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a), cli, 100));
-    await emitSale(a.client, id, { paymentType: "credito", dueDate: "2026-10-09" });
+    await emitSale(a.client, id, { paymentType: "credito", dueDate: "2026-10-09" }, HOY);
 
     expect((await getClientReceivable(a.client, { clientId: cli, today: "2026-10-09" })).overdueAmount).toBe(0);
     expect((await getClientReceivable(a.client, { clientId: cli, today: "2026-10-10" })).overdueAmount).toBe(100);
@@ -129,7 +129,7 @@ describe("cobros — Cuentas por Cobrar", () => {
   it("fijar vencimiento en una venta emitida", async () => {
     const a = await makeTenant("due");
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a), null, 100));
-    await emitSale(a.client, id, { paymentType: "credito" });
+    await emitSale(a.client, id, { paymentType: "credito" }, HOY);
     await setDueDate(a.client, id, "2027-06-30");
     const { data } = await a.client.from("sales").select("due_date").eq("id", id).single();
     expect(data!.due_date).toBe("2027-06-30");
@@ -158,6 +158,6 @@ describe("cobros — la fecha del cobro es el día de la empresa", () => {
     await expect(registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 10, paidAt: "2026-10-10" }, "2026-10-09"))
       .rejects.toThrow(/futura/);
     await expect(registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 10 }, "basura"))
-      .rejects.toThrow(/today/);
+      .rejects.toThrow(/Fecha local inválida/);
   });
 });

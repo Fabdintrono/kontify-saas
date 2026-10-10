@@ -20,8 +20,16 @@ describe("cobros — schema", () => {
   it("rechaza paidAt mal formada", () => {
     expect(paymentCreateSchema.safeParse({ saleId: sid, amount: 10, paidAt: "31-12-2026" }).success).toBe(false);
   });
+  it("rechaza paidAt con fecha inexistente", () => {
+    const r = paymentCreateSchema.safeParse({ saleId: sid, amount: 10, paidAt: "2026-02-30" });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0].message).toBe("Fecha inválida");
+  });
   it("dueDate acepta fecha o null", () => {
     expect(dueDateSchema.safeParse({ saleId: sid, dueDate: "2026-12-31" }).success).toBe(true);
     expect(dueDateSchema.safeParse({ saleId: sid, dueDate: "" }).success).toBe(true); // → null
+  });
+  it("rechaza dueDate con fecha inexistente", () => {
+    expect(dueDateSchema.safeParse({ saleId: sid, dueDate: "2026-02-30" }).success).toBe(false);
   });
 });

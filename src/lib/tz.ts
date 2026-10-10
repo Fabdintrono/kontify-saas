@@ -44,7 +44,7 @@ export function isDateISO(s: unknown): s is string {
   const t = new Date(Date.UTC(y, m - 1, d));
   return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
 }
-function assertDateISO(s: string): void {
+export function assertDateISO(s: string): void {
   if (!isDateISO(s)) throw new Error(`Fecha local inválida: ${s}`);
 }
 const toISO = (t: Date) => `${pad(t.getUTCFullYear(), 4)}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;

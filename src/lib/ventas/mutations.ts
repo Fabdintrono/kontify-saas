@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SaleSaveInput, EmitInput } from "@/lib/ventas/schema";
 import { computeSaleTotals } from "@/lib/ventas/totals";
 import { applySaleStockOut, reverseSaleStock } from "@/lib/inventario/mutations";
-import { todayISO, isDateISO, DEFAULT_TZ } from "@/lib/tz";
+import { isDateISO } from "@/lib/tz";
 
 function headerTotals(input: SaleSaveInput) {
   const t = computeSaleTotals(
@@ -65,9 +65,9 @@ export async function deleteDraft(sb: SupabaseClient, id: string): Promise<void>
 
 /** `today` = "YYYY-MM-DD" en la zona de la empresa (fecha del cobro al contado). */
 export async function emitSale(
-  sb: SupabaseClient, id: string, payment: EmitInput, today: string = todayISO(DEFAULT_TZ),
+  sb: SupabaseClient, id: string, payment: EmitInput, today: string,
 ): Promise<void> {
-  if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
+  if (!isDateISO(today)) throw new Error(`Fecha local inválida: ${today}`);
   const { data: sale, error: readErr } = await sb.from("sales")
     .select("id, status, total, tenant_id, created_by").eq("id", id).maybeSingle();
   if (readErr) throw readErr;

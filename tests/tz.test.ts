@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { localDateISO, startOfDayUTC, addDaysISO, rangeToInstants, todayISO } from "@/lib/tz";
+import { localDateISO, startOfDayUTC, addDaysISO, rangeToInstants, todayISO, isDateISO, tzOffsetMinutes } from "@/lib/tz";
 
 const VE = "America/Caracas"; // UTC-4 todo el año
 
@@ -28,5 +28,38 @@ describe("tz helpers", () => {
   });
   it("todayISO usa la zona", () => {
     expect(todayISO(VE, new Date("2026-10-10T03:56:01Z"))).toBe("2026-10-09");
+  });
+  it("startOfDayUTC: si la medianoche local no existe, el día arranca en la transición", () => {
+    expect(startOfDayUTC("2026-03-08", "America/Havana")).toBe("2026-03-08T05:00:00.000Z");
+    expect(startOfDayUTC("2026-09-06", "America/Santiago")).toBe("2026-09-06T04:00:00.000Z");
+    expect(startOfDayUTC("2026-03-29", "Atlantic/Azores")).toBe("2026-03-29T01:00:00.000Z");
+  });
+  it("startOfDayUTC: si la medianoche local ocurre dos veces, toma la primera", () => {
+    expect(startOfDayUTC("2026-11-01", "America/Havana")).toBe("2026-11-01T04:00:00.000Z");
+  });
+  it("tzOffsetMinutes: zonas con desfase no entero", () => {
+    const t = new Date("2026-06-15T00:00:00Z");
+    expect(tzOffsetMinutes(t, "Asia/Kathmandu")).toBe(345);
+    expect(tzOffsetMinutes(t, "Pacific/Kiritimati")).toBe(840);
+    expect(tzOffsetMinutes(t, "Etc/GMT+12")).toBe(-720);
+  });
+  it("rangeToInstants: cruza el cambio de horario sin perder ni duplicar horas; invertido se normaliza", () => {
+    expect(rangeToInstants({ from: "2026-03-07", to: "2026-03-09" }, "America/New_York"))
+      .toEqual({ fromInstant: "2026-03-07T05:00:00.000Z", toInstant: "2026-03-10T04:00:00.000Z" });
+    expect(rangeToInstants({ from: "2026-10-20", to: "2026-10-01" }, "UTC"))
+      .toEqual({ fromInstant: "2026-10-01T00:00:00.000Z", toInstant: "2026-10-21T00:00:00.000Z" });
+  });
+  it("isDateISO y las guardas de entrada", () => {
+    expect(isDateISO("2026-10-09")).toBe(true);
+    expect(isDateISO("2026-02-30")).toBe(false);
+    expect(isDateISO("2026-10-09T00:00:00Z")).toBe(false);
+    expect(isDateISO("basura")).toBe(false);
+    expect(isDateISO(null)).toBe(false);
+    expect(() => addDaysISO("basura", 1)).toThrow(/Fecha local inválida/);
+    expect(() => startOfDayUTC("2026-13-45", "UTC")).toThrow(/Fecha local inválida/);
+    expect(() => localDateISO(new Date(), "Mars/Phobos")).toThrow(RangeError);
+  });
+  it("todayISO sin now usa el reloj y devuelve YYYY-MM-DD", () => {
+    expect(todayISO("UTC")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

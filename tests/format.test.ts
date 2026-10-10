@@ -15,4 +15,28 @@ describe("fechas", () => {
     expect(weekdayShort("2026-10-09")).toBe("vie");
     expect(weekdayShort("2026-10-10")).toBe("sáb");
   });
+  it("formatDate: el borde de medianoche en Caracas cae del lado correcto", () => {
+    expect(formatDate("2026-10-10T03:59:59Z", "America/Caracas")).toBe("09/10/2026");
+    expect(formatDate("2026-10-10T04:00:00Z", "America/Caracas")).toBe("10/10/2026");
+  });
+  it("formatDate: una columna DATE pasada por error no se corre un día", () => {
+    expect(formatDate("2026-10-01", "America/Caracas")).toBe("01/10/2026");
+  });
+  it("formatDate nunca lanza: zona inválida o vacía usa la de respaldo; basura → —", () => {
+    expect(formatDate("2026-10-10T03:56:01Z", "Nowhere/Fake")).toBe("09/10/2026");
+    expect(formatDate("2026-10-10T03:56:01Z", "")).toBe("09/10/2026");
+    expect(formatDate("basura", "UTC")).toBe("—");
+    expect(formatDate(undefined, "UTC")).toBe("—");
+  });
+  it("formatDateOnly rechaza instantes completos y fechas inválidas", () => {
+    expect(formatDateOnly("2026-10-10T03:56:01+00:00")).toBe("—");
+    expect(formatDateOnly("2026-13-45")).toBe("—");
+    expect(formatDateOnly("2026-1-5")).toBe("—");
+    expect(formatDateOnly("")).toBe("—");
+  });
+  it("weekdayShort degrada a — en vez de lanzar", () => {
+    expect(weekdayShort("basura")).toBe("—");
+    expect(weekdayShort(null)).toBe("—");
+    expect(weekdayShort("2026-10-12")).toBe("lun");
+  });
 });

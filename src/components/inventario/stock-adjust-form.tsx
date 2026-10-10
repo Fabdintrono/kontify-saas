@@ -2,7 +2,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { registerAdjustmentAction, type FormState } from "@/app/(app)/operaciones/inventario/actions";
 import { useToast } from "@/components/ui/toast";
-import { flashMessage } from "@/lib/flash";
+import { flashFor } from "@/lib/flash";
 
 type LiteProduct = { id: string; name: string };
 type Branch = { id: string; name: string };
@@ -19,7 +19,7 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
   const { toast } = useToast();
   const defaultBranch = userBranchId ?? branches.find((b) => b)?.id ?? "";
   const err = (k: string) => state.fieldErrors?.[k];
-  useEffect(() => { if (state.ok) { setOpen(false); toast(flashMessage("stock-ajustado", null)!); } }, [state]);
+  useEffect(() => { if (state.ok) { setOpen(false); toast(flashFor("stock-ajustado")); } }, [state]);
 
   if (!open) return (
     <button type="button" onClick={() => setOpen(true)}

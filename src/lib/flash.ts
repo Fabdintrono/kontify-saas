@@ -38,7 +38,15 @@ export function withFlash(path: string, key: FlashKey, arg?: string | number | n
   return `${path}${sep}flash=${key}${a}`;
 }
 
+// El `arg` llega de la URL: solo se acepta un número corto (es un número de documento).
+const ARG_OK = /^\d{1,9}$/;
+
 export function flashMessage(key: string, arg: string | null): { title: string; description?: string } | null {
   const fn = (MESSAGES as Record<string, (a: string | null) => { title: string; description?: string }>)[key];
-  return fn ? fn(arg) : null;
+  return fn ? fn(arg && ARG_OK.test(arg) ? arg : null) : null;
+}
+
+/** Para llamadas internas con clave conocida (sin `!`). */
+export function flashFor(key: FlashKey, arg: string | number | null = null): { title: string; description?: string } {
+  return MESSAGES[key](arg == null ? null : String(arg));
 }

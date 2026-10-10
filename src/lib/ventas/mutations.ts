@@ -66,7 +66,7 @@ export async function deleteDraft(sb: SupabaseClient, id: string): Promise<void>
 /** `today` = "YYYY-MM-DD" en la zona de la empresa (fecha del cobro al contado). */
 export async function emitSale(
   sb: SupabaseClient, id: string, payment: EmitInput, today: string,
-): Promise<void> {
+): Promise<number> {
   if (!isDateISO(today)) throw new Error(`Fecha local inválida: ${today}`);
   const { data: sale, error: readErr } = await sb.from("sales")
     .select("id, status, total, tenant_id, created_by").eq("id", id).maybeSingle();
@@ -82,9 +82,10 @@ export async function emitSale(
     payment_method: payment.paymentType === "contado" ? (payment.paymentMethod ?? null) : null,
     due_date: payment.paymentType === "credito" ? (payment.dueDate ?? null) : null,
     updated_at: new Date().toISOString(),
-  }).eq("id", id).eq("status", "draft").select("id");
+  }).eq("id", id).eq("status", "draft").select("id, number");
   if (error) throw error;
   if (!data || data.length === 0) throw new Error("La venta ya no es un borrador");
+  const number = Number(data[0].number);
 
   // El contado se registra como un cobro por el total → el trigger fija paid_amount.
   if (payment.paymentType === "contado") {
@@ -98,6 +99,7 @@ export async function emitSale(
 
   // Descuenta stock de los ítems 'good' de la venta (permite negativo).
   await applySaleStockOut(sb, id);
+  return number;
 }
 
 export async function voidSale(sb: SupabaseClient, id: string): Promise<void> {

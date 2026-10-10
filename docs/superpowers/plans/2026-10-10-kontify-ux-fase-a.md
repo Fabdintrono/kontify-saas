@@ -1279,30 +1279,40 @@ git commit -m "fix(builders): solo el botón pulsado muestra estado pendiente"
 `src/components/ui/toast.test.tsx`:
 ```tsx
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { render, screen, fireEvent, act, cleanup } from "@testing-library/react";
 import { ToastProvider, useToast } from "./toast";
 
-function Demo() {
+afterEach(() => { cleanup(); vi.useRealTimers(); });
+
+function Demo({ href }: { href?: string }) {
   const { toast } = useToast();
-  return <button onClick={() => toast({ title: "Venta #4 emitida", href: "/operaciones/facturacion/x" })}>go</button>;
+  return <button onClick={() => toast({ title: "Venta #4 emitida", href })}>go</button>;
 }
 
 describe("Toast", () => {
   it("muestra el título, un enlace Ver y se puede cerrar", () => {
-    render(<ToastProvider><Demo /></ToastProvider>);
+    render(<ToastProvider><Demo href="/operaciones/facturacion/x" /></ToastProvider>);
     fireEvent.click(screen.getByText("go"));
     expect(screen.getByText("Venta #4 emitida")).toBeTruthy();
     expect(screen.getByText("Ver").getAttribute("href")).toBe("/operaciones/facturacion/x");
     fireEvent.click(screen.getByLabelText("Cerrar aviso"));
     expect(screen.queryByText("Venta #4 emitida")).toBeNull();
   });
-  it("se cierra solo a los 4 segundos", async () => {
+  it("sin enlace se cierra solo a los 4 segundos", () => {
+    vi.useFakeTimers();
     render(<ToastProvider><Demo /></ToastProvider>);
     fireEvent.click(screen.getByText("go"));
-    await act(async () => { await new Promise((r) => setTimeout(r, 4300)); });
+    act(() => { vi.advanceTimersByTime(4500); });
     expect(screen.queryByText("Venta #4 emitida")).toBeNull();
-  }, 10000);
+  });
+  it("con enlace no se cierra solo: hay que darle tiempo de pulsar Ver", () => {
+    vi.useFakeTimers();
+    render(<ToastProvider><Demo href="/operaciones/facturacion/x" /></ToastProvider>);
+    fireEvent.click(screen.getByText("go"));
+    act(() => { vi.advanceTimersByTime(4500); });
+    expect(screen.getByText("Venta #4 emitida")).toBeTruthy();
+  });
 });
 ```
 Run: `npx vitest run src/components/ui/toast.test.tsx` → FAIL.
@@ -1311,7 +1321,7 @@ Run: `npx vitest run src/components/ui/toast.test.tsx` → FAIL.
 
 ```tsx
 "use client";
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { CircleCheck, TriangleAlert, X } from "lucide-react";
 
@@ -1325,26 +1335,34 @@ const DURATION_MS = 4000;
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Toast[]>([]);
   const seq = useRef(0);
-  const dismiss = useCallback((id: number) => setItems((xs) => xs.filter((x) => x.id !== id)), []);
+  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+  const dismiss = useCallback((id: number) => {
+    const t = timers.current.get(id);
+    if (t) { clearTimeout(t); timers.current.delete(id); }
+    setItems((xs) => xs.filter((x) => x.id !== id));
+  }, []);
   const toast = useCallback((t: ToastInput) => {
     const id = ++seq.current;
     setItems((xs) => [...xs.slice(-2), { ...t, id }]); // máximo 3 visibles
-    setTimeout(() => dismiss(id), DURATION_MS);
+    // Un aviso con enlace no se va solo: el usuario necesita tiempo para pulsar «Ver».
+    if (!t.href) timers.current.set(id, setTimeout(() => dismiss(id), DURATION_MS));
   }, [dismiss]);
+  // Al desmontar, ningún temporizador queda vivo tocando estado de un árbol que ya no existe.
+  useEffect(() => () => { for (const t of timers.current.values()) clearTimeout(t); timers.current.clear(); }, []);
   const value = useMemo(() => ({ toast }), [toast]);
   return (
     <ToastCtx.Provider value={value}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-3 bottom-20 z-[60] flex flex-col items-center gap-2 lg:inset-x-auto lg:bottom-6 lg:right-6 lg:items-end">
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-3 bottom-20 z-[60] flex flex-col items-center gap-2 lg:inset-x-auto lg:bottom-24 lg:right-6 lg:items-end">  {/* bottom-24: libra el FAB de Vender */}
         {items.map((t) => (
-          <div key={t.id} role="status"
+          <div key={t.id}
             className="pointer-events-auto flex w-full max-w-sm items-start gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm shadow-lg">
             {t.tone === "error"
               ? <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#dc2626]" strokeWidth={2} aria-hidden="true" />
               : <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#0f766e] dark:text-[#6ee7b7]" strokeWidth={2} aria-hidden="true" />}
             <div className="min-w-0 flex-1">
-              <p className="font-semibold text-[var(--text)]">{t.title}</p>
-              {t.description && <p className="text-xs text-[var(--text-soft)]">{t.description}</p>}
+              <p className="break-words font-semibold text-[var(--text)]">{t.title}</p>
+              {t.description && <p className="break-words text-xs text-[var(--text-soft)]">{t.description}</p>}
               {t.href && <Link href={t.href} onClick={() => dismiss(t.id)} className="mt-1 inline-block text-xs font-semibold text-[#0e7490] dark:text-[#5eead4]">{t.hrefLabel ?? "Ver"}</Link>}
             </div>
             <button type="button" aria-label="Cerrar aviso" onClick={() => dismiss(t.id)}
@@ -1364,14 +1382,14 @@ export function useToast(): Ctx {
   return ctx;
 }
 ```
-Run el test → PASS (2).
+Run el test → PASS (3).
 
 - [ ] **Step 3: Test de flash (falla)**
 
 `tests/flash.test.ts`:
 ```ts
 import { describe, it, expect } from "vitest";
-import { withFlash, flashMessage } from "@/lib/flash";
+import { withFlash, flashMessage, flashFor } from "@/lib/flash";
 
 describe("flash", () => {
   it("withFlash añade la clave (y el argumento) a la URL", () => {
@@ -1382,6 +1400,13 @@ describe("flash", () => {
     expect(flashMessage("venta-emitida", "4")).toEqual({ title: "Venta #4 emitida", description: "Se asignó el número y se descontó el stock." });
     expect(flashMessage("cliente-creado", null)?.title).toBe("Cliente creado");
     expect(flashMessage("lo-que-sea", null)).toBeNull();
+  });
+  it("un arg que no es un número se descarta (viene de la URL)", () => {
+    expect(flashMessage("venta-emitida", "0 — llame al 0800")?.title).toBe("Venta emitida");
+  });
+  it("flashFor no necesita `!`: la clave es conocida", () => {
+    expect(flashFor("abono-registrado").title).toBe("Abono registrado");
+    expect(flashFor("venta-emitida", 12).title).toBe("Venta #12 emitida");
   });
 });
 ```
@@ -1430,12 +1455,20 @@ export function withFlash(path: string, key: FlashKey, arg?: string | number | n
   return `${path}${sep}flash=${key}${a}`;
 }
 
+// El `arg` llega de la URL: solo se acepta un número corto (es un número de documento).
+const ARG_OK = /^\d{1,9}$/;
+
 export function flashMessage(key: string, arg: string | null): { title: string; description?: string } | null {
   const fn = (MESSAGES as Record<string, (a: string | null) => { title: string; description?: string }>)[key];
-  return fn ? fn(arg) : null;
+  return fn ? fn(arg && ARG_OK.test(arg) ? arg : null) : null;
+}
+
+/** Para llamadas internas con clave conocida (sin `!`). */
+export function flashFor(key: FlashKey, arg: string | number | null = null): { title: string; description?: string } {
+  return MESSAGES[key](arg == null ? null : String(arg));
 }
 ```
-Run el test → PASS (2).
+Run el test → PASS (4).
 
 - [ ] **Step 5: `FlashToast` y montaje en el shell**
 
@@ -1443,28 +1476,32 @@ Run el test → PASS (2).
 ```tsx
 "use client";
 import { useEffect } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { flashMessage } from "@/lib/flash";
 
-/** Lee ?flash=clave&arg=… tras un redirect, muestra el toast y limpia la URL (sin recargar). */
+/** Lee ?flash=clave&arg=… tras un redirect, muestra el toast y limpia la URL sin navegar
+ *  (history.replaceState se integra con el router de Next y evita un segundo render del servidor). */
 export function FlashToast() {
   const sp = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
   const key = sp.get("flash");
   const arg = sp.get("arg");
+  const shown = useRef<string | null>(null);
   useEffect(() => {
     if (!key) return;
+    const token = `${key}|${arg ?? ""}`;
+    if (shown.current === token) return; // StrictMode re-ejecuta el efecto con las mismas props
+    shown.current = token;
     const msg = flashMessage(key, arg);
     if (msg) toast(msg);
     const next = new URLSearchParams(sp.toString());
     next.delete("flash"); next.delete("arg");
     const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, arg]);
+    window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
+  }, [key, arg, sp, pathname, toast]);
   return null;
 }
 ```
@@ -1494,15 +1531,16 @@ import { FlashToast } from "@/components/shell/flash-toast";
 `src/app/(app)/operaciones/facturacion/actions.ts`:
 - `submitSaleAction`: antes del `redirect` final, obtener el número si emitió: 
   ```ts
+  // `emitSale` devuelve el número asignado (su update ya hace select("id, number")): sin consulta extra.
   let number: number | null = null;
-  if (intent === "emit") { const { data } = await sb.from("sales").select("number").eq("id", saleId).maybeSingle(); number = data?.number ?? null; }
+  if (intent === "emit") number = await m.emitSale(sb, saleId, pay.data, todayISO(timezone));
   redirect(withFlash(`${LIST}/${saleId}`, intent === "emit" ? "venta-emitida" : "venta-borrador", number));
   ```
 - `deleteDraftAction`: `redirect(withFlash(LIST, "venta-borrador-eliminado"))`.
 - `voidSaleAction` no redirige: el toast lo dispara el `ConfirmDialog` (Task 10).
 
 `src/app/(app)/operaciones/presupuestos/actions.ts`:
-- `submitQuoteAction`: igual que ventas con `"presupuesto-enviado"` (número vía `select("number")` de `quotes`) / `"presupuesto-borrador"`.
+- `submitQuoteAction`: igual que ventas con `"presupuesto-enviado"` (número devuelto por `sendQuote`) / `"presupuesto-borrador"`.
 - `deleteQuoteAction`: `withFlash(LIST, "presupuesto-eliminado")`.
 - `convertQuoteAction`: `redirect(withFlash(`/operaciones/facturacion/${saleId}/editar`, "presupuesto-convertido"))`.
 - `setQuoteStatusAction` no redirige: toast desde el cliente (Task 10).
@@ -1511,9 +1549,9 @@ import { FlashToast } from "@/components/shell/flash-toast";
 
 `src/components/cobros/payment-form.tsx`: `const { toast } = useToast();` y el efecto:
 ```ts
-useEffect(() => { if (state.ok) { setOpen(false); toast(flashMessage("abono-registrado", null)!); } }, [state]);
+useEffect(() => { if (state.ok) { setOpen(false); toast(flashFor("abono-registrado")); } }, [state]);
 ```
-(imports: `useToast` de `@/components/ui/toast`, `flashMessage` de `@/lib/flash`.)
+(imports: `useToast` de `@/components/ui/toast`, `flashFor` de `@/lib/flash` — tipado, sin `!`.)
 
 `src/components/inventario/stock-adjust-form.tsx`: igual con `"stock-ajustado"`.
 
@@ -1523,7 +1561,7 @@ useEffect(() => { if (state.ok) { setOpen(false); toast(flashMessage("abono-regi
 import { useTransition } from "react";
 import { setDueDateAction } from "@/app/(app)/finanzas/cuentas-por-cobrar/actions";
 import { useToast } from "@/components/ui/toast";
-import { flashMessage } from "@/lib/flash";
+import { flashFor } from "@/lib/flash";
 import { formatDateOnly } from "@/lib/format";
 
 export function DueDateField({ saleId, dueDate, canEdit }: { saleId: string; dueDate: string | null; canEdit: boolean }) {
@@ -1536,7 +1574,7 @@ export function DueDateField({ saleId, dueDate, canEdit }: { saleId: string; due
   );
   return (
     <form className="flex items-center gap-2"
-      onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); start(async () => { await setDueDateAction(fd); toast(flashMessage("vencimiento-guardado", null)!); }); }}>
+      onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); start(async () => { try { await setDueDateAction(fd); toast(flashFor("vencimiento-guardado")); } catch { toast({ title: "No se pudo guardar el vencimiento", tone: "error" }); } }); }}>
       <input type="hidden" name="saleId" value={saleId} />
       <label htmlFor={`due-${saleId}`} className="text-sm text-[var(--text-soft)]">Vencimiento</label>
       <input id={`due-${saleId}`} type="date" name="dueDate" defaultValue={dueDate ?? ""} className={inputCls} />

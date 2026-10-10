@@ -2,7 +2,7 @@
 import { useTransition } from "react";
 import { setDueDateAction } from "@/app/(app)/finanzas/cuentas-por-cobrar/actions";
 import { useToast } from "@/components/ui/toast";
-import { flashMessage } from "@/lib/flash";
+import { flashFor } from "@/lib/flash";
 import { formatDateOnly } from "@/lib/format";
 
 export function DueDateField({ saleId, dueDate, canEdit }: { saleId: string; dueDate: string | null; canEdit: boolean }) {
@@ -15,7 +15,7 @@ export function DueDateField({ saleId, dueDate, canEdit }: { saleId: string; due
   );
   return (
     <form className="flex items-center gap-2"
-      onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); start(async () => { await setDueDateAction(fd); toast(flashMessage("vencimiento-guardado", null)!); }); }}>
+      onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); start(async () => { try { await setDueDateAction(fd); toast(flashFor("vencimiento-guardado")); } catch { toast({ title: "No se pudo guardar el vencimiento", tone: "error" }); } }); }}>
       <input type="hidden" name="saleId" value={saleId} />
       <label htmlFor={`due-${saleId}`} className="text-sm text-[var(--text-soft)]">Vencimiento</label>
       <input id={`due-${saleId}`} type="date" name="dueDate" defaultValue={dueDate ?? ""} className={inputCls} />

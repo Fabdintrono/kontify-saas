@@ -62,6 +62,7 @@ export async function submitSaleAction(_prev: FormState, fd: FormData): Promise<
   if (!BACK_OFFICE.includes(role) && branchId) parsed.data.branchId = branchId;
 
   let saleId = id;
+  let number: number | null = null; // el número solo existe tras emitir; lo lleva el toast
   try {
     const { currency, timezone } = await getTenantSettings(sb);
     if (id) await m.updateDraft(sb, id, tenantId, parsed.data);
@@ -70,16 +71,9 @@ export async function submitSaleAction(_prev: FormState, fd: FormData): Promise<
     if (intent === "emit") {
       const pay = emitSchema.safeParse({ paymentType: fd.get("paymentType"), paymentMethod: fd.get("paymentMethod"), dueDate: fd.get("dueDate") });
       if (!pay.success) return { ok: false, fieldErrors: zodErrors(pay.error) };
-      await m.emitSale(sb, saleId, pay.data, todayISO(timezone));
+      number = await m.emitSale(sb, saleId, pay.data, todayISO(timezone));
     }
   } catch (e) { return { ok: false, error: (e as Error).message }; }
-
-  // El número solo existe tras emitir; lo lleva el toast ("Venta #12 emitida").
-  let number: number | null = null;
-  if (intent === "emit") {
-    const { data } = await sb.from("sales").select("number").eq("id", saleId).maybeSingle();
-    number = data?.number ?? null;
-  }
 
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${saleId}`);

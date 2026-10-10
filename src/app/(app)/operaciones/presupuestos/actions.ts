@@ -54,19 +54,13 @@ export async function submitQuoteAction(_prev: FormState, fd: FormData): Promise
   if (!BACK_OFFICE.includes(role) && branchId) parsed.data.branchId = branchId;
 
   let quoteId = id;
+  let number: number | null = null; // el número se asigna al enviar; lo lleva el toast
   try {
     const currency = await getTenantCurrency(sb);
     if (id) await m.updateDraft(sb, id, tenantId, parsed.data);
     else quoteId = await m.createDraft(sb, tenantId, userId, currency, parsed.data);
-    if (intent === "send") await m.sendQuote(sb, quoteId);
+    if (intent === "send") number = await m.sendQuote(sb, quoteId);
   } catch (e) { return { ok: false, error: (e as Error).message }; }
-
-  // El número se asigna al enviar; lo lleva el toast ("Presupuesto #7 enviado").
-  let number: number | null = null;
-  if (intent === "send") {
-    const { data } = await sb.from("quotes").select("number").eq("id", quoteId).maybeSingle();
-    number = data?.number ?? null;
-  }
 
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${quoteId}`);

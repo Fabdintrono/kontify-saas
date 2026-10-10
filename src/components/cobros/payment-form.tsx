@@ -2,7 +2,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { registerPaymentAction, type FormState } from "@/app/(app)/finanzas/cuentas-por-cobrar/actions";
 import { useToast } from "@/components/ui/toast";
-import { flashMessage } from "@/lib/flash";
+import { flashFor } from "@/lib/flash";
 import { formatMoney } from "@/lib/format";
 
 const initial: FormState = { ok: false };
@@ -16,7 +16,7 @@ export function PaymentForm({ saleId, balance, currency, today }: { saleId: stri
   const err = (k: string) => state.fieldErrors?.[k];
 
   // Tras un abono exitoso, colapsa el panel y avisa; el revalidatePath ya refrescó saldo/historial.
-  useEffect(() => { if (state.ok) { setOpen(false); toast(flashMessage("abono-registrado", null)!); } }, [state]);
+  useEffect(() => { if (state.ok) { setOpen(false); toast(flashFor("abono-registrado")); } }, [state]);
 
   if (!open) return (
     <button type="button" onClick={() => setOpen(true)}

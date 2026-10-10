@@ -55,7 +55,7 @@ export async function deleteDraft(sb: SupabaseClient, id: string): Promise<void>
   if (!data || data.length === 0) throw new Error("Solo se pueden borrar borradores");
 }
 
-export async function sendQuote(sb: SupabaseClient, id: string): Promise<void> {
+export async function sendQuote(sb: SupabaseClient, id: string): Promise<number> {
   const { data: q, error: readErr } = await sb.from("quotes").select("id, status").eq("id", id).maybeSingle();
   if (readErr) throw readErr;
   if (!q || q.status !== "draft") throw new Error("Solo se envían borradores");
@@ -65,9 +65,10 @@ export async function sendQuote(sb: SupabaseClient, id: string): Promise<void> {
   if (numErr) throw numErr;
   const { data, error } = await sb.from("quotes").update({
     number: num, status: "sent", updated_at: new Date().toISOString(),
-  }).eq("id", id).eq("status", "draft").select("id");
+  }).eq("id", id).eq("status", "draft").select("id, number");
   if (error) throw error;
   if (!data || data.length === 0) throw new Error("El presupuesto ya no es un borrador");
+  return Number(data[0].number);
 }
 
 export async function setQuoteStatus(sb: SupabaseClient, id: string, status: "accepted" | "rejected"): Promise<void> {

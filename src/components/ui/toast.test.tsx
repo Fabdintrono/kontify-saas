@@ -1,28 +1,37 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act, cleanup } from "@testing-library/react";
 import { ToastProvider, useToast } from "./toast";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 
-function Demo() {
+function Demo({ href }: { href?: string }) {
   const { toast } = useToast();
-  return <button onClick={() => toast({ title: "Venta #4 emitida", href: "/operaciones/facturacion/x" })}>go</button>;
+  return <button onClick={() => toast({ title: "Venta #4 emitida", href })}>go</button>;
 }
 
 describe("Toast", () => {
   it("muestra el título, un enlace Ver y se puede cerrar", () => {
-    render(<ToastProvider><Demo /></ToastProvider>);
+    render(<ToastProvider><Demo href="/operaciones/facturacion/x" /></ToastProvider>);
     fireEvent.click(screen.getByText("go"));
     expect(screen.getByText("Venta #4 emitida")).toBeTruthy();
     expect(screen.getByText("Ver").getAttribute("href")).toBe("/operaciones/facturacion/x");
     fireEvent.click(screen.getByLabelText("Cerrar aviso"));
     expect(screen.queryByText("Venta #4 emitida")).toBeNull();
   });
-  it("se cierra solo a los 4 segundos", async () => {
+  it("sin enlace se cierra solo a los 4 segundos", () => {
+    vi.useFakeTimers();
     render(<ToastProvider><Demo /></ToastProvider>);
     fireEvent.click(screen.getByText("go"));
-    await act(async () => { await new Promise((r) => setTimeout(r, 4300)); });
+    expect(screen.getByText("Venta #4 emitida")).toBeTruthy();
+    act(() => { vi.advanceTimersByTime(4500); });
     expect(screen.queryByText("Venta #4 emitida")).toBeNull();
-  }, 10000);
+  });
+  it("con enlace no se cierra solo: hay que darle tiempo de pulsar Ver", () => {
+    vi.useFakeTimers();
+    render(<ToastProvider><Demo href="/operaciones/facturacion/x" /></ToastProvider>);
+    fireEvent.click(screen.getByText("go"));
+    act(() => { vi.advanceTimersByTime(4500); });
+    expect(screen.getByText("Venta #4 emitida")).toBeTruthy();
+  });
 });

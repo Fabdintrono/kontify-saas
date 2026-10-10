@@ -41,24 +41,24 @@ async function ctx() {
 
 export async function createProductAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const { sb, userId, role, tenantId } = await ctx();
-  if (!canManageProducts(role)) return { ok: false, error: "Sin permiso" };
+  if (!canManageProducts(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const parsed = productCreateSchema.safeParse(productFields(fd));
   if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
   let id: string;
   try { id = await m.createProduct(sb, tenantId, userId, null, parsed.data); }
-  catch (e) { return { ok: false, error: (e as Error).message }; }
+  catch (e) { return { ok: false, ...actionError(e) }; }
   revalidatePath(LIST);
   redirect(withFlash(`${LIST}/${id}`, "producto-creado"));
 }
 
 export async function updateProductAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const { sb, role } = await ctx();
-  if (!canManageProducts(role)) return { ok: false, error: "Sin permiso" };
+  if (!canManageProducts(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const id = String(fd.get("id") ?? "");
   const parsed = productCreateSchema.safeParse(productFields(fd));
   if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
   try { await m.updateProduct(sb, id, parsed.data); }
-  catch (e) { return { ok: false, error: (e as Error).message }; }
+  catch (e) { return { ok: false, ...actionError(e) }; }
   revalidatePath(`${LIST}/${id}`);
   redirect(withFlash(`${LIST}/${id}`, "producto-guardado"));
 }
@@ -80,14 +80,14 @@ export async function createCategoryNamed(
   name: string,
 ): Promise<{ ok: boolean; category?: { id: string; name: string }; error?: string }> {
   const { sb, role, tenantId } = await ctx();
-  if (!canManageProducts(role)) return { ok: false, error: "Sin permiso" };
+  if (!canManageProducts(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const parsed = categoryCreateSchema.safeParse({ name });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message };
   try {
     const c = await m.createCategory(sb, tenantId, parsed.data.name);
     revalidatePath(LIST);
     return { ok: true, category: c };
-  } catch (e) { return { ok: false, error: (e as Error).message }; }
+  } catch (e) { return { ok: false, ...actionError(e) }; }
 }
 
 export async function createCategoryFormAction(fd: FormData): Promise<void> {

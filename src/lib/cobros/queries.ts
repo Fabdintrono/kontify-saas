@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { round2 } from "@/lib/ventas/totals";
-import { isDateISO } from "@/lib/tz";
+import { assertDateISO } from "@/lib/tz";
 
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 function sanitize(term: string): string { return term.replace(/[%,()*]/g, " ").trim(); }
@@ -14,7 +14,7 @@ export async function listReceivablesByClient(sb: SupabaseClient, opts: {
 }): Promise<ReceivableClientRow[]> {
   try {
     const { search = "", filter = "todos", today } = opts;
-    if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
+    assertDateISO(today);
     let q = sb.from("sales").select("client_id, total, paid_amount, balance, due_date, clients(name)")
       .eq("status", "issued").gt("balance", 0);
     const s = sanitize(search);
@@ -51,7 +51,7 @@ export async function getClientReceivable(sb: SupabaseClient, opts: { clientId: 
 }> {
   try {
     const { clientId, today } = opts;
-    if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
+    assertDateISO(today);
     const { data, error } = await sb.from("sales")
       .select("id, number, total, paid_amount, balance, due_date, clients(name)")
       .eq("client_id", clientId).eq("status", "issued").gt("balance", 0).order("due_date", { nullsFirst: false });
@@ -77,10 +77,10 @@ export async function listPayments(sb: SupabaseClient, saleId: string): Promise<
   return data.map((p: any) => ({ id: p.id, amount: Number(p.amount), method: p.method, reference: p.reference, paidAt: p.paid_at, voided: p.voided }));
 }
 
-// Total por cobrar + porción vencida. La consumirá el dashboard ("Requieren atención") en un plan posterior.
+// Total por cobrar + porción vencida (sin consumidor en la UI por ahora; el dashboard usa attentionItems).
 export async function receivablesKpi(sb: SupabaseClient, today: string): Promise<{ total: number; overdue: number }> {
   try {
-    if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
+    assertDateISO(today);
     const { data, error } = await sb.from("sales").select("balance, due_date").eq("status", "issued").gt("balance", 0);
     if (error || !data) return { total: 0, overdue: 0 };
     let total = 0, overdue = 0;

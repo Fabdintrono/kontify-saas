@@ -1,12 +1,12 @@
 import { round2 } from "@/lib/ventas/totals";
-import { isDateISO } from "@/lib/tz";
+import { assertDateISO } from "@/lib/tz";
 
 export type PaymentStatus = "pagada" | "parcial" | "pendiente" | "vencida";
 export type SaleLike = { status: string; total: number; paidAmount: number; dueDate: string | null };
 
 /** Estado de pago derivado de una venta. `today` = "YYYY-MM-DD" en la zona de la empresa. Solo ventas emitidas. */
 export function paymentStatusOf(s: SaleLike, today: string): PaymentStatus | null {
-  if (!isDateISO(today)) throw new Error(`Fecha local inválida: ${today}`);
+  assertDateISO(today);
   if (s.status !== "issued") return null;
   const balance = round2(Number(s.total) - Number(s.paidAmount));
   if (balance <= 0) return "pagada";

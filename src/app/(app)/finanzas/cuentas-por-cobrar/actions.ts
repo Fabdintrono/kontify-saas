@@ -43,7 +43,7 @@ async function revalidateFor(sb: any, saleId: string, clientId?: string | null) 
 
 export async function registerPaymentAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const { sb, userId, role, tenantId } = await ctx();
-  if (!canRegisterPayment(role)) return { ok: false, error: "Sin permiso" };
+  if (!canRegisterPayment(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const parsed = paymentCreateSchema.safeParse({
     saleId: fd.get("saleId"), amount: fd.get("amount"), method: fd.get("method"),
     reference: fd.get("reference"), paidAt: fd.get("paidAt"), notes: fd.get("notes"),
@@ -52,7 +52,7 @@ export async function registerPaymentAction(_prev: FormState, fd: FormData): Pro
   const today = todayISO((await getTenantSettings(sb)).timezone);
   if (parsed.data.paidAt && parsed.data.paidAt > today) return { ok: false, fieldErrors: { paidAt: "La fecha no puede ser futura" } };
   try { await m.registerPayment(sb, tenantId, userId, parsed.data, today); }
-  catch (e) { return { ok: false, error: (e as Error).message }; }
+  catch (e) { return { ok: false, ...actionError(e) }; }
   await revalidateFor(sb, parsed.data.saleId);
   return { ok: true };
 }

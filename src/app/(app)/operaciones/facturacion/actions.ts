@@ -50,7 +50,7 @@ function commonFields(fd: FormData) {
 // Acción única con intent (save | emit) para el builder; compatible con useActionState.
 export async function submitSaleAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const { sb, userId, role, tenantId, branchId } = await ctx();
-  if (!canSell(role)) return { ok: false, error: "Sin permiso" };
+  if (!canSell(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const intent = String(fd.get("intent") ?? "save");
   const id = String(fd.get("id") ?? "");
 
@@ -74,7 +74,7 @@ export async function submitSaleAction(_prev: FormState, fd: FormData): Promise<
       if (!pay.success) return { ok: false, fieldErrors: zodErrors(pay.error) };
       number = await m.emitSale(sb, saleId, pay.data, todayISO(timezone));
     }
-  } catch (e) { return { ok: false, error: (e as Error).message }; }
+  } catch (e) { return { ok: false, ...actionError(e) }; }
 
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${saleId}`);

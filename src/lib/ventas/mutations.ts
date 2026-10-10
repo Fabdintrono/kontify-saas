@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SaleSaveInput, EmitInput } from "@/lib/ventas/schema";
 import { computeSaleTotals } from "@/lib/ventas/totals";
 import { applySaleStockOut, reverseSaleStock } from "@/lib/inventario/mutations";
-import { isDateISO } from "@/lib/tz";
+import { assertDateISO } from "@/lib/tz";
 
 function headerTotals(input: SaleSaveInput) {
   const t = computeSaleTotals(
@@ -67,7 +67,7 @@ export async function deleteDraft(sb: SupabaseClient, id: string): Promise<void>
 export async function emitSale(
   sb: SupabaseClient, id: string, payment: EmitInput, today: string,
 ): Promise<number> {
-  if (!isDateISO(today)) throw new Error(`Fecha local inválida: ${today}`);
+  assertDateISO(today);
   const { data: sale, error: readErr } = await sb.from("sales")
     .select("id, status, total, tenant_id, created_by").eq("id", id).maybeSingle();
   if (readErr) throw readErr;

@@ -45,7 +45,7 @@ function commonFields(fd: FormData) {
 
 export async function submitQuoteAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const { sb, userId, role, tenantId, branchId } = await ctx();
-  if (!canSell(role)) return { ok: false, error: "Sin permiso" };
+  if (!canSell(role)) return { ok: false, error: "No tienes permiso para esta acción." };
   const intent = String(fd.get("intent") ?? "save");
   const id = String(fd.get("id") ?? "");
 
@@ -61,7 +61,7 @@ export async function submitQuoteAction(_prev: FormState, fd: FormData): Promise
     if (id) await m.updateDraft(sb, id, tenantId, parsed.data);
     else quoteId = await m.createDraft(sb, tenantId, userId, currency, parsed.data);
     if (intent === "send") number = await m.sendQuote(sb, quoteId);
-  } catch (e) { return { ok: false, error: (e as Error).message }; }
+  } catch (e) { return { ok: false, ...actionError(e) }; }
 
   revalidatePath(LIST);
   revalidatePath(`${LIST}/${quoteId}`);

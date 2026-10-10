@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { round2 } from "@/lib/ventas/totals";
 import { formatMoney, formatDateOnly } from "@/lib/format";
-import { isDateISO } from "@/lib/tz";
+import { assertDateISO } from "@/lib/tz";
 import { listStock } from "@/lib/inventario/queries";
 
 export type AttentionItem = {
@@ -25,7 +25,7 @@ const stockItem = (kind: "agotado" | "bajo", r: { name: string; qty: number; min
  *  Cupo 5 vencidas + el resto de inventario, hasta MAX. Solo alerta de productos con mínimo
  *  declarado (`min_stock > 0`): sin mínimo no hay nada que reponer. */
 export async function attentionItems(sb: SupabaseClient, today: string): Promise<AttentionItem[]> {
-  if (!isDateISO(today)) throw new Error(`Fecha local inválida: ${today}`);
+  assertDateISO(today);
   const out: AttentionItem[] = [];
   const { data: sales, error } = await sb.from("sales").select("id, number, balance, due_date, currency, clients(name)")
     .eq("status", "issued").gt("balance", 0).lt("due_date", today).order("due_date").limit(MAX_VENCIDAS);

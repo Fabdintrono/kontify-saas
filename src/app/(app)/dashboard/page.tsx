@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { DollarSign, TrendingUp, Users, Boxes, ArrowDownCircle, ArrowUpCircle, Receipt, AlertTriangle, Package } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { AttentionList } from "@/components/dashboard/attention-list";
-import { PeriodSelector } from "@/components/dashboard/period-selector";
 import { clientsKpi, clientsByType } from "@/lib/clientes/queries";
 import { productsKpi, productsByCategory } from "@/lib/productos/queries";
 import { salesKpi, receivablesTotal } from "@/lib/ventas/queries";
@@ -55,7 +54,7 @@ export default async function Dashboard() {
         <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">
           Hola{firstName ? `, ${firstName}` : ""} 👋
         </h1>
-        <PeriodSelector />
+        {/* Selector de período: se reincorpora cuando los KPIs reaccionen a él (Fase B); hoy todo es "este mes". */}
       </div>
 
       {/* Móvil: hero Utilidad + 4 KPIs */}

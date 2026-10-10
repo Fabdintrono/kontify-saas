@@ -39,7 +39,7 @@ export async function createClientAction(_prev: FormState, fd: FormData): Promis
   if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
   let id: string;
   try { id = await m.createClient(sb, tenantId, userId, null, parsed.data); }
-  catch (e) { return { ok: false, error: (e as Error).message }; }
+  catch (e) { return { ok: false, ...actionError(e) }; }
   revalidatePath("/clientes");
   redirect(withFlash(`/clientes/${id}`, "cliente-creado"));
 }
@@ -50,7 +50,7 @@ export async function updateClientAction(_prev: FormState, fd: FormData): Promis
   const parsed = clientCreateSchema.safeParse(clientFields(fd));
   if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
   try { await m.updateClient(sb, id, parsed.data); }
-  catch (e) { return { ok: false, error: (e as Error).message }; }
+  catch (e) { return { ok: false, ...actionError(e) }; }
   revalidatePath(`/clientes/${id}`);
   redirect(withFlash(`/clientes/${id}`, "cliente-guardado"));
 }
@@ -87,7 +87,7 @@ export async function createClientTypeNamed(
     const t = await m.createClientType(sb, tenantId, parsed.data.name);
     revalidatePath("/clientes");
     return { ok: true, type: t };
-  } catch (e) { return { ok: false, error: (e as Error).message }; }
+  } catch (e) { return { ok: false, ...actionError(e) }; }
 }
 
 export async function updateClientTypeAction(fd: FormData): Promise<void> {

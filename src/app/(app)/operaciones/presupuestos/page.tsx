@@ -22,8 +22,10 @@ export default async function PresupuestosPage({ searchParams }: {
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const status = (["borradores", "enviados", "aceptados", "rechazados", "convertidos", "todos"].includes(sp.status ?? "") ? sp.status : "todos") as QuoteStatusFilter;
 
-  const { timezone: tz } = await getTenantSettings(sb);
-  const list = await listQuotes(sb, { search: sp.q ?? "", status, page });
+  const [list, { timezone: tz }] = await Promise.all([
+    listQuotes(sb, { search: sp.q ?? "", status, page }),
+    getTenantSettings(sb),
+  ]);
   const pages = Math.max(1, Math.ceil(list.total / list.pageSize));
 
   return (

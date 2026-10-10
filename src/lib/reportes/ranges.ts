@@ -10,9 +10,8 @@ const startOfMonth = (dateISO: string) => `${dateISO.slice(0, 7)}-01`;
 /** 0 = lunes … 6 = domingo, leído de la fecha local (no de la zona del proceso). */
 const mondayIndex = (dateISO: string) => (new Date(`${dateISO}T00:00:00Z`).getUTCDay() + 6) % 7;
 
-/** Preset → rango de días locales en la zona `tz`, tomando `ref` como "ahora". */
-export function presetRange(preset: Preset, ref: Date, tz: string): DateRange {
-  const today = localDateISO(ref, tz);
+/** Preset → rango a partir de un día local ya calculado ("YYYY-MM-DD"). */
+export function presetRangeFor(preset: Preset, today: string): DateRange {
   switch (preset) {
     case "hoy": return { from: today, to: today };
     case "semana": return { from: addDaysISO(today, -mondayIndex(today)), to: today };
@@ -22,6 +21,18 @@ export function presetRange(preset: Preset, ref: Date, tz: string): DateRange {
       return { from: startOfMonth(to), to };
     }
   }
+}
+
+/** Preset → rango de días locales en la zona `tz`, tomando `ref` como "ahora". */
+export function presetRange(preset: Preset, ref: Date, tz: string): DateRange {
+  return presetRangeFor(preset, localDateISO(ref, tz));
+}
+
+export const PRESET_KEYS: Preset[] = ["hoy", "semana", "mes", "mes_pasado"];
+
+/** Qué preset coincide exactamente con un rango (el más estrecho gana en empates: hoy > semana > mes). */
+export function activePreset(today: string, r: DateRange): Preset | undefined {
+  return PRESET_KEYS.find((p) => { const x = presetRangeFor(p, today); return x.from === r.from && x.to === r.to; });
 }
 
 export const monthRange = (ref: Date, tz: string): DateRange => presetRange("mes", ref, tz);

@@ -7,6 +7,8 @@ import { canSell } from "@/lib/ventas/permissions";
 import { deleteQuoteAction, setQuoteStatusAction, convertQuoteAction } from "@/app/(app)/operaciones/presupuestos/actions";
 import { QuoteDocument } from "@/components/presupuestos/quote-document";
 import { PendingButton } from "@/components/shared/pending-button";
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function PresupuestoDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,6 +20,7 @@ export default async function PresupuestoDetallePage({ params }: { params: Promi
   const { data: mem } = await sb.from("memberships").select("role").eq("user_id", user!.id).single();
   const role = (mem?.role ?? "vendedor") as Role;
   const allowed = canSell(role);
+  const { timezone: tz } = await getTenantSettings(sb);
 
   const btn = "rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[var(--text)]";
   const primary = "rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white";
@@ -64,7 +67,7 @@ export default async function PresupuestoDetallePage({ params }: { params: Promi
         </div>
       </div>
 
-      <QuoteDocument quote={quote as any} />
+      <QuoteDocument quote={quote as any} today={todayISO(tz)} />
     </div>
   );
 }

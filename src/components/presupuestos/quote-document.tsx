@@ -8,9 +8,9 @@ type Quote = {
   items: Item[]; computed: { subtotal: number; discountTotal: number; taxTotal: number; total: number; lines: { neto: number }[] };
 };
 
-export function QuoteDocument({ quote }: { quote: Quote }) {
+export function QuoteDocument({ quote, today }: { quote: Quote; today: string }) {
   const c = quote.currency;
-  const overdue = !!quote.valid_until && quote.valid_until < new Date().toISOString().slice(0, 10) && ["sent", "accepted"].includes(quote.status);
+  const overdue = !!quote.valid_until && quote.valid_until < today && ["sent", "accepted"].includes(quote.status);
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">

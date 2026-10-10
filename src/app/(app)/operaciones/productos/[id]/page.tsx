@@ -2,18 +2,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getProduct, getTenantCurrency } from "@/lib/productos/queries";
+import { getProduct } from "@/lib/productos/queries";
 import { canManageProducts, canArchiveProduct } from "@/lib/productos/permissions";
 import { archiveProductAction } from "@/app/(app)/operaciones/productos/actions";
 import { ProductStockPanel } from "@/components/inventario/product-stock-panel";
 import { CategoryBadge } from "@/components/productos/category-badge";
 import { formatMoney } from "@/lib/format";
+import { getTenantSettings } from "@/lib/tenant";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function ProductoDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const sb = await createClient();
-  const [p, currency] = await Promise.all([getProduct(sb, id), getTenantCurrency(sb)]);
+  const [p, { currency, timezone: tz }] = await Promise.all([getProduct(sb, id), getTenantSettings(sb)]);
   if (!p) notFound();
   const { data: { user } } = await sb.auth.getUser();
   const { data: mem } = await sb.from("memberships").select("role, branch_id").eq("user_id", user!.id).single();
@@ -62,7 +63,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
         <div className="sm:col-span-2">{field("Descripción", p.description)}</div>
       </div>
 
-      <ProductStockPanel productId={p.id} kind={p.kind} role={role} userBranchId={mem?.branch_id ?? null} />
+      <ProductStockPanel productId={p.id} kind={p.kind} role={role} userBranchId={mem?.branch_id ?? null} tz={tz} />
     </div>
   );
 }

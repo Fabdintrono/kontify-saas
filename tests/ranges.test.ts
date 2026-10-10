@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { presetRange, monthRange, weekRange, addDays } from "@/lib/reportes/ranges";
+import { presetRange, presetRangeFor, activePreset, monthRange, weekRange, addDays } from "@/lib/reportes/ranges";
 
 const VE = "America/Caracas";
 // Viernes 9 de octubre de 2026 a las 23:56 en Venezuela (= 10/10 03:56Z)
@@ -32,5 +32,12 @@ describe("presetRange con zona horaria", () => {
   });
   it("a las 23:00 del domingo en Caracas la semana sigue siendo la que termina ese domingo", () => {
     expect(presetRange("semana", new Date("2026-10-12T03:00:00Z"), "America/Caracas")).toEqual({ from: "2026-10-05", to: "2026-10-11" });
+  });
+  it("presetRangeFor y activePreset: el preset más estrecho gana en empates", () => {
+    expect(presetRangeFor("mes", "2026-10-09")).toEqual({ from: "2026-10-01", to: "2026-10-09" });
+    expect(activePreset("2026-10-09", { from: "2026-10-05", to: "2026-10-09" })).toBe("semana");
+    expect(activePreset("2026-10-01", { from: "2026-10-01", to: "2026-10-01" })).toBe("hoy"); // 1.º del mes: hoy == mes
+    expect(activePreset("2026-10-09", { from: "2026-09-01", to: "2026-09-30" })).toBe("mes_pasado");
+    expect(activePreset("2026-10-09", { from: "2026-10-02", to: "2026-10-09" })).toBeUndefined();
   });
 });

@@ -4,7 +4,7 @@ import { salesReport } from "@/lib/reportes/queries";
 import { monthRange } from "@/lib/reportes/ranges";
 import { canAccess, type Role } from "@/lib/auth/roles";
 import { getTenantSettings } from "@/lib/tenant";
-import { isDateISO } from "@/lib/tz";
+import { isDateISO, todayISO } from "@/lib/tz";
 import { formatMoney, formatDateOnly } from "@/lib/format";
 import { PeriodSelector } from "@/components/reportes/period-selector";
 import { BarChart } from "@/components/reportes/bar-chart";
@@ -21,9 +21,9 @@ export default async function ReporteVentasPage({ searchParams }: {
 
   const { currency, timezone: tz } = await getTenantSettings(sb);
   const def = monthRange(new Date(), tz);
-  // Una fecha inválida en la URL no manda: cae al preset por defecto y el selector muestra la real.
-  const from = isDateISO(sp.from) ? sp.from : def.from;
-  const to = isDateISO(sp.to) ? sp.to : def.to;
+  // Si cualquiera de los dos extremos no sirve, manda el preset completo: nunca un rango mezclado.
+  const valid = isDateISO(sp.from) && isDateISO(sp.to);
+  const { from, to } = valid ? { from: sp.from as string, to: sp.to as string } : def;
   const isBackOffice = ["owner", "admin", "administrativo"].includes(role);
 
   const [report, { data: branches }] = await Promise.all([
@@ -37,7 +37,7 @@ export default async function ReporteVentasPage({ searchParams }: {
   return (
     <div className="space-y-4 p-6">
       <h1 className="text-xl font-extrabold tracking-[-0.4px] text-[var(--text)]">Reporte de ventas</h1>
-      <PeriodSelector branches={(branches ?? []) as any} showBranch={isBackOffice} tz={tz} from={from} to={to} />
+      <PeriodSelector branches={(branches ?? []) as any} showBranch={isBackOffice} today={todayISO(tz)} from={from} to={to} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Ventas" value={String(s.count)} />

@@ -1,14 +1,14 @@
 "use client";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { presetRange, type Preset } from "@/lib/reportes/ranges";
+import { presetRangeFor, activePreset, type Preset } from "@/lib/reportes/ranges";
 
 const PRESETS: { key: Preset; label: string }[] = [
   { key: "hoy", label: "Hoy" }, { key: "semana", label: "Esta semana" },
   { key: "mes", label: "Este mes" }, { key: "mes_pasado", label: "Mes pasado" },
 ];
 
-export function PeriodSelector({ branches, showBranch, tz, from, to }: {
-  branches: { id: string; name: string }[]; showBranch: boolean; tz: string; from: string; to: string;
+export function PeriodSelector({ branches, showBranch, today, from, to }: {
+  branches: { id: string; name: string }[]; showBranch: boolean; today: string; from: string; to: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -16,7 +16,7 @@ export function PeriodSelector({ branches, showBranch, tz, from, to }: {
 
   function push(next: URLSearchParams) { router.push(`${pathname}?${next.toString()}`); }
   function setPreset(p: Preset) {
-    const r = presetRange(p, new Date(), tz);
+    const r = presetRangeFor(p, today);
     const n = new URLSearchParams(sp.toString());
     n.set("from", r.from); n.set("to", r.to);
     push(n);
@@ -33,7 +33,7 @@ export function PeriodSelector({ branches, showBranch, tz, from, to }: {
   }
 
   // El preset se marca comparando su rango con el que la página está usando de verdad.
-  const active = PRESETS.find((p) => { const r = presetRange(p.key, new Date(), tz); return r.from === from && r.to === to; })?.key;
+  const active = activePreset(today, { from, to });
   const dateCls = "h-9 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 text-sm text-[var(--text)]";
   return (
     <div className="flex flex-wrap items-center gap-2">

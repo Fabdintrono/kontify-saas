@@ -690,12 +690,14 @@ Quitar `getTenantCurrency` del import de productos (ya no se usa aquí).
 `src/app/(app)/reportes/ventas/page.tsx`:
 ```ts
 import { getTenantSettings } from "@/lib/tenant";
+import { isDateISO, todayISO } from "@/lib/tz";
 import { formatDateOnly } from "@/lib/format";
 // …
   const { currency, timezone: tz } = await getTenantSettings(sb);
   const def = monthRange(new Date(), tz);
-  const from = sp.from || def.from;
-  const to = sp.to || def.to;
+  // Si cualquiera de los dos extremos no sirve, manda el preset completo: nunca un rango mezclado.
+  const valid = isDateISO(sp.from) && isDateISO(sp.to);
+  const { from, to } = valid ? { from: sp.from as string, to: sp.to as string } : def;
   // …
   const [report, { data: branches }] = await Promise.all([
     salesReport(sb, { from, to, branchId: sp.branch || null, tz }),
@@ -703,19 +705,21 @@ import { formatDateOnly } from "@/lib/format";
   ]);
   const dayBars = report.byDay.map((d) => ({ label: formatDateOnly(d.date).slice(0, 5), value: d.revenue }));
   // …
-  <PeriodSelector branches={(branches ?? []) as any} showBranch={isBackOffice} tz={tz} from={from} to={to} />
+  <PeriodSelector branches={(branches ?? []) as any} showBranch={isBackOffice} today={todayISO(tz)} from={from} to={to} />
 ```
-`src/components/reportes/period-selector.tsx`: añadir props `tz`, `from`, `to`; usar `presetRange(p, new Date(), tz)`; los `<input type="date">` muestran `defaultValue={from}` / `defaultValue={to}` (así el preset por defecto se ve); y marcar el preset activo:
+En `src/lib/reportes/ranges.ts` añadir una entrada por día ya calculado y que la anterior delegue, para que el selector sea determinista (sin `new Date()` en el cliente): `presetRangeFor(preset, today)`, `PRESET_KEYS` y `activePreset(today, range)` (el preset más estrecho gana en empates: hoy > semana > mes). `presetRange(preset, ref, tz)` queda como `presetRangeFor(preset, localDateISO(ref, tz))`.
+
+`src/components/reportes/period-selector.tsx`: añadir props `today`, `from`, `to` (la página pasa `today={todayISO(tz)}`); usar `presetRangeFor(p, today)` y `activePreset`; los `<input type="date">` muestran `defaultValue={from}` / `defaultValue={to}` (así el preset por defecto se ve); y marcar el preset activo:
 ```tsx
-export function PeriodSelector({ branches, showBranch, tz, from, to }: {
-  branches: { id: string; name: string }[]; showBranch: boolean; tz: string; from: string; to: string;
+export function PeriodSelector({ branches, showBranch, today, from, to }: {
+  branches: { id: string; name: string }[]; showBranch: boolean; today: string; from: string; to: string;
 }) {
   // …
   function setPreset(p: Preset) {
-    const r = presetRange(p, new Date(), tz);
+    const r = presetRangeFor(p, today);
     // … igual
   }
-  const active = PRESETS.find((p) => { const r = presetRange(p.key, new Date(), tz); return r.from === from && r.to === to; })?.key;
+  const active = activePreset(today, { from, to });
   // en el map de PRESETS:
   <button key={p.key} onClick={() => setPreset(p.key)} aria-pressed={active === p.key}
     className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium ${active === p.key
@@ -771,7 +775,7 @@ import { todayISO } from "@/lib/tz";
 - [ ] **Step 6: Movimientos de inventario**
 
 `src/components/inventario/movements-history.tsx`: prop `tz: string`; `{formatDate(m.createdAt, tz)}`.
-`src/components/inventario/product-stock-panel.tsx`: obtener `tz` con `getTenantSettings(sb)` junto a las otras consultas y pasar `<MovementsHistory movements={movements} tz={tz} />`.
+`src/components/inventario/product-stock-panel.tsx`: prop `tz: string` (no consulta ajustes por su cuenta) y pasarlo a `<MovementsHistory movements={movements} tz={tz} />`. En `src/app/(app)/operaciones/productos/[id]/page.tsx` cambiar `getTenantCurrency(sb)` por `getTenantSettings(sb)` y pasar `tz` al panel.
 
 - [ ] **Step 7: Presupuestos**
 
@@ -785,7 +789,7 @@ export function QuotesTable({ rows, tz, today }: { rows: QuoteListRow[]; tz: str
   // Fecha: {formatDate(r.createdAt, tz)}
   // Vigencia: {formatDateOnly(r.validUntil)}{isOverdue(r, today) ? " · vencido" : ""}
 ```
-`src/components/presupuestos/quote-document.tsx`: `Válido hasta: {formatDateOnly(quote.valid_until)}`.
+`src/components/presupuestos/quote-document.tsx`: prop `today: string` para el cálculo de `overdue` (el mismo día de la empresa que usa la lista) y `Válido hasta: {formatDateOnly(quote.valid_until)}`. En `src/app/(app)/operaciones/presupuestos/[id]/page.tsx`: `const { timezone: tz } = await getTenantSettings(sb);` y `<QuoteDocument quote={quote as any} today={todayISO(tz)} />`.
 
 - [ ] **Step 8: Typecheck + tests + arranque**
 

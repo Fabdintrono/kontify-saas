@@ -22,8 +22,10 @@ export default async function FacturacionPage({ searchParams }: {
   const status = (["borradores", "emitidas", "anuladas", "todas"].includes(sp.status ?? "") ? sp.status : "todas") as SaleStatusFilter;
   const payment = (["pendientes", "todas"].includes(sp.payment ?? "") ? sp.payment : "todas") as SalePaymentFilter;
 
-  const { timezone: tz } = await getTenantSettings(sb);
-  const list = await listSales(sb, { search: sp.q ?? "", status, payment, page });
+  const [list, { timezone: tz }] = await Promise.all([
+    listSales(sb, { search: sp.q ?? "", status, payment, page }),
+    getTenantSettings(sb),
+  ]);
   const pages = Math.max(1, Math.ceil(list.total / list.pageSize));
 
   return (

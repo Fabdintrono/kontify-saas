@@ -1,10 +1,12 @@
 "use client";
-import { PanelLeft, Bell, LogOut, Settings, Search, Keyboard } from "lucide-react";
+import { PanelLeft, Bell, LogOut, Settings, Search, Keyboard, Plus } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { DropdownMenu, DropdownItem, DropdownLabel, DropdownSeparator } from "@/components/ui/dropdown-menu";
 import { Popover } from "@/components/ui/popover";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { buttonCls } from "@/components/ui/button";
+import { canSell } from "@/lib/ventas/permissions";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { ShellUser } from "@/components/shell/types";
 
@@ -32,6 +34,14 @@ export function TopBar({ user, onToggle, onSearch }: {
       </button>
 
       <div className="flex-1" />
+
+      {/* Vender está siempre a un clic, en cualquier pantalla: es la acción que se repite
+          todo el día y no debería obligar a volver al módulo de Ventas. */}
+      {canSell(user.role) && (
+        <Link href="/operaciones/facturacion/nueva" className={buttonCls("primary", "h-9")}>
+          <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" /> Nueva venta
+        </Link>
+      )}
 
       <Popover trigger={
         <button aria-label="Notificaciones" className="relative grid h-9 w-9 place-items-center rounded-lg text-[var(--text-soft)] hover:bg-[var(--bg)]">

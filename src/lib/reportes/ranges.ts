@@ -41,3 +41,20 @@ export function activePreset(today: string, r: DateRange): Preset | undefined {
 
 export const monthRange = (ref: Date, tz: string): DateRange => presetRange("mes", ref, tz);
 export const weekRange = (ref: Date, tz: string): DateRange => presetRange("semana", ref, tz);
+
+/** El mismo tramo del mes pasado: del día 1 al mismo número de día.
+ *
+ *  Comparar diez días de este mes contra los treinta del pasado hace quedar mal a
+ *  cualquier negocio el día 5 y bien el día 28. Esto compara tramos iguales.
+ *  Si el día no existe en el mes anterior (31 de marzo frente a febrero), se recorta
+ *  al último día de ese mes: es el tramo más largo que sí se puede comparar. */
+export function sameSpanLastMonth(today: string): DateRange {
+  assertDateISO(today);
+  const [y, m, d] = today.split("-").map(Number);
+  const prevY = m === 1 ? y - 1 : y;
+  const prevM = m === 1 ? 12 : m - 1;
+  const ultimoDiaPrev = new Date(Date.UTC(prevY, prevM, 0)).getUTCDate();
+  const dia = Math.min(d, ultimoDiaPrev);
+  const mm = String(prevM).padStart(2, "0");
+  return { from: `${prevY}-${mm}-01`, to: `${prevY}-${mm}-${String(dia).padStart(2, "0")}` };
+}

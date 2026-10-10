@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DollarSign, TrendingUp, Users, Boxes, ArrowDownCircle, ArrowUpCircle, Receipt, AlertTriangle, Package } from "lucide-react";
-import { KpiCard } from "@/components/dashboard/kpi-card";
+import { KpiCard, TrendChip } from "@/components/dashboard/kpi-card";
 import { AttentionList } from "@/components/dashboard/attention-list";
 import { clientsKpi, clientsByType } from "@/lib/clientes/queries";
 import { productsKpi, productsByCategory } from "@/lib/productos/queries";
@@ -14,6 +14,7 @@ import { utilityThisMonth, salesByDayThisWeek, topProductsThisMonth } from "@/li
 import { getTenantSettings } from "@/lib/tenant";
 import { todayISO } from "@/lib/tz";
 import { attentionItems } from "@/lib/dashboard/attention";
+import { dashboardTrends } from "@/lib/dashboard/trends";
 import { gettingStartedStatus, canSeeGettingStarted, canHideGettingStarted } from "@/lib/dashboard/getting-started";
 import { BarChart } from "@/components/reportes/bar-chart";
 import { ModuleGuide } from "@/components/shared/module-guide";
@@ -40,9 +41,10 @@ export default async function Dashboard() {
     salesKpi(supabase, tz), receivablesTotal(supabase),
   ]);
   const [invKpi, invBreakdown] = await Promise.all([stockKpi(supabase), inventoryStatusBreakdown(supabase)]);
-  const [util, weekDays, topProds, attention, gs] = await Promise.all([
+  const [util, weekDays, topProds, attention, trends, gs] = await Promise.all([
     utilityThisMonth(supabase, tz), salesByDayThisWeek(supabase, tz), topProductsThisMonth(supabase, tz, 5),
     attentionItems(supabase, todayISO(tz)),
+    dashboardTrends(supabase, tz),
     // Solo dueño/admin ven «Primeros pasos»: para el resto no se consulta.
     canSeeGettingStarted(role) ? gettingStartedStatus(supabase) : Promise.resolve(null),
   ]);
@@ -54,6 +56,8 @@ export default async function Dashboard() {
   const ticket = sKpi.avgTicket > 0 ? { value: formatMoney(sKpi.avgTicket, currency) } : {};
   const porCobrar = recv.total > 0 ? { value: formatMoney(recv.total, currency) } : {};
   const totalProductos = prodKpi.total > 0 ? { value: String(prodKpi.total) } : {};
+  const dinero = (n: number) => formatMoney(n, currency);
+  const unidades = (n: number) => `${n}`;
   const totalClientes = kpi.total > 0
     ? { value: String(kpi.total), sub: `${kpi.newThisMonth} nuevos este mes` }
     : {};
@@ -78,7 +82,8 @@ export default async function Dashboard() {
       {/* Móvil: hero Utilidad + 4 KPIs */}
       <div className="grid grid-cols-2 gap-3 lg:hidden">
         <div className="col-span-2"><KpiCard icon={TrendingUp} label="Utilidad del mes" value={utilidadMes.value} /></div>
-        <KpiCard icon={DollarSign} label="Ventas del mes" value={ventasMes.value} />
+        <KpiCard icon={DollarSign} label="Ventas del mes" value={ventasMes.value}
+          trend={<TrendChip trend={trends.ventas} formato={dinero} />} />
         <KpiCard icon={Users} label="Total de clientes" value={totalClientes.value} sub={totalClientes.sub} />
         <KpiCard icon={ArrowDownCircle} label="Por cobrar" value={porCobrar.value} />
         <KpiCard icon={AlertTriangle} label="Bajo stock" value={bajoStock.value} />
@@ -87,13 +92,16 @@ export default async function Dashboard() {
 
       {/* Escritorio: 4 KPIs primarios + 4 secundarios */}
       <div className="hidden grid-cols-4 gap-3 lg:grid">
-        <KpiCard icon={DollarSign} label="Ventas del mes" value={ventasMes.value} />
+        <KpiCard icon={DollarSign} label="Ventas del mes" value={ventasMes.value}
+          trend={<TrendChip trend={trends.ventas} formato={dinero} />} />
         <KpiCard icon={TrendingUp} label="Utilidad del mes" value={utilidadMes.value} />
-        <KpiCard icon={Users} label="Total de clientes" value={totalClientes.value} sub={totalClientes.sub} />
+        <KpiCard icon={Users} label="Total de clientes" value={totalClientes.value}
+          trend={<TrendChip trend={trends.clientes} formato={unidades} />} />
         <KpiCard icon={Boxes} label="Valor de inventario" value={valorInventario.value} />
         <KpiCard icon={ArrowDownCircle} label="Por cobrar" value={porCobrar.value} />
         <KpiCard icon={ArrowUpCircle} label="Por pagar" />
-        <KpiCard icon={Receipt} label="Ticket promedio" value={ticket.value} />
+        <KpiCard icon={Receipt} label="Ticket promedio" value={ticket.value}
+          trend={<TrendChip trend={trends.ticket} formato={dinero} />} />
         <KpiCard icon={AlertTriangle} label="Bajo stock / agotados" value={bajoStock.value} />
       </div>
 

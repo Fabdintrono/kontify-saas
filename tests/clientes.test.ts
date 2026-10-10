@@ -92,3 +92,47 @@ describe("clientes — RLS", () => {
     expect(after.find((t) => t.id === types[0].id)?.name).toBe(original); // RLS impidió el cambio
   });
 });
+
+describe("clientes — valor comercial en la lista", () => {
+  it("un cliente sin ventas sale en cero, no en null", async () => {
+    const a = await makeTenant("stats-cero");
+    const types = await listClientTypes(a.client);
+    await createClient(a.client, a.tenantId, a.id, null, { kind: "person", name: "Sin compras", typeId: types[0].id });
+
+    const { rows } = await listClients(a.client);
+    expect(rows[0].orders).toBe(0);
+    expect(rows[0].spent).toBe(0);
+    expect(rows[0].lastOrderAt).toBeNull();
+  });
+
+  it("la vista no deja ver clientes de otro tenant", async () => {
+    const a = await makeTenant("stats-a");
+    const b = await makeTenant("stats-b");
+    const tA = await listClientTypes(a.client);
+    await createClient(a.client, a.tenantId, a.id, null, { kind: "person", name: "Solo de A", typeId: tA[0].id });
+
+    const desdeB = await listClients(b.client);
+    expect(desdeB.rows.map((r) => r.name)).not.toContain("Solo de A");
+  });
+
+  it("ordenar por total comprado no revienta aunque nadie haya comprado", async () => {
+    const a = await makeTenant("stats-orden");
+    const types = await listClientTypes(a.client);
+    for (const n of ["Uno", "Dos"]) {
+      await createClient(a.client, a.tenantId, a.id, null, { kind: "person", name: n, typeId: types[0].id });
+    }
+    const r = await listClients(a.client, { sort: "spent", dir: "desc" });
+    expect(r.rows.length).toBe(2);
+    expect(r.total).toBe(2);
+  });
+
+  it("el tipo del cliente viaja en la vista, sin incrustar otra tabla", async () => {
+    const a = await makeTenant("stats-tipo");
+    const types = await listClientTypes(a.client);
+    const mayorista = types.find((t) => t.name === "Mayorista")!;
+    await createClient(a.client, a.tenantId, a.id, null, { kind: "company", name: "Empresa X", typeId: mayorista.id });
+
+    const { rows } = await listClients(a.client);
+    expect(rows[0].typeName).toBe("Mayorista");
+  });
+});

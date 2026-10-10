@@ -7,6 +7,12 @@ export type ClientListRow = {
   id: string; name: string; kind: "person" | "company";
   phone: string | null; email: string | null; active: boolean;
   typeId: string | null; typeName: string | null;
+  /** Ventas emitidas de este cliente. Los borradores no cuentan y las anuladas dejan de contar. */
+  orders: number;
+  /** Suma de esas ventas, en la moneda de la empresa. */
+  spent: number;
+  /** Instante de la última venta emitida, o null si nunca compró. */
+  lastOrderAt: string | null;
 };
 export type ClientStatus = "activos" | "archivados" | "todos";
 
@@ -16,7 +22,10 @@ export const CLIENTS_SORT: SortSpec = {
   default: { key: "name", dir: "asc" },
   columns: {
     name: { column: "name", natural: "asc" },
-    type: { column: "client_types(name)", natural: "asc", nullsFirst: false },
+    type: { column: "type_name", natural: "asc", nullsFirst: false },
+    orders: { column: "orders_count", natural: "desc" },
+    spent: { column: "spent_total", natural: "desc" },
+    lastOrder: { column: "last_order_at", natural: "desc", nullsFirst: false },
     status: { column: "active", natural: "desc" },
   },
 };
@@ -32,7 +41,12 @@ export async function listClients(sb: SupabaseClient, opts: {
 } = {}): Promise<{ rows: ClientListRow[]; total: number; page: number; pageSize: number }> {
   const { search = "", typeId = null, status = "activos", page = 1, pageSize = 20 } = opts;
   const order = resolveSort(CLIENTS_SORT, opts.sort, opts.dir);
-  let q = sb.from("clients").select("id, name, kind, phone, email, active, type_id, client_types(name)", { count: "exact" });
+  // `clients_with_stats` es la misma tabla más tres columnas agregadas de ventas.
+  // Leer de la vista es lo que permite ordenar por «cuánto me compra» sobre el total,
+  // y no solo dentro de la página que se está viendo.
+  let q = sb.from("clients_with_stats")
+    .select("id, name, kind, phone, email, active, type_id, type_name, orders_count, spent_total, last_order_at",
+      { count: "exact" });
   if (status === "activos") q = q.eq("active", true);
   else if (status === "archivados") q = q.eq("active", false);
   if (typeId) q = q.eq("type_id", typeId);
@@ -49,7 +63,9 @@ export async function listClients(sb: SupabaseClient, opts: {
   if (error) throw error;
   const rows: ClientListRow[] = (data ?? []).map((r: any) => ({
     id: r.id, name: r.name, kind: r.kind, phone: r.phone, email: r.email, active: r.active,
-    typeId: r.type_id, typeName: r.client_types?.name ?? null,
+    typeId: r.type_id, typeName: r.type_name ?? null,
+    orders: Number(r.orders_count ?? 0), spent: Number(r.spent_total ?? 0),
+    lastOrderAt: r.last_order_at ?? null,
   }));
   return { rows, total: count ?? 0, page, pageSize };
 }
@@ -93,4 +109,23 @@ export async function clientsByType(sb: SupabaseClient): Promise<{ typeId: strin
     }
     return [...map.values()].sort((a, b) => b.count - a.count);
   } catch { return []; }
+}
+
+/** Resumen de la cartera para las tarjetas de la lista.
+ *  Degrada a ceros ante cualquier error: una tarjeta en cero es correcta, una cifra
+ *  calculada sobre una consulta fallida, no. */
+export async function clientsOverview(sb: SupabaseClient, tz: string): Promise<{
+  activos: number; archivados: number; nuevosEsteMes: number;
+}> {
+  const cero = { activos: 0, archivados: 0, nuevosEsteMes: 0 };
+  try {
+    const desde = startOfDayUTC(monthRange(new Date(), tz).from, tz);
+    const [act, arch, nuevos] = await Promise.all([
+      sb.from("clients").select("id", { count: "exact", head: true }).eq("active", true),
+      sb.from("clients").select("id", { count: "exact", head: true }).eq("active", false),
+      sb.from("clients").select("id", { count: "exact", head: true }).gte("created_at", desde),
+    ]);
+    if (act.error || arch.error || nuevos.error) return cero;
+    return { activos: act.count ?? 0, archivados: arch.count ?? 0, nuevosEsteMes: nuevos.count ?? 0 };
+  } catch (e) { console.error("clientsOverview", e); return cero; }
 }

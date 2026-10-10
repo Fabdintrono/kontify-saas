@@ -20,6 +20,9 @@ describe("SaleStatusBadge", () => {
   it("borrador y anulada ignoran paymentStatus", () => {
     render(<SaleStatusBadge status="void" paymentStatus="pagada" />);
     expect(screen.getByText("Anulada")).toBeTruthy();
+    cleanup();
+    render(<SaleStatusBadge status="draft" paymentStatus="pagada" />);
+    expect(screen.getByText("Borrador")).toBeTruthy();
   });
   it("lleva icono (no depende solo del color)", () => {
     const { container } = render(<SaleStatusBadge status="issued" paymentStatus="pagada" />);

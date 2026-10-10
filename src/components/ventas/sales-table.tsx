@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { SaleListRow } from "@/lib/ventas/queries";
 import { formatMoney, formatDate } from "@/lib/format";
-import { SaleStatusBadge } from "./status-badge";
+import { SaleStatusBadge, DANGER_TEXT } from "./status-badge";
 
 export function SalesTable({ rows, tz }: { rows: SaleListRow[]; tz: string }) {
   return (
@@ -23,8 +23,8 @@ export function SalesTable({ rows, tz }: { rows: SaleListRow[]; tz: string }) {
             <td className="text-[var(--text-soft)]">{formatDate(r.issuedAt ?? r.createdAt, tz)}</td>
             <td className="text-[var(--text)]">{r.clientName ?? "Consumidor final"}</td>
             <td className="text-[var(--text)]">{formatMoney(r.total, r.currency)}</td>
-            <td className={r.paymentStatus === "vencida" ? "font-medium text-[#dc2626]" : "text-[var(--text-soft)]"}>
-              {r.status === "issued" ? formatMoney(r.balance, r.currency) : "—"}
+            <td className={r.paymentStatus === "vencida" ? DANGER_TEXT : "text-[var(--text-soft)]"}>
+              {r.status === "issued" && r.paymentStatus !== "pagada" ? formatMoney(r.balance, r.currency) : "—"}
             </td>
             <td><SaleStatusBadge status={r.status} paymentStatus={r.paymentStatus} /></td>
           </tr>

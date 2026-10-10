@@ -974,6 +974,7 @@ export type SaleLike = { status: string; total: number; paidAmount: number; dueD
 
 /** Estado de pago derivado de una venta. `today` = "YYYY-MM-DD" en la zona de la empresa. Solo ventas emitidas. */
 export function paymentStatusOf(s: SaleLike, today: string): PaymentStatus | null {
+  if (!isDateISO(today)) throw new Error(`Fecha local inválida: ${today}`); // isDateISO de @/lib/tz
   if (s.status !== "issued") return null;
   const balance = round2(Number(s.total) - Number(s.paidAmount));
   if (balance <= 0) return "pagada";
@@ -1066,22 +1067,24 @@ import { Pencil, Check, CircleCheck, CircleDot, Clock, TriangleAlert, X } from "
 import type { PaymentStatus } from "@/lib/cobros/status";
 
 type Spec = { label: string; cls: string; icon: LucideIcon };
-const GRAY = "bg-[var(--bg)] text-[var(--text-soft)]";
+// Contraste AA a 12px: en light los tonos oscuros, en dark los claros.
+const GRAY = "bg-[var(--bg)] text-[#475569] dark:text-[var(--text-soft)]";
 const TEAL = "bg-[#0e7490]/10 text-[#0e7490] dark:text-[#5eead4]";
 const GREEN = "bg-[#0f766e]/10 text-[#0f766e] dark:text-[#6ee7b7]";
-const AMBER = "bg-[#b45309]/10 text-[#b45309] dark:text-[#fbbf24]";
-const RED = "bg-[#dc2626]/10 text-[#dc2626] dark:text-[#f87171]";
+const AMBER = "bg-[#b45309]/10 text-[#92400e] dark:text-[#fbbf24]";
+const RED = "bg-[#dc2626]/10 text-[#b91c1c] dark:text-[#f87171]";
+export const DANGER_TEXT = "font-medium text-[#b91c1c] dark:text-[#f87171]"; // saldo vencido fuera del chip
 
 const DOC: Record<string, Spec> = {
   draft:  { label: "Borrador", cls: GRAY, icon: Pencil },
   issued: { label: "Emitida",  cls: TEAL, icon: Check },
   void:   { label: "Anulada",  cls: RED,  icon: X },
 };
-const PAY: Record<PaymentStatus, Spec> = {
-  pagada:    { label: "Pagada",    cls: GREEN, icon: CircleCheck },
-  parcial:   { label: "Parcial",   cls: AMBER, icon: CircleDot },
-  pendiente: { label: "Pendiente", cls: AMBER, icon: Clock },
-  vencida:   { label: "Vencida",   cls: RED,   icon: TriangleAlert },
+const PAY: Record<PaymentStatus, Spec> = { // etiquetas desde PAYMENT_LABEL (una sola fuente)
+  pagada:    { label: PAYMENT_LABEL.pagada,    cls: GREEN, icon: CircleCheck },
+  parcial:   { label: PAYMENT_LABEL.parcial,   cls: AMBER, icon: CircleDot },
+  pendiente: { label: PAYMENT_LABEL.pendiente, cls: AMBER, icon: Clock },
+  vencida:   { label: PAYMENT_LABEL.vencida,   cls: RED,   icon: TriangleAlert },
 };
 
 /** Estado del documento; si está emitida y se conoce el estado de pago, muestra ese (es lo que importa al usuario). */
@@ -1101,43 +1104,53 @@ Run: `npx vitest run src/components/ventas/status-badge.test.tsx` → PASS (4).
 
 `src/components/ventas/sales-table.tsx` (celdas Saldo y Estado):
 ```tsx
-<td className={r.paymentStatus === "vencida" ? "font-medium text-[#dc2626]" : "text-[var(--text-soft)]"}>
-  {r.status === "issued" ? formatMoney(r.balance, r.currency) : "—"}
+<td className={r.paymentStatus === "vencida" ? DANGER_TEXT : "text-[var(--text-soft)]"}>
+  {r.status === "issued" && r.paymentStatus !== "pagada" ? formatMoney(r.balance, r.currency) : "—"}
 </td>
 <td><SaleStatusBadge status={r.status} paymentStatus={r.paymentStatus} /></td>
 ```
 `src/components/ventas/sale-row-card.tsx`:
 ```tsx
-<p className="truncate text-xs text-[var(--text-soft)]">
-  {formatDate(r.issuedAt ?? r.createdAt, tz)} · {formatMoney(r.total, r.currency)}
+<p className="truncate text-xs text-[var(--text-soft)]">  {/* fecha al final: si se recorta, se pierde la fecha, no el saldo */}
+  {formatMoney(r.total, r.currency)}
   {r.status === "issued" && r.balance > 0 ? ` · saldo ${formatMoney(r.balance, r.currency)}` : ""}
+  {` · ${formatDate(r.issuedAt ?? r.createdAt, tz)}`}
 </p>
 // …
 <SaleStatusBadge status={r.status} paymentStatus={r.paymentStatus} />
 ```
-`src/components/ventas/sales-toolbar.tsx`: añadir `<option value="vencidas">Vencidas</option>` después de «Pendientes».
+`src/components/ventas/sales-toolbar.tsx`: la opción `pendientes` se llama «Con saldo» (el valor no cambia) y debajo va `<option value="vencidas">Vencidas</option>`.
 `src/app/(app)/operaciones/facturacion/page.tsx`: aceptar `vencidas` en la validación del filtro (`["pendientes", "vencidas", "todas"]`) y llamar `listSales(sb, { search: sp.q ?? "", status, payment, page, today: todayISO(tz) })`.
 
 - [ ] **Step 9: Detalle: bloque «Pago» honesto y vencimiento solo con saldo**
 
 `src/components/ventas/sale-document.tsx`: añadir al tipo `Sale` → `due_date?: string | null;` y nuevas props `paymentStatus?: PaymentStatus | null`. Reemplazar el bloque `{sale.status === "issued" && (…)}` por:
 ```tsx
+// La frase se arma con los datos, no con el estado (una vencida parcial dice lo pagado y lo que falta).
+const paid = Number(sale.paid_amount), total = Number(sale.total);
+const balance = round2(total - paid);
+const payParts = [
+  paymentStatus === "pagada" && sale.payment_method ? sale.payment_method : null,
+  paid > 0 && balance > 0 ? `pagado ${formatMoney(paid, c)} de ${formatMoney(total, c)}` : null,
+  balance > 0 ? `saldo ${formatMoney(balance, c)}` : null,
+  sale.due_date
+    ? `${paymentStatus === "vencida" ? "venció el" : paymentStatus === "pagada" ? "vencía el" : "vence el"} ${formatDateOnly(sale.due_date)}`
+    : null,
+].filter(Boolean);
+
 {sale.status === "issued" && (
   <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <span className="text-[var(--text-soft)]">Pago</span>
-      <span className="flex items-center gap-2 font-medium text-[var(--text)]">
+      <span className="flex flex-wrap items-center justify-end gap-2 font-medium text-[var(--text)]">
         <SaleStatusBadge status="issued" paymentStatus={paymentStatus ?? null} />
-        {paymentStatus === "pagada" && sale.payment_method ? `· ${sale.payment_method}` : null}
-        {paymentStatus === "parcial" ? `· pagado ${formatMoney(Number(sale.paid_amount), c)} de ${formatMoney(Number(sale.total), c)}` : null}
-        {(paymentStatus === "pendiente" || paymentStatus === "vencida") ? `· saldo ${formatMoney(balance, c)}` : null}
-        {sale.due_date && paymentStatus !== "pagada" ? ` · ${paymentStatus === "vencida" ? "venció el" : "vence el"} ${formatDateOnly(sale.due_date)}` : null}
+        {payParts.length ? <span>· {payParts.join(" · ")}</span> : null}
       </span>
     </div>
   </div>
 )}
 ```
-(Se elimina la frase «Los abonos parciales llegan con el módulo de Cobros».) Imports: `formatDateOnly` de `@/lib/format`, `PaymentStatus` de `@/lib/cobros/status`.
+(Se elimina la frase «Los abonos parciales llegan con el módulo de Cobros».) Imports: `formatDateOnly` de `@/lib/format`, `round2` de `@/lib/ventas/totals`, `PaymentStatus` de `@/lib/cobros/status`.
 
 `src/app/(app)/operaciones/facturacion/[id]/page.tsx`:
 ```ts

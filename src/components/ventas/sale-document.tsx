@@ -1,4 +1,5 @@
 import { formatMoney, formatDateOnly } from "@/lib/format";
+import { round2 } from "@/lib/ventas/totals";
 import type { PaymentStatus } from "@/lib/cobros/status";
 import { SaleStatusBadge } from "./status-badge";
 
@@ -12,7 +13,17 @@ type Sale = {
 
 export function SaleDocument({ sale, paymentStatus }: { sale: Sale; paymentStatus?: PaymentStatus | null }) {
   const c = sale.currency;
-  const balance = Number(sale.total) - Number(sale.paid_amount);
+  const paid = Number(sale.paid_amount), total = Number(sale.total);
+  const balance = round2(total - paid);
+  // La frase se arma con los datos, no con el estado: una vencida parcial dice lo pagado y lo que falta.
+  const payParts = [
+    paymentStatus === "pagada" && sale.payment_method ? sale.payment_method : null,
+    paid > 0 && balance > 0 ? `pagado ${formatMoney(paid, c)} de ${formatMoney(total, c)}` : null,
+    balance > 0 ? `saldo ${formatMoney(balance, c)}` : null,
+    sale.due_date
+      ? `${paymentStatus === "vencida" ? "venció el" : paymentStatus === "pagada" ? "vencía el" : "vence el"} ${formatDateOnly(sale.due_date)}`
+      : null,
+  ].filter(Boolean);
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
@@ -56,12 +67,9 @@ export function SaleDocument({ sale, paymentStatus }: { sale: Sale; paymentStatu
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-[var(--text-soft)]">Pago</span>
-            <span className="flex items-center gap-2 font-medium text-[var(--text)]">
+            <span className="flex flex-wrap items-center justify-end gap-2 font-medium text-[var(--text)]">
               <SaleStatusBadge status="issued" paymentStatus={paymentStatus ?? null} />
-              {paymentStatus === "pagada" && sale.payment_method ? `· ${sale.payment_method}` : null}
-              {paymentStatus === "parcial" ? `· pagado ${formatMoney(Number(sale.paid_amount), c)} de ${formatMoney(Number(sale.total), c)}` : null}
-              {(paymentStatus === "pendiente" || paymentStatus === "vencida") ? `· saldo ${formatMoney(balance, c)}` : null}
-              {sale.due_date && paymentStatus !== "pagada" ? ` · ${paymentStatus === "vencida" ? "venció el" : "vence el"} ${formatDateOnly(sale.due_date)}` : null}
+              {payParts.length ? <span>· {payParts.join(" · ")}</span> : null}
             </span>
           </div>
         </div>

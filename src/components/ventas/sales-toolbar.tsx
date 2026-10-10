@@ -31,7 +31,7 @@ export function SalesToolbar() {
       </select>
       <select className={sel} defaultValue={sp.get("payment") ?? "todas"} onChange={(e) => setParam("payment", e.target.value)}>
         <option value="todas">Pago: todas</option>
-        <option value="pendientes">Pendientes</option>
+        <option value="pendientes">Con saldo</option>
         <option value="vencidas">Vencidas</option>
       </select>
     </div>

@@ -7,9 +7,10 @@ describe("paymentStatusOf", () => {
     expect(paymentStatusOf({ status: "draft", total: 10, paidAmount: 0, dueDate: null }, HOY)).toBeNull();
     expect(paymentStatusOf({ status: "void", total: 10, paidAmount: 0, dueDate: null }, HOY)).toBeNull();
   });
-  it("pagada cuando el saldo es cero (o negativo por redondeo)", () => {
+  it("pagada cuando el saldo es cero (o negativo por redondeo o sobrepago)", () => {
     expect(paymentStatusOf({ status: "issued", total: 25.4, paidAmount: 25.4, dueDate: null }, HOY)).toBe("pagada");
     expect(paymentStatusOf({ status: "issued", total: 10, paidAmount: 10.004, dueDate: "2026-01-01" }, HOY)).toBe("pagada");
+    expect(paymentStatusOf({ status: "issued", total: 10, paidAmount: 12, dueDate: "2026-01-01" }, HOY)).toBe("pagada");
   });
   it("parcial cuando hay abonos pero queda saldo", () => {
     expect(paymentStatusOf({ status: "issued", total: 10, paidAmount: 4, dueDate: null }, HOY)).toBe("parcial");
@@ -22,5 +23,8 @@ describe("paymentStatusOf", () => {
   it("pendiente sin abonos y sin vencer", () => {
     expect(paymentStatusOf({ status: "issued", total: 10, paidAmount: 0, dueDate: null }, HOY)).toBe("pendiente");
     expect(paymentStatusOf({ status: "issued", total: 10, paidAmount: 0, dueDate: "2026-11-15" }, HOY)).toBe("pendiente");
+  });
+  it("una fecha local inválida es un error de programación, no un estado inventado", () => {
+    expect(() => paymentStatusOf({ status: "issued", total: 10, paidAmount: 0, dueDate: null }, "basura")).toThrow(/Fecha local inválida/);
   });
 });

@@ -12,8 +12,9 @@ export function SaleRowCard({ r, tz }: { r: SaleListRow; tz: string }) {
           {r.number != null ? `#${r.number}` : "Borrador"} · {r.clientName ?? "Consumidor final"}
         </p>
         <p className="truncate text-xs text-[var(--text-soft)]">
-          {formatDate(r.issuedAt ?? r.createdAt, tz)} · {formatMoney(r.total, r.currency)}
+          {formatMoney(r.total, r.currency)}
           {r.status === "issued" && r.balance > 0 ? ` · saldo ${formatMoney(r.balance, r.currency)}` : ""}
+          {` · ${formatDate(r.issuedAt ?? r.createdAt, tz)}`}
         </p>
       </div>
       <SaleStatusBadge status={r.status} paymentStatus={r.paymentStatus} />

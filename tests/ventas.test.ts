@@ -70,6 +70,35 @@ describe("ventas — flujo y correlativo", () => {
     expect(count ?? 0).toBe(0);
   });
 
+  it("estado de pago en la lista: dueDate/paymentStatus por fila y filtro «vencidas»", async () => {
+    const a = await makeTenant("pago");
+    const b = await mainBranch(a);
+    const HOY_FIJO = "2026-10-09";
+    const vencida = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b));
+    await emitSale(a.client, vencida, { paymentType: "credito", dueDate: "2026-10-01" }, HOY);
+    const futura = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b));
+    await emitSale(a.client, futura, { paymentType: "credito", dueDate: "2026-11-15" }, HOY);
+    const sinFecha = await createDraft(a.client, a.tenantId, a.id, "USD", sale(b));
+    await emitSale(a.client, sinFecha, { paymentType: "credito" }, HOY);
+
+    const vencidas = await listSales(a.client, { payment: "vencidas", today: HOY_FIJO });
+    expect(vencidas.rows.map((r) => r.id)).toEqual([vencida]);
+    expect(vencidas.rows[0].dueDate).toBe("2026-10-01");
+    expect(vencidas.rows[0].paymentStatus).toBe("vencida");
+
+    const conSaldo = await listSales(a.client, { payment: "pendientes", today: HOY_FIJO });
+    expect(conSaldo.total).toBe(3);
+    const porId = new Map(conSaldo.rows.map((r) => [r.id, r]));
+    expect(porId.get(vencida)!.paymentStatus).toBe("vencida");
+    expect(porId.get(futura)!.paymentStatus).toBe("pendiente");
+    expect(porId.get(futura)!.dueDate).toBe("2026-11-15");
+    expect(porId.get(sinFecha)!.paymentStatus).toBe("pendiente");
+    expect(porId.get(sinFecha)!.dueDate).toBeNull();
+
+    // un `today` inválido es un error de programación: falla en vez de pintar estados inventados
+    await expect(listSales(a.client, { payment: "pendientes", today: "basura" })).rejects.toThrow(/Fecha local inválida/);
+  });
+
   it("historial por cliente", async () => {
     const a = await makeTenant("hist");
     const b = await mainBranch(a);

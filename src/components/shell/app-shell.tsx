@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { Store, Bell } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 import { navForRole, configForRole } from "@/lib/nav";
 import { Rail } from "@/components/shell/rail";
 import { SubNav } from "@/components/shell/subnav";
@@ -10,6 +10,8 @@ import { TopBar } from "@/components/shell/topbar";
 import { FabVender } from "@/components/shell/fab-vender";
 import { MobileBottomNav } from "@/components/shell/mobile-bottom-nav";
 import { Popover } from "@/components/ui/popover";
+import { CommandPalette } from "@/components/shell/command-palette";
+import { KeyboardShortcuts } from "@/components/shell/keyboard-shortcuts";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ToastProvider } from "@/components/ui/toast";
 import { FlashToast } from "@/components/shell/flash-toast";
@@ -26,6 +28,7 @@ export function AppShell({ user, children }: {
   const sections = navForRole(user.role);
   const config = configForRole(user.role);
   const [collapsed, setCollapsed] = useState(false);
+  const [buscador, setBuscador] = useState(false);
 
   useEffect(() => { setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1"); }, []);
   function toggle() {
@@ -35,20 +38,23 @@ export function AppShell({ user, children }: {
   return (
     <ToastProvider>
       <Suspense fallback={null}><FlashToast /></Suspense>
+      <CommandPalette role={user.role} open={buscador} onOpenChange={setBuscador} />
+      <KeyboardShortcuts role={user.role} onOpenSearch={() => setBuscador(true)} />
       <div className="flex h-screen overflow-hidden bg-[var(--bg)]">
         {/* Escritorio: dual-tier */}
         <div className="hidden lg:flex"><Rail sections={sections} config={config} /></div>
         <div className="hidden lg:block"><SubNav sections={sections} config={config} collapsed={collapsed} /></div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="hidden lg:block"><TopBar user={user} onToggle={toggle} /></div>
+          <div className="hidden lg:block"><TopBar user={user} onToggle={toggle} onSearch={() => setBuscador(true)} /></div>
 
           {/* Top bar móvil: selector de sucursal + campana (design-system §6, sin avatar) */}
           <div className="flex h-14 items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-4 lg:hidden">
-            {/* Selector de sucursal: hoy todo es consolidado; vuelve cuando filtre (Fase D). */}
-            <span className="flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 text-sm text-[var(--text-soft)]">
-              <Store className="h-4 w-4" strokeWidth={2} aria-hidden="true" /> Todas
-            </span>
+            <button type="button" onClick={() => setBuscador(true)}
+              className="flex h-10 flex-1 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 text-sm text-[var(--text-soft)] transition-colors hover:border-[var(--text-soft)]/40 active:scale-[0.99]">
+              <Search className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+              <span className="truncate">Buscar</span>
+            </button>
             <Popover trigger={
               <button aria-label="Notificaciones" className="grid h-9 w-9 place-items-center rounded-lg text-[var(--text-soft)] hover:bg-[var(--bg)]">
                 <Bell className="h-5 w-5" strokeWidth={2} />

@@ -20,6 +20,7 @@ import { ModuleGuide } from "@/components/shared/module-guide";
 import { GUIDES } from "@/lib/guides";
 import { Page } from "@/components/shared/page";
 import { GettingStarted } from "@/components/dashboard/getting-started";
+import { QuickActions } from "@/components/dashboard/quick-actions";
 import { hideGettingStartedAction } from "./actions";
 import { DANGER_TEXT } from "@/lib/ui-tokens";
 
@@ -71,6 +72,8 @@ export default async function Dashboard() {
       </div>
 
       {gs && <GettingStarted status={gs} canHide={canHideGettingStarted(role)} action={hideGettingStartedAction} />}
+
+      <QuickActions role={role} />
 
       {/* Móvil: hero Utilidad + 4 KPIs */}
       <div className="grid grid-cols-2 gap-3 lg:hidden">

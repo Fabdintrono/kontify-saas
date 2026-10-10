@@ -13,21 +13,28 @@
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
+  /* Curvas propias. Las de serie de CSS son flojas: no tienen el empuje que hace
+     que una animación se sienta intencionada. Nunca ease-in en interfaz: arranca
+     lento justo en el momento que el usuario mira. */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
   /* Movimiento. Solo se animan opacity y transform: nunca width ni height.
-     La salida siempre más corta que la entrada. */
-  --animate-fade-in: k-fade-in 160ms ease-out;
-  --animate-fade-out: k-fade-out 120ms ease-in;
-  --animate-fade-up: k-fade-up 180ms ease-out;
-  --animate-slide-right-in: k-slide-right-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
-  --animate-slide-right-out: k-slide-right-out 160ms ease-in;
-  --animate-slide-up-in: k-slide-up-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
-  --animate-slide-up-out: k-slide-up-out 160ms ease-in;
-  --animate-scale-in: k-scale-in 140ms ease-out;
-  --animate-scale-out: k-scale-out 110ms ease-in;
+     La salida siempre más corta que la entrada, y nada pasa de 300 ms. */
+  --animate-fade-in: k-fade-in 160ms var(--ease-out-strong);
+  --animate-fade-out: k-fade-out 110ms var(--ease-out-strong);
+  --animate-fade-up: k-fade-up 180ms var(--ease-out-strong);
+  --animate-slide-right-in: k-slide-right-in 240ms var(--ease-drawer);
+  --animate-slide-right-out: k-slide-right-out 160ms var(--ease-out-strong);
+  --animate-slide-up-in: k-slide-up-in 240ms var(--ease-drawer);
+  --animate-slide-up-out: k-slide-up-out 160ms var(--ease-out-strong);
+  --animate-scale-in: k-scale-in 150ms var(--ease-out-strong);
+  --animate-scale-out: k-scale-out 110ms var(--ease-out-strong);
   /* El diálogo se centra con translate(-50%,-50%): su animación tiene que conservarlo
      o salta a la esquina durante el viaje. */
-  --animate-dialog-in: k-dialog-in 160ms ease-out;
-  --animate-dialog-out: k-dialog-out 120ms ease-in;
+  --animate-dialog-in: k-dialog-in 180ms var(--ease-out-strong);
+  --animate-dialog-out: k-dialog-out 120ms var(--ease-out-strong);
 
   @keyframes k-fade-in { from { opacity: 0 } to { opacity: 1 } }
   @keyframes k-fade-out { from { opacity: 1 } to { opacity: 0 } }
@@ -64,6 +71,7 @@
   --border: #e8edf2;
   --text: #0f172a;
   --text-soft: #5b6b80;
+  --focus: #0e7490;
 }
 
 .dark {
@@ -72,12 +80,28 @@
   --border: #26334a;
   --text: #e2e8f0;
   --text-soft: #94a3b8;
+  --focus: #5eead4;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
+}
+
+/* Anillo de foco único, visible solo para quien navega con el teclado.
+   Antes los campos apagaban el contorno y solo cambiaban el color del borde:
+   un cambio de borde no llega al 3:1 que pide el criterio de foco visible. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* El hover solo existe donde hay puntero de verdad: en una pantalla táctil
+   se queda pegado después de tocar. */
+@media (hover: none) {
+  *:hover { transition: none; }
 }
 
 /* Quien pide menos movimiento recibe los mismos estados, sin el viaje.

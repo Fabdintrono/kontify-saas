@@ -16,6 +16,7 @@ const DATE_ISO = /^\d{4}-\d{2}-\d{2}$/;
 
 const fmtCache = new Map<string, Intl.DateTimeFormat>();
 function fmtFor(tz: string): Intl.DateTimeFormat {
+  if (typeof tz !== "string" || !tz) throw new RangeError("Zona horaria no indicada");
   let f = fmtCache.get(tz);
   if (!f) {
     f = new Intl.DateTimeFormat("en-US", {

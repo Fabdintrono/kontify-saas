@@ -3,9 +3,10 @@ import { newUserClient } from "./setup";
 import type { SaleSaveInput } from "@/lib/ventas/schema";
 import { createDraft, emitSale, voidSale } from "@/lib/ventas/mutations";
 import { registerPayment, voidPayment, setDueDate } from "@/lib/cobros/mutations";
-import { listReceivablesByClient, getClientReceivable, listPayments } from "@/lib/cobros/queries";
+import { listReceivablesByClient, getClientReceivable, listPayments, receivablesKpi } from "@/lib/cobros/queries";
+import { todayISO } from "@/lib/tz";
 
-const HOY = new Date().toISOString().slice(0, 10);
+const HOY = todayISO("UTC");
 
 async function makeTenant(name: string) {
   const u = await newUserClient();
@@ -100,10 +101,22 @@ describe("cobros — Cuentas por Cobrar", () => {
     const soloVencidos = await listReceivablesByClient(a.client, { filter: "vencidos", today: HOY });
     expect(soloVencidos.find((r) => r.clientId === cli)?.overdueAmount).toBe(100);
 
-    const detail = await getClientReceivable(a.client, cli, HOY);
+    const detail = await getClientReceivable(a.client, { clientId: cli, today: HOY });
     expect(detail.totalDue).toBe(150);
     expect(detail.rows).toHaveLength(2);
     expect(detail.rows.find((r) => r.saleId === id1)?.overdue).toBe(true);
+  });
+
+  it("vencida solo cuando due_date < today: vence hoy no es vencida, mañana sí", async () => {
+    const a = await makeTenant("bord");
+    const cli = await makeClient(a, "Borde");
+    const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a), cli, 100));
+    await emitSale(a.client, id, { paymentType: "credito", dueDate: "2026-10-09" });
+
+    expect((await getClientReceivable(a.client, { clientId: cli, today: "2026-10-09" })).overdueAmount).toBe(0);
+    expect((await getClientReceivable(a.client, { clientId: cli, today: "2026-10-10" })).overdueAmount).toBe(100);
+    expect((await receivablesKpi(a.client, "2026-10-10")).overdue).toBe(100);
+    expect(await listReceivablesByClient(a.client, { today: "basura" })).toEqual([]); // today inválido degrada a vacío
   });
 
   it("fijar vencimiento en una venta emitida", async () => {

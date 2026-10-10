@@ -58,6 +58,7 @@ describe("tz helpers", () => {
     expect(() => addDaysISO("basura", 1)).toThrow(/Fecha local inválida/);
     expect(() => startOfDayUTC("2026-13-45", "UTC")).toThrow(/Fecha local inválida/);
     expect(() => localDateISO(new Date(), "Mars/Phobos")).toThrow(RangeError);
+    expect(() => localDateISO(new Date(), undefined as unknown as string)).toThrow(RangeError);
     expect(isDateISO("0099-01-01")).toBe(false);
     expect(isDateISO("1000-01-01")).toBe(true);
     expect(() => addDaysISO("2026-10-09", NaN)).toThrow(/Desplazamiento de días inválido/);

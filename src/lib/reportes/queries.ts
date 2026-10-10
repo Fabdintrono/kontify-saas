@@ -11,10 +11,12 @@ export type SalesReport = {
   byClient: { clientId: string | null; name: string; count: number; revenue: number }[];
 };
 
-const EMPTY: SalesReport = {
+// Fábrica, no constante: devolver siempre el mismo objeto dejaría que un consumidor mutara los
+// arreglos vacíos y contaminara la siguiente llamada que degrade.
+const empty = (): SalesReport => ({
   summary: { count: 0, revenue: 0, utility: 0, avgTicket: 0, marginPct: 0, costIncompleteCount: 0 },
   byDay: [], byProduct: [], bySeller: [], byClient: [],
-};
+});
 
 export type ReportOpts = DateRange & { branchId?: string | null; tz: string };
 
@@ -26,7 +28,7 @@ export async function salesReport(sb: SupabaseClient, opts: ReportOpts): Promise
       .eq("status", "issued").gte("issued_at", fromInstant).lt("issued_at", toInstant);
     if (branchId) sq = sq.eq("branch_id", branchId);
     const { data: sales, error } = await sq;
-    if (error || !sales || sales.length === 0) return EMPTY;
+    if (error || !sales || sales.length === 0) return empty();
 
     const saleIds = sales.map((s: any) => s.id);
     const { data: items } = await sb.from("sale_items")
@@ -87,7 +89,7 @@ export async function salesReport(sb: SupabaseClient, opts: ReportOpts): Promise
       bySeller: [...bySeller.values()].map((e) => ({ ...e, revenue: round2(e.revenue), utility: round2(e.utility) })).sort((a, b) => b.revenue - a.revenue),
       byClient: [...byClient.values()].map((e) => ({ ...e, revenue: round2(e.revenue) })).sort((a, b) => b.revenue - a.revenue),
     };
-  } catch { return EMPTY; }
+  } catch (e) { console.error("salesReport", e); return empty(); }
 }
 
 export async function utilityThisMonth(sb: SupabaseClient, tz: string): Promise<{ utility: number; costIncompleteCount: number }> {

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { round2 } from "@/lib/ventas/totals";
+import { isDateISO } from "@/lib/tz";
 
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 function sanitize(term: string): string { return term.replace(/[%,()*]/g, " ").trim(); }
@@ -13,6 +14,7 @@ export async function listReceivablesByClient(sb: SupabaseClient, opts: {
 }): Promise<ReceivableClientRow[]> {
   try {
     const { search = "", filter = "todos", today } = opts;
+    if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
     let q = sb.from("sales").select("client_id, total, paid_amount, balance, due_date, clients(name)")
       .eq("status", "issued").gt("balance", 0);
     const s = sanitize(search);
@@ -39,15 +41,17 @@ export async function listReceivablesByClient(sb: SupabaseClient, opts: {
     let rows = [...map.values()].map((r) => ({ ...r, totalDue: round2(r.totalDue), overdueAmount: round2(r.overdueAmount) }));
     if (filter === "vencidos") rows = rows.filter((r) => r.overdueAmount > 0);
     return rows.sort((a, b) => b.totalDue - a.totalDue);
-  } catch { return []; }
+  } catch (e) { console.error("listReceivablesByClient", e); return []; }
 }
 
-export async function getClientReceivable(sb: SupabaseClient, clientId: string, today: string): Promise<{
+export async function getClientReceivable(sb: SupabaseClient, opts: { clientId: string; today: string }): Promise<{
   clientName: string | null;
   rows: { saleId: string; number: number | null; total: number; paid: number; balance: number; dueDate: string | null; overdue: boolean }[];
   totalDue: number; overdueAmount: number;
 }> {
   try {
+    const { clientId, today } = opts;
+    if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
     const { data, error } = await sb.from("sales")
       .select("id, number, total, paid_amount, balance, due_date, clients(name)")
       .eq("client_id", clientId).eq("status", "issued").gt("balance", 0).order("due_date", { nullsFirst: false });
@@ -61,7 +65,7 @@ export async function getClientReceivable(sb: SupabaseClient, clientId: string, 
       return { saleId: r.id, number: r.number, total: Number(r.total), paid: Number(r.paid_amount), balance, dueDate: r.due_date, overdue };
     });
     return { clientName: (data[0] as any)?.clients?.name ?? null, rows, totalDue: round2(totalDue), overdueAmount: round2(overdueAmount) };
-  } catch { return { clientName: null, rows: [], totalDue: 0, overdueAmount: 0 }; }
+  } catch (e) { console.error("getClientReceivable", e); return { clientName: null, rows: [], totalDue: 0, overdueAmount: 0 }; }
 }
 
 export async function listPayments(sb: SupabaseClient, saleId: string): Promise<{
@@ -76,10 +80,11 @@ export async function listPayments(sb: SupabaseClient, saleId: string): Promise<
 // Total por cobrar + porción vencida. La consumirá el dashboard ("Requieren atención") en un plan posterior.
 export async function receivablesKpi(sb: SupabaseClient, today: string): Promise<{ total: number; overdue: number }> {
   try {
+    if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
     const { data, error } = await sb.from("sales").select("balance, due_date").eq("status", "issued").gt("balance", 0);
     if (error || !data) return { total: 0, overdue: 0 };
     let total = 0, overdue = 0;
     for (const r of data as any[]) { const b = Number(r.balance); total += b; if (r.due_date && r.due_date < today) overdue += b; }
     return { total: round2(total), overdue: round2(overdue) };
-  } catch { return { total: 0, overdue: 0 }; }
+  } catch (e) { console.error("receivablesKpi", e); return { total: 0, overdue: 0 }; }
 }

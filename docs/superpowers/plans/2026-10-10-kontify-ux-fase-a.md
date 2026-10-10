@@ -501,7 +501,7 @@ git commit -m "feat(format): formatDate en zona de la empresa, formatDateOnly pa
 - Modify: `src/lib/ventas/queries.ts` (`salesKpi`, quitar `monthStartISO`)
 - Modify: `src/lib/clientes/queries.ts:52-61` (`clientsKpi`)
 - Modify: `src/lib/cobros/queries.ts` (`todayISO` → parámetro `today`)
-- Test: `tests/reportes.test.ts` (añadir bloque), `tests/cobros.test.ts` (ajustar llamadas)
+- Test: `tests/reportes.test.ts` (añadir bloque), `tests/cobros.test.ts` (ajustar llamadas), `tests/ventas.test.ts` y `tests/clientes.test.ts` (pasar `tz` a `salesKpi`/`clientsKpi`: `tsconfig` también typechequea `tests/`)
 
 - [ ] **Step 1: Test que falla (añadir al final de `tests/reportes.test.ts`)**
 
@@ -622,8 +622,8 @@ export async function listReceivablesByClient(sb: SupabaseClient, opts: {
     // … (resto igual; eliminar la línea `const today = todayISO();`)
 ```
 ```ts
-export async function getClientReceivable(sb: SupabaseClient, clientId: string, today: string): Promise<{ … }> {
-  // … eliminar `const today = todayISO();`
+export async function getClientReceivable(sb: SupabaseClient, { clientId, today }: { clientId: string; today: string }): Promise<{ … }> {
+  // … eliminar `const today = todayISO();` (objeto de opciones: dos strings adyacentes se confunden)
 ```
 ```ts
 export async function receivablesKpi(sb: SupabaseClient, today: string): Promise<{ total: number; overdue: number }> {
@@ -645,7 +645,7 @@ Expected: errores SOLO en páginas/componentes que llaman a estas funciones (se 
 - [ ] **Step 9: Commit**
 
 ```bash
-git add src/lib/reportes/queries.ts src/lib/ventas/queries.ts src/lib/clientes/queries.ts src/lib/cobros/queries.ts tests/reportes.test.ts tests/cobros.test.ts
+git add src/lib/reportes/queries.ts src/lib/ventas/queries.ts src/lib/clientes/queries.ts src/lib/cobros/queries.ts tests/reportes.test.ts tests/cobros.test.ts tests/ventas.test.ts tests/clientes.test.ts
 git commit -m "feat(consultas): rangos y 'hoy' en la zona horaria de la empresa (ventas, reportes, clientes, cobros)"
 ```
 

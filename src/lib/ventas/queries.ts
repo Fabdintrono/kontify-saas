@@ -71,7 +71,7 @@ export async function salesKpi(sb: SupabaseClient, tz: string): Promise<{ monthT
     if (error || !data) return { monthTotal: 0, avgTicket: 0 };
     const monthTotal = data.reduce((s: number, r: any) => s + Number(r.total), 0);
     return { monthTotal: round2(monthTotal), avgTicket: data.length ? round2(monthTotal / data.length) : 0 };
-  } catch { return { monthTotal: 0, avgTicket: 0 }; }
+  } catch (e) { console.error("salesKpi", e); return { monthTotal: 0, avgTicket: 0 }; }
 }
 
 export async function receivablesTotal(sb: SupabaseClient): Promise<{ total: number }> {
@@ -79,7 +79,7 @@ export async function receivablesTotal(sb: SupabaseClient): Promise<{ total: num
     const { data, error } = await sb.from("sales").select("total, paid_amount").eq("status", "issued");
     if (error || !data) return { total: 0 };
     return { total: round2(data.reduce((s: number, r: any) => s + (Number(r.total) - Number(r.paid_amount)), 0)) };
-  } catch { return { total: 0 }; }
+  } catch (e) { console.error("receivablesTotal", e); return { total: 0 }; }
 }
 
 export async function salesByClient(sb: SupabaseClient, clientId: string): Promise<{

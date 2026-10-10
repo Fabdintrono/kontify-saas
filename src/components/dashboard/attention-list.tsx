@@ -5,7 +5,7 @@ import type { AttentionItem } from "@/lib/dashboard/attention";
 
 export type { AttentionItem };
 
-export function AttentionList({ items }: { items: AttentionItem[] }) {
+export function AttentionList({ items, canSeeReceivables }: { items: AttentionItem[]; canSeeReceivables: boolean }) {
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
       <p className="mb-2 text-sm font-bold text-[var(--text)]">Requieren atención</p>
@@ -30,8 +30,9 @@ export function AttentionList({ items }: { items: AttentionItem[] }) {
           })}
         </ul>
       )}
-      {/* El cupo del panel es corto: si hay vencidas, la lista completa vive en Cuentas por cobrar. */}
-      {items.some((i) => i.kind === "vencida") && (
+      {/* El cupo del panel es corto: si hay vencidas, la lista completa vive en Cuentas por cobrar.
+          Quien no puede verla no recibe el enlace: la pantalla lo devolvería al dashboard. */}
+      {canSeeReceivables && items.some((i) => i.kind === "vencida") && (
         <p className="mt-2 text-right">
           <Link href="/finanzas/cuentas-por-cobrar?filter=vencidos" className="text-xs font-semibold text-[#0e7490] hover:underline">
             Ver todas las vencidas

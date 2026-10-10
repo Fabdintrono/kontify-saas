@@ -10,7 +10,7 @@ export type AttentionItem = {
 };
 
 /** Cupo total del panel. */
-export const MAX = 8;
+const MAX = 8;
 /** Cupo de ventas vencidas: deja siempre al menos 3 huecos para el inventario. */
 const MAX_VENCIDAS = 5;
 

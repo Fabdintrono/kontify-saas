@@ -8,6 +8,7 @@ import { productsKpi, productsByCategory } from "@/lib/productos/queries";
 import { salesKpi, receivablesTotal } from "@/lib/ventas/queries";
 import { stockKpi, inventoryStatusBreakdown } from "@/lib/inventario/queries";
 import { canManageProducts } from "@/lib/productos/permissions";
+import { canRegisterPayment } from "@/lib/cobros/permissions";
 import type { Role } from "@/lib/auth/roles";
 import { formatMoney, weekdayShort } from "@/lib/format";
 import { utilityThisMonth, salesByDayThisWeek, topProductsThisMonth } from "@/lib/reportes/queries";
@@ -151,7 +152,7 @@ export default async function Dashboard() {
         </div>
       </div>
 
-      <AttentionList items={attention} />
+      <AttentionList items={attention} canSeeReceivables={canRegisterPayment(role)} />
     </div>
   );
 }

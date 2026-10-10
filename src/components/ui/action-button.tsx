@@ -4,7 +4,7 @@ import { useToast, type ToastInput } from "@/components/ui/toast";
 import { GENERIC_ERROR, isRedirectError, type ActionResult } from "@/lib/action-result";
 
 /** Acción de un clic que no necesita confirmación (reactivar, marcar aceptado) pero sí avisar
- *  de que pasó algo. Equivale a <form action={…}> + <PendingButton>, con toast al terminar.
+ *  de que pasó algo. Equivale a <form action={…}> + botón de submit, con toast al terminar.
  *  Usar ConfirmDialog cuando la acción sea destructiva o irreversible. */
 export function ActionButton({ action, payload, successToast, pendingLabel = "…", className, children }: {
   action: (fd: FormData) => Promise<ActionResult>; payload: Record<string, string>;

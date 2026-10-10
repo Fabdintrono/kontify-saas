@@ -12,12 +12,16 @@ export type SortSpec = {
 export type ResolvedSort = { key: string; dir: SortDir; column: string; ascending: boolean; nullsFirst?: boolean };
 
 /** Traduce lo que llega por URL a una orden segura.
- *  Lo que no esté en `spec.columns` cae al defecto: nada escrito por el usuario
- *  llega crudo a `.order()`. */
+ *  Lo que no esté en `spec.columns` cae al defecto COMPLETO, dirección incluida: una
+ *  columna que no existe no es media orden válida, así que tampoco manda su `dir`.
+ *  Nada escrito por el usuario llega crudo a `.order()`. */
 export function resolveSort(spec: SortSpec, key: string | undefined, dir: string | undefined): ResolvedSort {
-  const k = key && Object.prototype.hasOwnProperty.call(spec.columns, key) ? key : spec.default.key;
+  const known = !!key && Object.prototype.hasOwnProperty.call(spec.columns, key);
+  const k = known ? key! : spec.default.key;
   const col = spec.columns[k];
-  const d: SortDir = dir === "asc" || dir === "desc" ? dir : (col?.natural ?? spec.default.dir);
+  const d: SortDir = known && (dir === "asc" || dir === "desc")
+    ? dir
+    : (known ? (col?.natural ?? spec.default.dir) : spec.default.dir);
   return { key: k, dir: d, column: col?.column ?? k, ascending: d === "asc", nullsFirst: col?.nullsFirst };
 }
 

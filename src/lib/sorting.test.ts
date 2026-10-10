@@ -22,6 +22,14 @@ describe("resolveSort", () => {
     expect(resolveSort(SPEC, "name); drop table products; --", "asc").column).toBe("name");
   });
 
+  it("una clave inválida tampoco impone su dirección: cae el defecto completo", () => {
+    expect(resolveSort(SPEC, "password", "desc")).toEqual({
+      key: "name", dir: "asc", column: "name", ascending: true, nullsFirst: undefined,
+    });
+    // Y una dirección suelta sin clave tampoco manda.
+    expect(resolveSort(SPEC, undefined, "desc").dir).toBe("asc");
+  });
+
   it("no acepta claves heredadas del prototipo", () => {
     expect(resolveSort(SPEC, "constructor", "asc").key).toBe("name");
     expect(resolveSort(SPEC, "toString", "asc").key).toBe("name");

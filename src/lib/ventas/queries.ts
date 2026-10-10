@@ -3,6 +3,7 @@ import { computeSaleTotals, round2 } from "@/lib/ventas/totals";
 import { monthRange } from "@/lib/reportes/ranges";
 import { assertDateISO, rangeToInstants } from "@/lib/tz";
 import { paymentStatusOf, type PaymentStatus } from "@/lib/cobros/status";
+import { resolveSort, type SortSpec } from "@/lib/sorting";
 
 export type SaleStatusFilter = "borradores" | "emitidas" | "anuladas" | "todas";
 export type SalePaymentFilter = "pendientes" | "vencidas" | "todas";
@@ -13,15 +14,31 @@ export type SaleListRow = {
   dueDate: string | null; paymentStatus: PaymentStatus | null;
 };
 
+/** Columnas por las que puede ordenar la lista de ventas.
+ *  «Estado» no está: se calcula después de la consulta (paymentStatusOf), así que
+ *  ordenar por él en el servidor daría un orden falso sobre el total. */
+export const SALES_SORT: SortSpec = {
+  default: { key: "date", dir: "desc" },
+  columns: {
+    number: { column: "number", natural: "desc", nullsFirst: false },
+    date: { column: "created_at", natural: "desc" },
+    client: { column: "clients(name)", natural: "asc", nullsFirst: false },
+    total: { column: "total", natural: "desc" },
+    balance: { column: "balance", natural: "desc" },
+  },
+};
+
 const STATUS_MAP: Record<string, string> = { borradores: "draft", emitidas: "issued", anuladas: "void" };
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 function sanitize(term: string): string { return term.replace(/[%,()*]/g, " ").trim(); }
 
 export async function listSales(sb: SupabaseClient, opts: {
-  search?: string; status?: SaleStatusFilter; payment?: SalePaymentFilter; page?: number; pageSize?: number; today: string;
+  search?: string; status?: SaleStatusFilter; payment?: SalePaymentFilter; page?: number; pageSize?: number;
+  today: string; sort?: string; dir?: string;
 }): Promise<{ rows: SaleListRow[]; total: number; page: number; pageSize: number }> {
   const { search = "", status = "todas", payment = "todas", page = 1, pageSize = 20, today } = opts;
   assertDateISO(today);
+  const order = resolveSort(SALES_SORT, opts.sort, opts.dir);
   let q = sb.from("sales").select(
     "id, number, status, total, paid_amount, currency, issued_at, created_at, due_date, clients(name), branches(name)",
     { count: "exact" },
@@ -40,7 +57,10 @@ export async function listSales(sb: SupabaseClient, opts: {
     }
   }
   const from = (page - 1) * pageSize;
-  q = q.order("created_at", { ascending: false }).range(from, from + pageSize - 1);
+  q = q.order(order.column, { ascending: order.ascending, nullsFirst: order.nullsFirst ?? order.ascending });
+  // Segundo criterio estable: sin él, dos filas con el mismo valor pueden saltar de página.
+  if (order.column !== "created_at") q = q.order("created_at", { ascending: false });
+  q = q.range(from, from + pageSize - 1);
   const { data, error, count } = await q;
   if (error) throw error;
   const rows: SaleListRow[] = (data ?? []).map((r: any) => ({

@@ -31,7 +31,7 @@ describe("FlashToast", () => {
     const { rerender } = render(tree());
     expect(screen.getAllByText("Cambios guardados")).toHaveLength(1);
 
-    // La URL quedó limpia (el replaceState no reejecuta el efecto: lo simula este rerender).
+    // el mock no propaga replaceState a useSearchParams (Next sí lo hace); este rerender lo simula
     params = new URLSearchParams();
     rerender(tree());
 

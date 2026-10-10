@@ -7,6 +7,9 @@ import { canSell } from "@/lib/ventas/permissions";
 import { deleteQuoteAction, setQuoteStatusAction, convertQuoteAction } from "@/app/(app)/operaciones/presupuestos/actions";
 import { QuoteDocument } from "@/components/presupuestos/quote-document";
 import { PendingButton } from "@/components/shared/pending-button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ActionButton } from "@/components/ui/action-button";
+import { flashFor } from "@/lib/flash";
 import { getTenantSettings } from "@/lib/tenant";
 import { todayISO } from "@/lib/tz";
 import type { Role } from "@/lib/auth/roles";
@@ -35,26 +38,28 @@ export default async function PresupuestoDetallePage({ params }: { params: Promi
               <Link href={`/operaciones/presupuestos/${quote.id}/editar`} className={`flex items-center gap-1.5 ${btn}`}>
                 <Pencil className="h-4 w-4" /> Editar
               </Link>
-              <form action={deleteQuoteAction}>
-                <input type="hidden" name="id" value={quote.id} />
-                <button className={`${btn} text-[#dc2626]`}>Eliminar</button>
-              </form>
+              <ConfirmDialog action={deleteQuoteAction} payload={{ id: quote.id }}
+                title="¿Eliminar este presupuesto?" description="Se borra el borrador. No afecta ventas ni stock."
+                confirmLabel="Eliminar" triggerClassName={`${btn} text-[#dc2626]`}>
+                Eliminar
+              </ConfirmDialog>
             </>
           )}
           {allowed && (quote.status === "sent" || quote.status === "accepted") && (
             <>
               {quote.status === "sent" && (
-                <form action={setQuoteStatusAction}>
-                  <input type="hidden" name="id" value={quote.id} />
-                  <input type="hidden" name="status" value="accepted" />
-                  <button className={btn}>Marcar aceptado</button>
-                </form>
+                <ActionButton action={setQuoteStatusAction} payload={{ id: quote.id, status: "accepted" }}
+                  successToast={flashFor("presupuesto-aceptado")} className={btn}>
+                  Marcar aceptado
+                </ActionButton>
               )}
-              <form action={setQuoteStatusAction}>
-                <input type="hidden" name="id" value={quote.id} />
-                <input type="hidden" name="status" value="rejected" />
-                <button className={`${btn} text-[#dc2626]`}>Marcar rechazado</button>
-              </form>
+              <ConfirmDialog action={setQuoteStatusAction} payload={{ id: quote.id, status: "rejected" }}
+                title={`¿Marcar el presupuesto #${quote.number} como rechazado?`}
+                description="Queda cerrado y no podrá convertirse en venta."
+                confirmLabel="Marcar rechazado" successToast={flashFor("presupuesto-rechazado")}
+                triggerClassName={`${btn} text-[#dc2626]`}>
+                Marcar rechazado
+              </ConfirmDialog>
               <form action={convertQuoteAction}>
                 <input type="hidden" name="id" value={quote.id} />
                 <PendingButton className={primary} pendingLabel="Convirtiendo…">Convertir en venta</PendingButton>

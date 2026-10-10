@@ -36,9 +36,12 @@ describe("Toast", () => {
   });
   it("un error no se cierra solo y se anuncia en el canal assertive", () => {
     vi.useFakeTimers();
-    render(<ToastProvider><Demo tone="error" /></ToastProvider>);
+    const { container } = render(<ToastProvider><Demo tone="error" /></ToastProvider>);
     fireEvent.click(screen.getByText("go"));
-    expect(screen.getByRole("alert")).toBeTruthy();
+    const assertive = container.ownerDocument.querySelector('[data-toast-region="assertive"]')!;
+    expect(assertive.getAttribute("aria-live")).toBe("assertive");
+    expect(assertive.textContent).toContain("Venta #4 emitida");
+    expect(container.ownerDocument.querySelector('[data-toast-region="polite"]')!.textContent).toBe("");
     act(() => { vi.advanceTimersByTime(4500); });
     expect(screen.getByText("Venta #4 emitida")).toBeTruthy();
   });

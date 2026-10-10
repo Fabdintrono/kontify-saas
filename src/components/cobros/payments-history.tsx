@@ -1,5 +1,7 @@
 import { formatMoney, formatDateOnly } from "@/lib/format";
 import { voidPaymentAction } from "@/app/(app)/finanzas/cuentas-por-cobrar/actions";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { flashFor } from "@/lib/flash";
 
 type Payment = { id: string; amount: number; method: string | null; reference: string | null; paidAt: string; voided: boolean };
 
@@ -18,11 +20,13 @@ export function PaymentsHistory({ payments, saleId, currency, canVoid }: {
             </span>
           </span>
           {canVoid && !p.voided && (
-            <form action={voidPaymentAction}>
-              <input type="hidden" name="id" value={p.id} />
-              <input type="hidden" name="saleId" value={saleId} />
-              <button className="text-xs text-[var(--text-soft)] hover:text-[#dc2626]">Anular</button>
-            </form>
+            <ConfirmDialog action={voidPaymentAction} payload={{ id: p.id, saleId }}
+              title={`¿Anular el abono de ${formatMoney(p.amount, currency)}?`}
+              description="El saldo de la venta vuelve a subir. No se puede deshacer."
+              confirmLabel="Anular abono" successToast={flashFor("abono-anulado")}
+              triggerClassName="text-xs font-medium text-[var(--text-soft)] hover:text-[#dc2626]">
+              Anular
+            </ConfirmDialog>
           )}
         </li>
       ))}

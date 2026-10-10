@@ -14,6 +14,8 @@ import { SaleDocument } from "@/components/ventas/sale-document";
 import { PaymentsHistory } from "@/components/cobros/payments-history";
 import { PaymentForm } from "@/components/cobros/payment-form";
 import { DueDateField } from "@/components/cobros/due-date-field";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { flashFor } from "@/lib/flash";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function VentaDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -39,6 +41,8 @@ export default async function VentaDetallePage({ params }: { params: Promise<{ i
     today,
   );
 
+  const dangerBtn = "rounded-[10px] border border-[#dc2626]/40 px-3 py-2 text-sm font-medium text-[#dc2626] hover:bg-[#dc2626]/5";
+
   return (
     <div className="space-y-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -50,18 +54,19 @@ export default async function VentaDetallePage({ params }: { params: Promise<{ i
                 className="flex items-center gap-1.5 rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[var(--text)]">
                 <Pencil className="h-4 w-4" /> Editar
               </Link>
-              <form action={deleteDraftAction}>
-                <input type="hidden" name="id" value={sale.id} />
-                <button className="rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[#dc2626]">Eliminar borrador</button>
-              </form>
+              <ConfirmDialog action={deleteDraftAction} payload={{ id: sale.id }}
+                title="¿Eliminar este borrador?" description="Se borra la venta en preparación. No afecta stock ni numeración."
+                confirmLabel="Eliminar borrador" triggerClassName={dangerBtn}>
+                Eliminar borrador
+              </ConfirmDialog>
             </>
           )}
           {issued && canVoidSale(role) && !hasPayments && (
-            <form action={voidSaleAction}>
-              <input type="hidden" name="id" value={sale.id} />
-              <input type="hidden" name="clientId" value={sale.client_id ?? ""} />
-              <button className="rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[#dc2626]">Anular</button>
-            </form>
+            <ConfirmDialog action={voidSaleAction} payload={{ id: sale.id, clientId: sale.client_id ?? "" }}
+              title={`¿Anular la venta #${sale.number}?`} description="El stock vuelve al inventario y la venta queda anulada. No se puede deshacer."
+              confirmLabel="Anular venta" successToast={flashFor("venta-anulada", sale.number)} triggerClassName={dangerBtn}>
+              Anular
+            </ConfirmDialog>
           )}
         </div>
       </div>

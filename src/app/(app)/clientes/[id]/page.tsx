@@ -6,6 +6,9 @@ import { getClient } from "@/lib/clientes/queries";
 import { canArchiveClient } from "@/lib/clientes/permissions";
 import { archiveClientAction } from "@/app/(app)/clientes/actions";
 import { TypeBadge } from "@/components/clientes/type-badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ActionButton } from "@/components/ui/action-button";
+import { flashFor } from "@/lib/flash";
 import { salesByClient } from "@/lib/ventas/queries";
 import { formatMoney, formatDate } from "@/lib/format";
 import { getTenantSettings } from "@/lib/tenant";
@@ -26,6 +29,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
   const field = (label: string, value: string | null) => (
     <div><p className="text-xs text-[var(--text-soft)]">{label}</p><p className="text-sm text-[var(--text)]">{value || "—"}</p></div>
   );
+  const secondaryBtn = "rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[var(--text)]";
 
   return (
     <div className="space-y-4 p-6">
@@ -40,15 +44,19 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             className="flex items-center gap-1.5 rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[var(--text)]">
             <Pencil className="h-4 w-4" /> Editar
           </Link>
-          {canArchiveClient(role) && (
-            <form action={archiveClientAction}>
-              <input type="hidden" name="id" value={c.id} />
-              <input type="hidden" name="active" value={c.active ? "false" : "true"} />
-              <button className="rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[var(--text)]">
-                {c.active ? "Archivar" : "Reactivar"}
-              </button>
-            </form>
-          )}
+          {canArchiveClient(role) && (c.active ? (
+            <ConfirmDialog action={archiveClientAction} payload={{ id: c.id, active: "false" }}
+              title={`¿Archivar a ${c.name}?`}
+              description="Deja de aparecer en listas y al vender. Su historial y sus ventas se conservan; puedes reactivarlo cuando quieras."
+              confirmLabel="Archivar" successToast={flashFor("cliente-archivado")} triggerClassName={secondaryBtn}>
+              Archivar
+            </ConfirmDialog>
+          ) : (
+            <ActionButton action={archiveClientAction} payload={{ id: c.id, active: "true" }}
+              successToast={flashFor("cliente-reactivado")} className={secondaryBtn}>
+              Reactivar
+            </ActionButton>
+          ))}
         </div>
       </div>
 

@@ -11,6 +11,8 @@ import { PeriodSelector } from "@/components/reportes/period-selector";
 import { BarChart } from "@/components/reportes/bar-chart";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ModuleHeader } from "@/components/shared/module-header";
+import { ModuleGuide } from "@/components/shared/module-guide";
+import { GUIDES } from "@/lib/guides";
 
 export default async function ReporteVentasPage({ searchParams }: {
   searchParams: Promise<{ from?: string; to?: string; branch?: string }>;
@@ -54,7 +56,8 @@ export default async function ReporteVentasPage({ searchParams }: {
       {s.count === 0 ? (
         <div className={card}>
           <EmptyState icon={TrendingUp} title="Sin ventas en este período"
-            hint="Prueba otro período o quita el filtro de sucursal." />
+            hint="Prueba otro período o quita el filtro de sucursal."
+            secondary={<ModuleGuide guide={GUIDES.reportes_ventas} />} />
         </div>
       ) : (
         <>

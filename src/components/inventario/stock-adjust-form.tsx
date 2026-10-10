@@ -3,6 +3,7 @@ import { useActionState, useEffect, useState } from "react";
 import { registerAdjustmentAction, type FormState } from "@/app/(app)/operaciones/inventario/actions";
 import { useToast } from "@/components/ui/toast";
 import { flashFor } from "@/lib/flash";
+import { FieldLabel } from "@/components/shared/field-label";
 
 type LiteProduct = { id: string; name: string };
 type Branch = { id: string; name: string };
@@ -45,9 +46,9 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
         )}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelCls}>Sucursal</label>
+          <FieldLabel htmlFor="adjBranchId" help="sucursal">Sucursal</FieldLabel>
           {isBackOffice
-            ? <select name="branchId" className={inputCls} defaultValue={defaultBranch}>{branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
+            ? <select id="adjBranchId" name="branchId" className={inputCls} defaultValue={defaultBranch}>{branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
             : <input type="hidden" name="branchId" value={defaultBranch} />}
           {!isBackOffice && <p className="py-2 text-sm text-[var(--text)]">{branches.find((b) => b.id === defaultBranch)?.name ?? "—"}</p>}
         </div>

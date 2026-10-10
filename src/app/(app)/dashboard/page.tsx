@@ -39,7 +39,9 @@ export default async function Dashboard() {
   const [invKpi, invBreakdown] = await Promise.all([stockKpi(supabase), inventoryStatusBreakdown(supabase)]);
   const [util, weekDays, topProds, attention, gs] = await Promise.all([
     utilityThisMonth(supabase, tz), salesByDayThisWeek(supabase, tz), topProductsThisMonth(supabase, tz, 5),
-    attentionItems(supabase, todayISO(tz)), gettingStartedStatus(supabase),
+    attentionItems(supabase, todayISO(tz)),
+    // Solo dueño/admin ven «Primeros pasos»: para el resto no se consulta.
+    canSeeGettingStarted(role) ? gettingStartedStatus(supabase) : Promise.resolve(null),
   ]);
   const utilidadMes = canManageProducts(role) && sKpi.monthTotal > 0 ? { value: formatMoney(util.utility, currency) } : {};
   const weekBars = weekDays.map((d) => ({ label: weekdayShort(d.date), value: d.revenue }));
@@ -62,10 +64,10 @@ export default async function Dashboard() {
           </h1>
           <p className="mt-0.5 max-w-3xl text-sm text-[var(--text-soft)]">{GUIDES.dashboard.subtitle} <ModuleGuide guide={GUIDES.dashboard} className="ml-1 align-baseline" /></p>
         </div>
-        {/* Selector de período: se reincorpora cuando los KPIs reaccionen a él (Fase B); hoy todo es "este mes". */}
+        {/* Selector de período: se reincorpora cuando los KPIs reaccionen a él (Fase C); hoy todo es "este mes". */}
       </div>
 
-      {canSeeGettingStarted(role) && <GettingStarted status={gs} canHide={canHideGettingStarted(role)} action={hideGettingStartedAction} />}
+      {gs && <GettingStarted status={gs} canHide={canHideGettingStarted(role)} action={hideGettingStartedAction} />}
 
       {/* Móvil: hero Utilidad + 4 KPIs */}
       <div className="grid grid-cols-2 gap-3 lg:hidden">

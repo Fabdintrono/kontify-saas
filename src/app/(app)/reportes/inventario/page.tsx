@@ -7,6 +7,8 @@ import { canAccess, type Role } from "@/lib/auth/roles";
 import { formatMoney } from "@/lib/format";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ModuleHeader } from "@/components/shared/module-header";
+import { ModuleGuide } from "@/components/shared/module-guide";
+import { GUIDES } from "@/lib/guides";
 
 export default async function ReporteInventarioPage() {
   const sb = await createClient();
@@ -25,7 +27,8 @@ export default async function ReporteInventarioPage() {
       {val.rows.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
           <EmptyState icon={Boxes} title="Carga existencias para ver el valor"
-            hint="El valor es existencia × costo de cada producto." />
+            hint="El valor es existencia × costo de cada producto."
+            secondary={<ModuleGuide guide={GUIDES.reportes_inventario} />} />
         </div>
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 lg:p-4">

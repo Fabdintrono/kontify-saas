@@ -1,4 +1,4 @@
-import { isDateISO } from "@/lib/tz";
+import { isDateISO, DEFAULT_TZ } from "@/lib/tz";
 
 export function formatMoney(amount: number | null | undefined, currency = "USD"): string {
   if (amount === null || amount === undefined || Number.isNaN(Number(amount))) return "—";
@@ -9,14 +9,10 @@ export function formatMoney(amount: number | null | undefined, currency = "USD")
   }
 }
 
-// Zona de respaldo local a este módulo (no importar tenant.ts aquí: arrastraría código de servidor
-// a cualquier cliente que importe formatMoney).
-const FALLBACK_TZ = "America/Caracas";
-
 function dateFormatter(tz: string): Intl.DateTimeFormat {
   const opts: Intl.DateTimeFormatOptions = { day: "2-digit", month: "2-digit", year: "numeric" };
-  try { return new Intl.DateTimeFormat("es-VE", { ...opts, timeZone: tz || FALLBACK_TZ }); }
-  catch { return new Intl.DateTimeFormat("es-VE", { ...opts, timeZone: FALLBACK_TZ }); }
+  try { return new Intl.DateTimeFormat("es-VE", { ...opts, timeZone: tz || DEFAULT_TZ }); }
+  catch { return new Intl.DateTimeFormat("es-VE", { ...opts, timeZone: DEFAULT_TZ }); }
 }
 
 /** Timestamp (ISO con zona) → "dd/mm/aaaa" en la zona de la empresa. Nunca lanza.

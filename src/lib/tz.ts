@@ -7,6 +7,8 @@
 //  - startOfDayUTC: si la medianoche local no existe (salto de horario), el día arranca en la
 //    transición; si ocurre dos veces (retroceso), toma la primera.
 
+export const DEFAULT_TZ = "America/Caracas";
+
 export type DateRange = { from: string; to: string };
 
 const pad = (n: number, w = 2) => String(n).padStart(w, "0");

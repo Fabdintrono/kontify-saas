@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { DEFAULT_TZ } from "@/lib/tz";
+export { DEFAULT_TZ };
 
 export type TenantSettings = { currency: string; timezone: string };
-export const DEFAULT_TZ = "America/Caracas";
 export const DEFAULT_CURRENCY = "USD";
 
 function validTz(tz: unknown): tz is string {

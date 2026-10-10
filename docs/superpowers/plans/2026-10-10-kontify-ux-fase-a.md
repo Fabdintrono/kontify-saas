@@ -483,6 +483,7 @@ export function weekdayShort(dateISO: string | null | undefined): string {
 
 Run: `npx vitest run tests/format.test.ts`
 Expected: PASS (3 tests). Si `weekdayShort` devuelve `"vie."` con punto, ajustar el test a lo que da Node (`console.log` una vez) — la forma exacta depende de ICU; lo que importa es que sea el día correcto.
+(Más casos —borde de medianoche, DATE por error, zona inválida, degradación— se añadieron en la revisión; ver tests/format.test.ts.)
 
 - [ ] **Step 5: Commit**
 

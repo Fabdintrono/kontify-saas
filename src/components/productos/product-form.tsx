@@ -2,6 +2,7 @@
 import { useActionState, useState } from "react";
 import { createCategoryNamed, type FormState } from "@/app/(app)/operaciones/productos/actions";
 import { FieldLabel } from "@/components/shared/field-label";
+import { Button } from "@/components/ui/button";
 
 type Category = { id: string; name: string };
 type TaxRate = { id: string; name: string; isDefault: boolean };
@@ -107,9 +108,9 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
       <div><label className={labelCls}>Descripción</label><textarea name="description" defaultValue={values.description ?? ""} rows={3} className={inputCls} /></div>
 
       {state.error && <p className="text-sm text-[#dc2626]">{state.error}</p>}
-      <button disabled={pending} className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+      <Button variant="primary" disabled={pending}>
         {pending ? "Guardando…" : submitLabel}
-      </button>
+      </Button>
     </form>
   );
 }

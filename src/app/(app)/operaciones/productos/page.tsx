@@ -7,6 +7,7 @@ import { ProductsToolbar } from "@/components/productos/products-toolbar";
 import { ProductsTable } from "@/components/productos/products-table";
 import { ProductRowCard } from "@/components/productos/product-row-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { buttonCls } from "@/components/ui/button";
 import { ModuleHeader } from "@/components/shared/module-header";
 import { ModuleGuide } from "@/components/shared/module-guide";
 import { GUIDES } from "@/lib/guides";
@@ -34,9 +35,8 @@ export default async function ProductosPage({ searchParams }: {
   return (
     <div className="space-y-4 p-6">
       <ModuleHeader module="productos" actions={canManageProducts(role) ? (
-        <Link href="/operaciones/productos/nuevo"
-          className="flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
-          <Plus className="h-4 w-4" strokeWidth={2.5} /> Nuevo producto
+        <Link href="/operaciones/productos/nuevo" className={buttonCls("primary")}>
+          <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" /> Nuevo producto
         </Link>
       ) : undefined} />
 

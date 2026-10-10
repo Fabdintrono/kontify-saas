@@ -8,6 +8,7 @@ import { archiveClientAction } from "@/app/(app)/clientes/actions";
 import { TypeBadge } from "@/components/clientes/type-badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ActionButton } from "@/components/ui/action-button";
+import { buttonCls } from "@/components/ui/button";
 import { flashFor } from "@/lib/flash";
 import { salesByClient } from "@/lib/ventas/queries";
 import { formatMoney, formatDate } from "@/lib/format";
@@ -29,7 +30,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
   const field = (label: string, value: string | null) => (
     <div><p className="text-xs text-[var(--text-soft)]">{label}</p><p className="text-sm text-[var(--text)]">{value || "—"}</p></div>
   );
-  const secondaryBtn = "rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[var(--text)]";
+  const secondaryBtn = buttonCls("secondary");
 
   return (
     <div className="space-y-4 p-6">
@@ -40,9 +41,8 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
           {!c.active && <span className="rounded-full bg-[var(--bg)] px-2 py-0.5 text-xs text-[var(--text-soft)]">Archivado</span>}
         </div>
         <div className="flex items-center gap-2">
-          <Link href={`/clientes/${c.id}/editar`}
-            className="flex items-center gap-1.5 rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[var(--text)]">
-            <Pencil className="h-4 w-4" /> Editar
+          <Link href={`/clientes/${c.id}/editar`} className={secondaryBtn}>
+            <Pencil className="h-4 w-4" aria-hidden="true" /> Editar
           </Link>
           {canArchiveClient(role) && (c.active ? (
             <ConfirmDialog action={archiveClientAction} payload={{ id: c.id, active: "false" }}

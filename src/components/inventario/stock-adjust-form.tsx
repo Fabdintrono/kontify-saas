@@ -2,6 +2,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { registerAdjustmentAction, type FormState } from "@/app/(app)/operaciones/inventario/actions";
 import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
 import { flashFor } from "@/lib/flash";
 import { FieldLabel } from "@/components/shared/field-label";
 
@@ -23,10 +24,9 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
   useEffect(() => { if (state.ok) { setOpen(false); toast(flashFor("stock-ajustado")); } }, [state]);
 
   if (!open) return (
-    <button type="button" onClick={() => setOpen(true)}
-      className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
+    <Button type="button" variant="primary" onClick={() => setOpen(true)}>
       Ajustar stock
-    </button>
+    </Button>
   );
 
   return (
@@ -70,10 +70,10 @@ export function StockAdjustForm({ products, productId, branches, userBranchId, i
       </div>
       {state.error && <p className="text-sm text-[#dc2626]">{state.error}</p>}
       <div className="flex gap-2">
-        <button disabled={pending} className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+        <Button variant="primary" disabled={pending}>
           {pending ? "Guardando…" : "Guardar"}
-        </button>
-        <button type="button" onClick={() => setOpen(false)} className="rounded-[10px] border border-[var(--border)] px-4 py-2.5 text-sm text-[var(--text)]">Cancelar</button>
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
       </div>
     </form>
   );

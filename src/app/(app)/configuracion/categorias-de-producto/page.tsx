@@ -4,6 +4,7 @@ import { listCategories } from "@/lib/productos/queries";
 import { canManageCategories } from "@/lib/productos/permissions";
 import { createCategoryFormAction, updateCategoryAction } from "@/app/(app)/operaciones/productos/actions";
 import { ModuleHeader } from "@/components/shared/module-header";
+import { Button } from "@/components/ui/button";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function CategoriasDeProductoPage() {
@@ -22,7 +23,7 @@ export default async function CategoriasDeProductoPage() {
 
       <form action={createCategoryFormAction} className="flex gap-2">
         <input name="name" placeholder="Nueva categoría (ej. Repuestos)" className={`${inputCls} flex-1`} />
-        <button className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 text-sm font-semibold text-white">Añadir</button>
+        <Button variant="primary">Añadir</Button>
       </form>
 
       <ul className="divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
@@ -31,14 +32,14 @@ export default async function CategoriasDeProductoPage() {
             <form action={updateCategoryAction} className="flex flex-1 items-center gap-2">
               <input type="hidden" name="id" value={c.id} />
               <input name="name" defaultValue={c.name} className={`${inputCls} flex-1`} />
-              <button className="rounded-[10px] border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--text)]">Guardar</button>
+              <Button variant="secondary">Guardar</Button>
             </form>
             <form action={updateCategoryAction}>
               <input type="hidden" name="id" value={c.id} />
               <input type="hidden" name="active" value={c.active ? "false" : "true"} />
-              <button className="rounded-[10px] border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--text-soft)]">
+              <Button variant="secondary">
                 {c.active ? "Desactivar" : "Activar"}
-              </button>
+              </Button>
             </form>
           </li>
         ))}

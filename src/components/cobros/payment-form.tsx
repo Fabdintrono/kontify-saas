@@ -2,6 +2,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { registerPaymentAction, type FormState } from "@/app/(app)/finanzas/cuentas-por-cobrar/actions";
 import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
 import { flashFor } from "@/lib/flash";
 import { formatMoney } from "@/lib/format";
 
@@ -19,10 +20,9 @@ export function PaymentForm({ saleId, balance, currency, today }: { saleId: stri
   useEffect(() => { if (state.ok) { setOpen(false); toast(flashFor("abono-registrado")); } }, [state]);
 
   if (!open) return (
-    <button type="button" onClick={() => setOpen(true)}
-      className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-3 py-2 text-sm font-semibold text-white">
+    <Button type="button" variant="primary" onClick={() => setOpen(true)}>
       Registrar abono
-    </button>
+    </Button>
   );
 
   return (
@@ -48,10 +48,10 @@ export function PaymentForm({ saleId, balance, currency, today }: { saleId: stri
       <div><label className={labelCls}>Notas</label><input name="notes" className={inputCls} /></div>
       {state.error && <p className="text-sm text-[#dc2626]">{state.error}</p>}
       <div className="flex gap-2">
-        <button disabled={pending} className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+        <Button variant="primary" disabled={pending}>
           {pending ? "Guardando…" : "Guardar abono"}
-        </button>
-        <button type="button" onClick={() => setOpen(false)} className="rounded-[10px] border border-[var(--border)] px-4 py-2.5 text-sm text-[var(--text)]">Cancelar</button>
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
       </div>
     </form>
   );

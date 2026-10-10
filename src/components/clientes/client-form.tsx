@@ -2,6 +2,7 @@
 import { useActionState, useState } from "react";
 import { createClientTypeNamed, type FormState } from "@/app/(app)/clientes/actions";
 import { FieldLabel } from "@/components/shared/field-label";
+import { Button } from "@/components/ui/button";
 
 type ClientType = { id: string; name: string };
 type Values = {
@@ -86,9 +87,9 @@ export function ClientForm({ action, types, values = {}, submitLabel }: {
       <div><label className={labelCls}>Notas</label><textarea name="notes" defaultValue={values.notes ?? ""} rows={3} className={inputCls} /></div>
 
       {state.error && <p className="text-sm text-[#dc2626]">{state.error}</p>}
-      <button disabled={pending} className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+      <Button variant="primary" disabled={pending}>
         {pending ? "Guardando…" : submitLabel}
-      </button>
+      </Button>
     </form>
   );
 }

@@ -4,6 +4,7 @@ import { listClientTypes } from "@/lib/clientes/queries";
 import { canManageClientTypes } from "@/lib/clientes/permissions";
 import { createClientTypeFormAction, updateClientTypeAction } from "@/app/(app)/clientes/actions";
 import { ModuleHeader } from "@/components/shared/module-header";
+import { Button } from "@/components/ui/button";
 import type { Role } from "@/lib/auth/roles";
 
 export default async function TiposDeClientePage() {
@@ -22,7 +23,7 @@ export default async function TiposDeClientePage() {
 
       <form action={createClientTypeFormAction} className="flex gap-2">
         <input name="name" placeholder="Nuevo tipo (ej. Mayorista)" className={`${inputCls} flex-1`} />
-        <button className="rounded-[10px] bg-gradient-to-br from-[#0e7490] to-[#14b8a6] px-4 text-sm font-semibold text-white">Añadir</button>
+        <Button variant="primary">Añadir</Button>
       </form>
 
       <ul className="divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
@@ -31,14 +32,14 @@ export default async function TiposDeClientePage() {
             <form action={updateClientTypeAction} className="flex flex-1 items-center gap-2">
               <input type="hidden" name="id" value={t.id} />
               <input name="name" defaultValue={t.name} className={`${inputCls} flex-1`} />
-              <button className="rounded-[10px] border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--text)]">Guardar</button>
+              <Button variant="secondary">Guardar</Button>
             </form>
             <form action={updateClientTypeAction}>
               <input type="hidden" name="id" value={t.id} />
               <input type="hidden" name="active" value={t.active ? "false" : "true"} />
-              <button className="rounded-[10px] border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--text-soft)]">
+              <Button variant="secondary">
                 {t.active ? "Desactivar" : "Activar"}
-              </button>
+              </Button>
             </form>
           </li>
         ))}

@@ -15,6 +15,7 @@ import { PaymentsHistory } from "@/components/cobros/payments-history";
 import { PaymentForm } from "@/components/cobros/payment-form";
 import { DueDateField } from "@/components/cobros/due-date-field";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { buttonCls } from "@/components/ui/button";
 import { flashFor } from "@/lib/flash";
 import type { Role } from "@/lib/auth/roles";
 
@@ -41,7 +42,7 @@ export default async function VentaDetallePage({ params }: { params: Promise<{ i
     today,
   );
 
-  const dangerBtn = "rounded-[10px] border border-[#dc2626]/40 px-3 py-2 text-sm font-medium text-[#dc2626] hover:bg-[#dc2626]/5";
+  const dangerBtn = buttonCls("danger");
 
   return (
     <div className="space-y-4 p-6">
@@ -50,9 +51,8 @@ export default async function VentaDetallePage({ params }: { params: Promise<{ i
         <div className="flex items-center gap-2">
           {sale.status === "draft" && (
             <>
-              <Link href={`/operaciones/facturacion/${sale.id}/editar`}
-                className="flex items-center gap-1.5 rounded-[10px] border border-[var(--border)] px-3 py-2 text-sm text-[var(--text)]">
-                <Pencil className="h-4 w-4" /> Editar
+              <Link href={`/operaciones/facturacion/${sale.id}/editar`} className={buttonCls("secondary")}>
+                <Pencil className="h-4 w-4" aria-hidden="true" /> Editar
               </Link>
               <ConfirmDialog action={deleteDraftAction} payload={{ id: sale.id }}
                 title="¿Eliminar este borrador?" description="Se borra la venta en preparación. No afecta stock ni numeración."

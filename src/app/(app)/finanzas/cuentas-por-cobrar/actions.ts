@@ -3,6 +3,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient as serverSupabase } from "@/lib/supabase/server";
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
 import { paymentCreateSchema, dueDateSchema } from "@/lib/cobros/schema";
 import { canRegisterPayment, canVoidPayment, canEditDueDate } from "@/lib/cobros/permissions";
 import * as m from "@/lib/cobros/mutations";
@@ -46,7 +48,9 @@ export async function registerPaymentAction(_prev: FormState, fd: FormData): Pro
     reference: fd.get("reference"), paidAt: fd.get("paidAt"), notes: fd.get("notes"),
   });
   if (!parsed.success) return { ok: false, fieldErrors: zodErrors(parsed.error) };
-  try { await m.registerPayment(sb, tenantId, userId, parsed.data); }
+  const today = todayISO((await getTenantSettings(sb)).timezone);
+  if (parsed.data.paidAt && parsed.data.paidAt > today) return { ok: false, fieldErrors: { paidAt: "La fecha no puede ser futura" } };
+  try { await m.registerPayment(sb, tenantId, userId, parsed.data, today); }
   catch (e) { return { ok: false, error: (e as Error).message }; }
   await revalidateFor(sb, parsed.data.saleId);
   return { ok: true };

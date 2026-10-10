@@ -31,6 +31,13 @@ async function balanceOf(t: any, saleId: string) {
   const { data } = await t.client.from("sales").select("balance, paid_amount").eq("id", saleId).single();
   return { balance: Number(data.balance), paid: Number(data.paid_amount) };
 }
+async function makeProduct(t: any, over: Record<string, any> = {}) {
+  const { data } = await t.client.from("products")
+    .insert({ tenant_id: t.tenantId, kind: "good", name: "Café", price: 10, cost: 4, ...over }).select("id").single();
+  return data!.id as string;
+}
+const saleOf = (branchId: string, items: SaleSaveInput["items"], clientId: string | null = null): SaleSaveInput =>
+  ({ clientId, branchId, globalDiscountPct: 0, notes: undefined, items });
 
 describe("cobros — flujo con trigger", () => {
   it("emitir contado crea un cobro y deja la venta pagada", async () => {
@@ -49,9 +56,9 @@ describe("cobros — flujo con trigger", () => {
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a), cli, 100));
     await emitSale(a.client, id, { paymentType: "credito" });
     expect((await balanceOf(a, id)).balance).toBe(100);
-    await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 40 });
+    await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 40 }, HOY);
     expect((await balanceOf(a, id)).balance).toBe(60);
-    await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 60 });
+    await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 60 }, HOY);
     expect((await balanceOf(a, id)).balance).toBe(0);
   });
 
@@ -59,14 +66,14 @@ describe("cobros — flujo con trigger", () => {
     const a = await makeTenant("ovr");
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a), null, 50));
     await emitSale(a.client, id, { paymentType: "credito" });
-    await expect(registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 51 })).rejects.toBeTruthy();
+    await expect(registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 51 }, HOY)).rejects.toBeTruthy();
   });
 
   it("anular un cobro restaura el saldo (trigger)", async () => {
     const a = await makeTenant("vd");
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a), null, 100));
     await emitSale(a.client, id, { paymentType: "credito" });
-    const pid = await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 100 });
+    const pid = await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 100 }, HOY);
     expect((await balanceOf(a, id)).balance).toBe(0);
     await voidPayment(a.client, pid);
     expect((await balanceOf(a, id)).balance).toBe(100);
@@ -76,7 +83,7 @@ describe("cobros — flujo con trigger", () => {
     const a = await makeTenant("blk");
     const id = await createDraft(a.client, a.tenantId, a.id, "USD", sale(await mainBranch(a), null, 100));
     await emitSale(a.client, id, { paymentType: "credito" });
-    const pid = await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 30 });
+    const pid = await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 30 }, HOY);
     await expect(voidSale(a.client, id)).rejects.toBeTruthy();
     await voidPayment(a.client, pid);
     await voidSale(a.client, id); // ahora sí
@@ -126,5 +133,31 @@ describe("cobros — Cuentas por Cobrar", () => {
     await setDueDate(a.client, id, "2027-06-30");
     const { data } = await a.client.from("sales").select("due_date").eq("id", id).single();
     expect(data!.due_date).toBe("2027-06-30");
+  });
+});
+
+describe("cobros — la fecha del cobro es el día de la empresa", () => {
+  it("contado: paid_at = today recibido (no el día UTC del servidor)", async () => {
+    const a = await makeTenant("payday"); const b = await mainBranch(a); const p = await makeProduct(a);
+    const id = await createDraft(a.client, a.tenantId, a.id, "USD", saleOf(b, [
+      { productId: p, description: "Café", quantity: 1, unitPrice: 10, discountPct: 0, taxRate: 0 },
+    ]));
+    await emitSale(a.client, id, { paymentType: "contado", paymentMethod: "efectivo" }, "2026-10-09");
+    const { data } = await a.client.from("payments").select("paid_at").eq("sale_id", id).single();
+    expect(data!.paid_at).toBe("2026-10-09");
+  });
+  it("abono: sin paidAt usa today; con paidAt futuro respecto a today lanza", async () => {
+    const a = await makeTenant("payday2"); const b = await mainBranch(a); const p = await makeProduct(a);
+    const id = await createDraft(a.client, a.tenantId, a.id, "USD", saleOf(b, [
+      { productId: p, description: "Café", quantity: 1, unitPrice: 100, discountPct: 0, taxRate: 0 },
+    ]));
+    await emitSale(a.client, id, { paymentType: "credito" }, "2026-10-09");
+    const pid = await registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 10 }, "2026-10-09");
+    const { data } = await a.client.from("payments").select("paid_at").eq("id", pid).single();
+    expect(data!.paid_at).toBe("2026-10-09");
+    await expect(registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 10, paidAt: "2026-10-10" }, "2026-10-09"))
+      .rejects.toThrow(/futura/);
+    await expect(registerPayment(a.client, a.tenantId, a.id, { saleId: id, amount: 10 }, "basura"))
+      .rejects.toThrow(/today/);
   });
 });

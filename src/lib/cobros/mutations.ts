@@ -1,10 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PaymentInput } from "@/lib/cobros/schema";
 import { round2 } from "@/lib/ventas/totals";
+import { isDateISO } from "@/lib/tz";
 
 export async function registerPayment(
-  sb: SupabaseClient, tenantId: string, userId: string, input: PaymentInput,
+  sb: SupabaseClient, tenantId: string, userId: string, input: PaymentInput, today: string,
 ): Promise<string> {
+  if (!isDateISO(today)) throw new Error(`"today" inválido: ${today}`);
+  if (input.paidAt && input.paidAt > today) throw new Error("La fecha no puede ser futura");
   const { data: sale, error: readErr } = await sb.from("sales")
     .select("id, status, balance").eq("id", input.saleId).maybeSingle();
   if (readErr) throw readErr;
@@ -19,7 +22,7 @@ export async function registerPayment(
   const { data, error } = await sb.from("payments").insert({
     tenant_id: tenantId, sale_id: input.saleId, amount,
     method: input.method ?? null, reference: input.reference ?? null,
-    paid_at: input.paidAt ?? new Date().toISOString().slice(0, 10),
+    paid_at: input.paidAt ?? today,
     notes: input.notes ?? null, created_by: userId,
   }).select("id").single();
   if (error) throw error;

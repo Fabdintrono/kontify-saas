@@ -14,8 +14,11 @@ describe("cobros — schema", () => {
     expect(paymentCreateSchema.safeParse({ saleId: sid, amount: -1 }).success).toBe(false);
     expect(paymentCreateSchema.safeParse({ amount: 10 }).success).toBe(false);
   });
-  it("rechaza paidAt futura", () => {
-    expect(paymentCreateSchema.safeParse({ saleId: sid, amount: 10, paidAt: "2999-01-01" }).success).toBe(false);
+  it("acepta paidAt futura en formato (la regla 'no futura' vive en la mutación/acción, que conocen la zona)", () => {
+    expect(paymentCreateSchema.safeParse({ saleId: sid, amount: 10, paidAt: "2999-01-01" }).success).toBe(true);
+  });
+  it("rechaza paidAt mal formada", () => {
+    expect(paymentCreateSchema.safeParse({ saleId: sid, amount: 10, paidAt: "31-12-2026" }).success).toBe(false);
   });
   it("dueDate acepta fecha o null", () => {
     expect(dueDateSchema.safeParse({ saleId: sid, dueDate: "2026-12-31" }).success).toBe(true);

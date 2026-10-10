@@ -3,7 +3,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient as serverSupabase } from "@/lib/supabase/server";
-import { getTenantCurrency } from "@/lib/productos/queries";
+import { getTenantSettings } from "@/lib/tenant";
+import { todayISO } from "@/lib/tz";
 import { saleSaveSchema, saleEmitSchema, emitSchema } from "@/lib/ventas/schema";
 import { canSell, canVoidSale } from "@/lib/ventas/permissions";
 import * as m from "@/lib/ventas/mutations";
@@ -61,14 +62,14 @@ export async function submitSaleAction(_prev: FormState, fd: FormData): Promise<
 
   let saleId = id;
   try {
-    const currency = await getTenantCurrency(sb);
+    const { currency, timezone } = await getTenantSettings(sb);
     if (id) await m.updateDraft(sb, id, tenantId, parsed.data);
     else saleId = await m.createDraft(sb, tenantId, userId, currency, parsed.data);
 
     if (intent === "emit") {
       const pay = emitSchema.safeParse({ paymentType: fd.get("paymentType"), paymentMethod: fd.get("paymentMethod"), dueDate: fd.get("dueDate") });
       if (!pay.success) return { ok: false, fieldErrors: zodErrors(pay.error) };
-      await m.emitSale(sb, saleId, pay.data);
+      await m.emitSale(sb, saleId, pay.data, todayISO(timezone));
     }
   } catch (e) { return { ok: false, error: (e as Error).message }; }
 

@@ -5,7 +5,6 @@ const optStr = (max: number) =>
     z.string().trim().max(max).optional());
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const optDate =
   z.preprocess((v) => (v == null || (typeof v === "string" && v.trim() === "") ? undefined : v),
@@ -16,7 +15,7 @@ export const paymentCreateSchema = z.object({
   amount: z.coerce.number().positive("El monto debe ser mayor a 0"),
   method: optStr(40),
   reference: optStr(60),
-  paidAt: optDate.refine((v) => !v || v <= todayISO(), "La fecha no puede ser futura"),
+  paidAt: optDate,
   notes: optStr(500),
 });
 export type PaymentInput = z.infer<typeof paymentCreateSchema>;

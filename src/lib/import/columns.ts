@@ -1,9 +1,10 @@
 import { normalizar } from "./sheet";
 import { parseNumero } from "@/lib/numero";
+import { parseFecha } from "./fecha";
 
 export { parseNumero };
 
-export type TipoColumna = "texto" | "numero" | "opcion";
+export type TipoColumna = "texto" | "numero" | "opcion" | "fecha";
 
 export type Columna = {
   key: string;
@@ -73,6 +74,17 @@ export function validarFila(
       if (n === null) { errores.push({ columna: c.key, mensaje: `«${bruto}» no es un número` }); valores[c.key] = null; continue; }
       if (n < 0) { errores.push({ columna: c.key, mensaje: "No puede ser negativo" }); valores[c.key] = null; continue; }
       valores[c.key] = n;
+      continue;
+    }
+
+    if (c.tipo === "fecha") {
+      const f = parseFecha(bruto);
+      if (f === null) {
+        errores.push({ columna: c.key, mensaje: `«${bruto}» no es una fecha. Usa 05/10/2026` });
+        valores[c.key] = null;
+        continue;
+      }
+      valores[c.key] = f;
       continue;
     }
 

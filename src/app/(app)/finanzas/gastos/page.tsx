@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus, Receipt, Repeat, TrendingDown, CalendarClock } from "lucide-react";
+import { Plus, Receipt, Repeat, TrendingDown, CalendarClock, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
   listExpenses, listExpenseCategories, listRecurring, expensesByCategory,
@@ -53,6 +53,10 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   return (
     <Page>
       <ModuleHeader module="gastos" actions={canManageExpenses(role) ? (<>
+        <Link href="/finanzas/gastos/importar" className={buttonCls("secondary")} aria-label="Importar gastos">
+          <Upload className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+          <span className="hidden xl:inline">Importar</span>
+        </Link>
         <Link href="/finanzas/gastos/fijos/nuevo" className={buttonCls("secondary")}>
           <Repeat className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
           <span className="hidden sm:inline">Nuevo fijo</span>
@@ -138,7 +142,11 @@ async function Movimientos({ sp, role, from, to, hoy }: {
           <EmptyState icon={Receipt} title="Sin gastos en este período"
             hint="Registra lo que sale del negocio y el inicio te dirá la utilidad real, no solo la bruta."
             action={canManageExpenses(role) ? { href: "/finanzas/gastos/nuevo", label: "Nuevo gasto" } : undefined}
-            secondary={<ModuleGuide guide={GUIDES.gastos} />} />
+            secondary={canManageExpenses(role)
+              ? <Link href="/finanzas/gastos/importar" className={buttonCls("secondary")}>
+                  <Upload className="h-4 w-4" strokeWidth={2} aria-hidden="true" /> Importar desde Excel
+                </Link>
+              : <ModuleGuide guide={GUIDES.gastos} />} />
         </div>
       ) : (<>
         <ListBox>

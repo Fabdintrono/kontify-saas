@@ -32,7 +32,7 @@ export function SubNav({ sections, config, collapsed }: {
                   <span className="min-w-0 flex-1 truncate">{child.label}</span>
                   {/* La pantalla existe pero aún no hace nada: se dice aquí, no al llegar. */}
                   {child.pronto && (
-                    <span className="shrink-0 rounded bg-[var(--bg)] px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-[var(--text-soft)]">
+                    <span className="shrink-0 rounded bg-[var(--bg)] px-1 py-px text-[10px] font-semibold text-[var(--text-soft)]">
                       pronto
                     </span>
                   )}

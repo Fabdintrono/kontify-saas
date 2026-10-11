@@ -9,6 +9,7 @@ import type { Resultado } from "@/lib/import/commit";
 import { plantillaCsv, mapear } from "@/lib/import/columns";
 import { COLUMNAS, ETIQUETA, type Entidad } from "@/lib/import/entities";
 import { EXTENSIONES } from "@/lib/import/sheet";
+import { formatDateOnly } from "@/lib/format";
 import { Button, Spinner } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { FIELD_SM } from "@/components/ui/field";
@@ -16,6 +17,13 @@ import { DANGER_TEXT } from "@/lib/ui-tokens";
 import { useToast } from "@/components/ui/toast";
 
 const VISTA_PREVIA = 50;
+
+/** Cómo se enseña un valor ya leído. La fecha va en la forma de aquí: la vista previa
+ *  existe para confirmar que se entendió bien, y «2026-11-02» es justo lo que no se lee. */
+function celda(v: string | number | null, tipo: string): string {
+  if (v === null || v === "") return "—";
+  return tipo === "fecha" ? formatDateOnly(String(v)) : String(v);
+}
 
 type Paso = "subir" | "revisar" | "listo";
 
@@ -285,7 +293,7 @@ function Revisar({ revision, entidad, archivo, trabajando, onCambiarColumna, onC
                     <td className="px-2 py-2 tabular-nums text-[var(--text-soft)]">{f.linea}</td>
                     {columnas.map((c) => (
                       <td key={c.key} className={`max-w-[18ch] truncate px-2 py-2 ${malas.has(c.key) ? DANGER_TEXT : "text-[var(--text)]"}`}>
-                        {f.valores[c.key] === null || f.valores[c.key] === "" ? "—" : String(f.valores[c.key])}
+                        {celda(f.valores[c.key], c.tipo)}
                       </td>
                     ))}
                     <td className="px-2 py-2">

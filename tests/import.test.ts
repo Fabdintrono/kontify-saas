@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { newUserClient } from "./setup";
-import { importarProductos, importarClientes } from "@/lib/import/commit";
+import { importarProductos, importarClientes, importarGastos } from "@/lib/import/commit";
 import { listProducts, listCategories } from "@/lib/productos/queries";
 import { listClients, listClientTypes } from "@/lib/clientes/queries";
+import { listExpenses, listExpenseCategories } from "@/lib/gastos/queries";
 import type { FilaRevisada } from "@/lib/import/analyze";
 
 async function makeTenant(name: string) {
@@ -11,6 +12,14 @@ async function makeTenant(name: string) {
     p_name: name, p_slug: `${name}-${Date.now()}-${Math.random()}`, p_full_name: name,
   });
   return { ...u, tenantId: tenantId as string };
+}
+
+async function addMember(owner: Awaited<ReturnType<typeof makeTenant>>, role: string) {
+  const u = await newUserClient();
+  const { error } = await owner.client.from("memberships")
+    .insert({ user_id: u.id, tenant_id: owner.tenantId, role });
+  if (error) throw error;
+  return u;
 }
 
 const fila = (linea: number, valores: Record<string, unknown>): FilaRevisada =>
@@ -135,5 +144,64 @@ describe("importar clientes", () => {
 
     const enA = await listClients(a.client);
     expect(enA.rows.map((c) => c.name)).not.toContain("Intruso");
+  });
+});
+
+describe("importar gastos", () => {
+  it("guarda los gastos con su categoría y en la moneda del negocio", async () => {
+    const a = await makeTenant("imp-gas");
+    const r = await importarGastos(a.client, a.tenantId, a.id, null, [
+      fila(2, { spentOn: "2026-10-05", description: "Alquiler del local", amount: 300, category: "Alquiler", supplier: "Inversiones López" }),
+      fila(3, { spentOn: "2026-10-07", description: "Luz y agua", amount: 65.5, category: "Servicios" }),
+    ]);
+    expect(r.insertados).toBe(2);
+    expect(r.rechazadas).toEqual([]);
+    // Alquiler y Servicios vienen sembradas en un tenant nuevo: no debe crear nada.
+    expect(r.creadas).toEqual([]);
+
+    const { rows, suma } = await listExpenses(a.client, { sort: "date", dir: "asc" });
+    expect(rows.map((e) => e.description)).toEqual(["Alquiler del local", "Luz y agua"]);
+    expect(rows[0].categoryName).toBe("Alquiler");
+    expect(rows[0].supplier).toBe("Inversiones López");
+    expect(suma).toBe(365.5);
+  });
+
+  it("crea la categoría de gasto que no existía", async () => {
+    const a = await makeTenant("imp-gas-cat");
+    const r = await importarGastos(a.client, a.tenantId, a.id, null, [
+      fila(2, { spentOn: "2026-10-05", description: "Anuncio en radio", amount: 50, category: "Publicidad" }),
+    ]);
+    expect(r.creadas).toEqual(["Publicidad"]);
+    const cats = await listExpenseCategories(a.client, { includeInactive: true });
+    expect(cats.map((c) => c.name)).toContain("Publicidad");
+  });
+
+  it("lo importado cuenta de inmediato en el total del mes", async () => {
+    const a = await makeTenant("imp-gas-kpi");
+    await importarGastos(a.client, a.tenantId, a.id, null, [
+      fila(2, { spentOn: "2026-10-05", description: "Uno", amount: 100 }),
+      fila(3, { spentOn: "2026-10-06", description: "Dos", amount: 50 }),
+    ]);
+    const { suma } = await listExpenses(a.client, { range: { from: "2026-10-01", to: "2026-10-31" } });
+    expect(suma).toBe(150);
+  });
+
+  it("un vendedor no puede importar gastos", async () => {
+    const a = await makeTenant("imp-gas-rls");
+    const vendedor = await addMember(a, "vendedor");
+    const r = await importarGastos(vendedor.client, a.tenantId, vendedor.id, null, [
+      fila(2, { spentOn: "2026-10-05", description: "Intento", amount: 10 }),
+    ]);
+    expect(r.insertados).toBe(0);
+    expect(r.rechazadas.length).toBe(1);
+  });
+
+  it("los gastos de un negocio no se ven desde otro", async () => {
+    const a = await makeTenant("imp-gas-a");
+    const b = await makeTenant("imp-gas-b");
+    await importarGastos(a.client, a.tenantId, a.id, null, [
+      fila(2, { spentOn: "2026-10-05", description: "Solo de A", amount: 10 }),
+    ]);
+    expect((await listExpenses(b.client)).total).toBe(0);
   });
 });

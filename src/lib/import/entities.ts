@@ -1,6 +1,6 @@
 import type { Columna } from "./columns";
 
-export const ENTIDADES = ["productos", "clientes"] as const;
+export const ENTIDADES = ["productos", "clientes", "gastos"] as const;
 export type Entidad = (typeof ENTIDADES)[number];
 
 export const COLUMNAS_PRODUCTOS: Columna[] = [
@@ -107,18 +107,69 @@ export const COLUMNAS_CLIENTES: Columna[] = [
   },
 ];
 
+export const COLUMNAS_GASTOS: Columna[] = [
+  {
+    key: "spentOn", label: "Fecha", obligatoria: true, tipo: "fecha",
+    alias: ["fecha del pago", "fecha de pago", "dia", "día", "fecha gasto"],
+    ejemplo: "05/10/2026", ayuda: "Día primero: 05/10/2026 es el 5 de octubre.",
+  },
+  {
+    key: "description", label: "En qué se gastó", obligatoria: true, tipo: "texto", maximo: 200,
+    alias: ["concepto", "descripcion", "descripción", "detalle", "gasto", "motivo", "referencia"],
+    ejemplo: "Alquiler del local, octubre",
+  },
+  {
+    key: "amount", label: "Monto", obligatoria: true, tipo: "numero",
+    alias: ["importe", "total", "valor", "cantidad", "monto pagado", "egreso", "debe"],
+    ejemplo: "300,00",
+  },
+  {
+    key: "category", label: "Categoría", obligatoria: false, tipo: "texto", maximo: 40,
+    alias: ["rubro", "tipo de gasto", "clasificacion", "clasificación", "cuenta", "grupo"],
+    ejemplo: "Alquiler", ayuda: "Si no existe, se crea.",
+  },
+  {
+    key: "supplier", label: "A quién se le pagó", obligatoria: false, tipo: "texto", maximo: 120,
+    alias: ["proveedor", "beneficiario", "a quien", "a quién", "pagado a", "tercero"],
+    ejemplo: "Inversiones López C.A.",
+  },
+  {
+    key: "paymentMethod", label: "Cómo se pagó", obligatoria: false, tipo: "texto", maximo: 40,
+    alias: ["metodo de pago", "método de pago", "forma de pago", "medio de pago", "pago"],
+    ejemplo: "Transferencia",
+  },
+  {
+    key: "notes", label: "Notas", obligatoria: false, tipo: "texto", maximo: 500,
+    alias: ["observaciones", "comentarios", "nota"],
+    ejemplo: "Factura 0043",
+  },
+];
+
 export const COLUMNAS: Record<Entidad, Columna[]> = {
   productos: COLUMNAS_PRODUCTOS,
   clientes: COLUMNAS_CLIENTES,
+  gastos: COLUMNAS_GASTOS,
 };
 
 export const ETIQUETA: Record<Entidad, { singular: string; plural: string; volver: string; titulo: string }> = {
   productos: { singular: "producto", plural: "productos", volver: "/operaciones/productos", titulo: "Importar productos" },
   clientes: { singular: "cliente", plural: "clientes", volver: "/clientes", titulo: "Importar clientes" },
+  gastos: { singular: "gasto", plural: "gastos", volver: "/finanzas/gastos", titulo: "Importar gastos" },
 };
 
-/** Campo por el que se decide si dos filas son el mismo registro. */
-export const CLAVE_DUPLICADO: Record<Entidad, { key: string; label: string }> = {
+/** Campo por el que se decide si dos filas son el mismo registro.
+ *
+ *  `null` cuando la entidad no tiene una clave natural. Un gasto no la tiene: dos
+ *  carreras de taxi el mismo día por el mismo importe son dos gastos de verdad. Para
+ *  esas, el repetido se detecta comparando la fila entera (ver `HUELLA`). */
+export const CLAVE_DUPLICADO: Record<Entidad, { key: string; label: string } | null> = {
   productos: { key: "sku", label: "SKU" },
   clientes: { key: "docId", label: "documento" },
+  gastos: null,
+};
+
+/** Campos que, juntos, hacen que dos filas sean «el mismo gasto».
+ *  Sirve para no duplicar el mes entero si alguien sube dos veces el mismo archivo. */
+export const HUELLA: Partial<Record<Entidad, string[]>> = {
+  gastos: ["spentOn", "description", "amount"],
 };

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { revisar, revalidar } from "@/lib/import/analyze";
 import { mapear } from "@/lib/import/columns";
-import { COLUMNAS_PRODUCTOS, COLUMNAS_CLIENTES } from "@/lib/import/entities";
+import { COLUMNAS_PRODUCTOS, COLUMNAS_CLIENTES, COLUMNAS_GASTOS } from "@/lib/import/entities";
 
 const CAB = ["Nombre", "SKU", "Precio de venta", "Costo"];
 
@@ -139,5 +139,68 @@ describe("revalidar — la segunda comprobación, ya en el servidor", () => {
 
   it("un texto más largo del límite se rechaza en vez de recortarse en silencio", () => {
     expect(rev([fila(2, { name: "x".repeat(200), price: 1 })]).rechazadas[0].motivo).toContain("demasiado largo");
+  });
+});
+
+describe("revisar — gastos, que no tienen clave única", () => {
+  const cab = ["Fecha", "Concepto", "Importe", "Rubro"];
+  const rev = (filas: string[][], existentes: string[] = []) => revisar({
+    entidad: "gastos", columnas: COLUMNAS_GASTOS, cabeceras: cab, filas,
+    mapeo: mapear(cab, COLUMNAS_GASTOS), existentes: new Set(existentes),
+  });
+
+  it("empareja los títulos que usa la gente", () => {
+    const m = mapear(cab, COLUMNAS_GASTOS);
+    expect(m.spentOn).toBe(0);
+    expect(m.description).toBe(1);
+    expect(m.amount).toBe(2);
+    expect(m.category).toBe(3);
+  });
+
+  it("lee la fecha escrita con el día primero", () => {
+    const r = rev([["05/10/2026", "Alquiler", "300", "Alquiler"]]);
+    expect(r.filas[0].errores).toEqual([]);
+    expect(r.filas[0].valores.spentOn).toBe("2026-10-05");
+    expect(r.filas[0].valores.amount).toBe(300);
+  });
+
+  it("dos gastos distintos el mismo día entran los dos", () => {
+    const r = rev([
+      ["05/10/2026", "Taxi al banco", "8", ""],
+      ["05/10/2026", "Taxi de vuelta", "8", ""],
+    ]);
+    expect(r.validas).toBe(2);
+  });
+
+  it("la fila repetida exacta sí choca, para no duplicar el mes al subir dos veces", () => {
+    const r = rev([
+      ["05/10/2026", "Alquiler", "300", ""],
+      ["05/10/2026", "Alquiler", "300", ""],
+    ]);
+    expect(r.filas[0].errores).toEqual([]);
+    expect(r.filas[1].errores[0].mensaje).toBe("Igual que la fila 2");
+  });
+
+  it("avisa de lo que ya está cargado, con una salida clara", () => {
+    const existente = ["2026-10-05", "Alquiler", "300"].map((v) => v.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()).join("|");
+    const r = rev([["05/10/2026", "Alquiler", "300", ""]], [existente]);
+    expect(r.filas[0].errores[0].mensaje).toContain("Ya hay un gasto igual ese día");
+    expect(r.filas[0].errores[0].mensaje).toContain("Cambia el concepto");
+  });
+
+  it("una fecha ilegible dice qué forma usar", () => {
+    const r = rev([["el martes", "Alquiler", "300", ""]]);
+    expect(r.filas[0].errores[0].mensaje).toContain("05/10/2026");
+  });
+
+  it("sin fecha no se compara con nada: el error es que falta, no que repite", () => {
+    const r = rev([["", "Alquiler", "300", ""], ["", "Alquiler", "300", ""]]);
+    expect(r.filas[0].errores.map((e) => e.mensaje)).toEqual(["Falta fecha"]);
+    expect(r.filas[1].errores.map((e) => e.mensaje)).toEqual(["Falta fecha"]);
+  });
+
+  it("el monto negativo se rechaza: un gasto se carga en positivo", () => {
+    const r = rev([["05/10/2026", "Devolución", "-50", ""]]);
+    expect(r.filas[0].errores[0].mensaje).toBe("No puede ser negativo");
   });
 });

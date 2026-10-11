@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizar } from "./sheet";
 import type { FilaRevisada } from "./analyze";
-import type { Entidad } from "./entities";
+import { getTenantSettings } from "@/lib/tenant";
 
 export type Resultado = {
   insertados: number;
@@ -16,7 +16,7 @@ const LOTE = 100;
 /** Busca el id de un catálogo por nombre; si no está, lo crea.
  *  Devuelve un mapa nombre normalizado → id, y los nombres que tuvo que crear. */
 async function resolverCatalogo(
-  sb: SupabaseClient, tabla: "product_categories" | "client_types",
+  sb: SupabaseClient, tabla: "product_categories" | "client_types" | "expense_categories",
   tenantId: string, nombres: string[],
 ): Promise<{ porNombre: Map<string, string>; creadas: string[] }> {
   const porNombre = new Map<string, string>();
@@ -51,7 +51,7 @@ async function resolverCatalogo(
 /** Inserta por lotes y cuenta lo que entró. Un lote que falle no tumba a los demás:
  *  se reintenta fila por fila para saber exactamente cuál dio problema. */
 async function insertarPorLotes(
-  sb: SupabaseClient, tabla: "products" | "clients",
+  sb: SupabaseClient, tabla: "products" | "clients" | "expenses",
   filas: { linea: number; row: Record<string, unknown> }[],
 ): Promise<{ insertados: number; rechazadas: { linea: number; motivo: string }[] }> {
   let insertados = 0;
@@ -141,7 +141,37 @@ export async function importarClientes(
   return { insertados, creadas, rechazadas };
 }
 
-export const IMPORTADOR: Record<Entidad, typeof importarProductos> = {
-  productos: importarProductos,
-  clientes: importarClientes,
-};
+export async function importarGastos(
+  sb: SupabaseClient, tenantId: string, userId: string, branchId: string | null, filas: FilaRevisada[],
+): Promise<Resultado> {
+  const { porNombre, creadas } = await resolverCatalogo(
+    sb, "expense_categories", tenantId,
+    filas.map((f) => String(f.valores.category ?? "")),
+  );
+
+  // La moneda es la del negocio: un archivo no la trae y mezclarlas sin tipo de cambio
+  // daría totales sin sentido.
+  const { currency } = await getTenantSettings(sb);
+
+  const payload = filas.map((f) => {
+    const v = f.valores;
+    const cat = v.category ? porNombre.get(normalizar(String(v.category))) ?? null : null;
+    return {
+      linea: f.linea,
+      row: {
+        tenant_id: tenantId, created_by: userId, branch_id: branchId,
+        category_id: cat,
+        description: v.description as string,
+        amount: v.amount as number,
+        currency,
+        spent_on: v.spentOn as string,
+        payment_method: (v.paymentMethod as string) ?? null,
+        supplier: (v.supplier as string) ?? null,
+        notes: (v.notes as string) ?? null,
+      },
+    };
+  });
+
+  const { insertados, rechazadas } = await insertarPorLotes(sb, "expenses", payload);
+  return { insertados, creadas, rechazadas };
+}

@@ -5,9 +5,10 @@ import { createClient as serverSupabase } from "@/lib/supabase/server";
 import { leerHoja, normalizar, EXTENSIONES, TAMANO_MAXIMO } from "@/lib/import/sheet";
 import { mapear, type Mapeo } from "@/lib/import/columns";
 import { revisar, revalidar, type Revision } from "@/lib/import/analyze";
-import { importarProductos, importarClientes, type Resultado } from "@/lib/import/commit";
+import { importarProductos, importarClientes, importarGastos, type Resultado } from "@/lib/import/commit";
 import { COLUMNAS, ENTIDADES, type Entidad } from "@/lib/import/entities";
 import { canManageProducts } from "@/lib/productos/permissions";
+import { canManageExpenses } from "@/lib/gastos/permissions";
 import { canAccess, type Role } from "@/lib/auth/roles";
 import { GENERIC_ERROR } from "@/lib/action-result";
 
@@ -27,15 +28,26 @@ async function ctx() {
 }
 
 function puede(role: Role, entidad: Entidad): boolean {
-  return entidad === "productos" ? canManageProducts(role) : canAccess(role, "clientes");
+  if (entidad === "productos") return canManageProducts(role);
+  if (entidad === "gastos") return canManageExpenses(role);
+  return canAccess(role, "clientes");
 }
 
 function esEntidad(v: unknown): v is Entidad {
   return typeof v === "string" && (ENTIDADES as readonly string[]).includes(v);
 }
 
-/** Claves que ya están guardadas, para avisar del duplicado antes de escribir nada. */
+/** Lo que ya está guardado, para avisar del repetido antes de escribir nada.
+ *
+ *  Productos y clientes tienen clave natural. Los gastos no, así que se compara la
+ *  huella: mismo día, mismo concepto y mismo monto. Es lo que evita duplicar el mes
+ *  entero cuando alguien sube dos veces el mismo archivo. */
 async function clavesExistentes(sb: Awaited<ReturnType<typeof ctx>>["sb"], entidad: Entidad): Promise<Set<string>> {
+  if (entidad === "gastos") {
+    const { data } = await sb.from("expenses").select("spent_on, description, amount");
+    return new Set((data ?? []).map((r: any) =>
+      [r.spent_on, r.description, Number(r.amount)].map((v) => normalizar(String(v))).join("|")));
+  }
   const tabla = entidad === "productos" ? "products" : "clients";
   const campo = entidad === "productos" ? "sku" : "doc_id";
   const { data } = await sb.from(tabla).select(campo).not(campo, "is", null);
@@ -99,10 +111,12 @@ export async function confirmarImportacion(entidad: Entidad, revision: Revision)
   if (buenas.length === 0) return { ok: false, error: "No hay ninguna fila válida que guardar." };
 
   try {
-    const importar = entidad === "productos" ? importarProductos : importarClientes;
+    const importar = entidad === "productos" ? importarProductos
+      : entidad === "gastos" ? importarGastos : importarClientes;
     const resultado = await importar(sb, tenantId, userId, branchId, buenas);
     resultado.rechazadas = [...rechazadas, ...resultado.rechazadas].sort((a, b) => a.linea - b.linea);
-    revalidatePath(entidad === "productos" ? "/operaciones/productos" : "/clientes");
+    revalidatePath(entidad === "productos" ? "/operaciones/productos"
+      : entidad === "gastos" ? "/finanzas/gastos" : "/clientes");
     revalidatePath("/dashboard");
     return { ok: true, resultado };
   } catch (e) {

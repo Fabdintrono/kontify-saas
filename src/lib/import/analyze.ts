@@ -1,6 +1,6 @@
 import { normalizar } from "./sheet";
 import { validarFila, type Columna, type Mapeo, type ErrorCelda } from "./columns";
-import { CLAVE_DUPLICADO, type Entidad } from "./entities";
+import { CLAVE_DUPLICADO, HUELLA, type Entidad } from "./entities";
 
 export type FilaRevisada = {
   /** Número de fila tal como la ve el usuario en su hoja, contando la de títulos. */
@@ -21,6 +21,32 @@ export type Revision = {
   conError: number;
 };
 
+/** Nombre del registro, para los mensajes. */
+const SINGULAR: Record<Entidad, string> = { productos: "producto", clientes: "cliente", gastos: "gasto" };
+
+/** Qué hace única a una fila: la clave natural si la entidad la tiene, o la huella
+ *  compuesta si no. Devuelve null cuando la fila no se puede comparar con nada
+ *  (p. ej. un producto sin SKU: dos sin código son dos productos distintos). */
+export function huellaDe(
+  entidad: Entidad, valores: Record<string, string | number | null>,
+): { k: string; columna: string; que: string } | null {
+  const clave = CLAVE_DUPLICADO[entidad];
+  if (clave) {
+    const v = valores[clave.key];
+    if (typeof v !== "string" || v.trim() === "") return null;
+    return { k: normalizar(v), columna: clave.key, que: clave.label };
+  }
+  const campos = HUELLA[entidad];
+  if (!campos) return null;
+  // Con cualquier campo de la huella vacío no hay con qué comparar.
+  if (campos.some((c) => valores[c] === null || valores[c] === undefined || valores[c] === "")) return null;
+  return {
+    k: campos.map((c) => normalizar(String(valores[c]))).join("|"),
+    columna: campos[0],
+    que: "gasto",
+  };
+}
+
 /** Revisa la hoja entera: valida cada celda, detecta repetidos dentro del archivo y
  *  marca los que ya existen en la base. No escribe nada. */
 export function revisar(opts: {
@@ -33,7 +59,6 @@ export function revisar(opts: {
   existentes: Set<string>;
 }): Revision {
   const { entidad, columnas, cabeceras, filas, mapeo, existentes } = opts;
-  const clave = CLAVE_DUPLICADO[entidad];
 
   const usadas = new Set(Object.values(mapeo).filter((i) => i >= 0));
   const ignoradas = cabeceras.filter((h, i) => !usadas.has(i) && h.trim() !== "");
@@ -44,16 +69,24 @@ export function revisar(opts: {
     const { valores, errores } = validarFila(fila, columnas, mapeo);
     const linea = i + 2;   // +1 por base 1, +1 por la fila de títulos
 
-    const v = valores[clave.key];
-    if (typeof v === "string" && v.trim() !== "") {
-      const k = normalizar(v);
-      const antes = vistas.get(k);
+    const h = huellaDe(entidad, valores);
+    if (h) {
+      const antes = vistas.get(h.k);
+      const esHuella = CLAVE_DUPLICADO[entidad] === null;
       if (antes !== undefined) {
-        errores.push({ columna: clave.key, mensaje: `El mismo ${clave.label} que la fila ${antes}` });
-      } else if (existentes.has(k)) {
-        errores.push({ columna: clave.key, mensaje: `Ya existe un ${entidad === "productos" ? "producto" : "cliente"} con ese ${clave.label}` });
+        errores.push({
+          columna: h.columna,
+          mensaje: esHuella ? `Igual que la fila ${antes}` : `El mismo ${h.que} que la fila ${antes}`,
+        });
+      } else if (existentes.has(h.k)) {
+        errores.push({
+          columna: h.columna,
+          mensaje: esHuella
+            ? "Ya hay un gasto igual ese día. Cambia el concepto si de verdad son dos"
+            : `Ya existe un ${SINGULAR[entidad]} con ese ${h.que}`,
+        });
       } else {
-        vistas.set(k, linea);
+        vistas.set(h.k, linea);
       }
     }
     return { linea, valores, errores };
@@ -81,7 +114,6 @@ export function revalidar(opts: {
   existentes: Set<string>;
 }): { buenas: FilaRevisada[]; rechazadas: { linea: number; motivo: string }[] } {
   const { entidad, columnas, filas, existentes } = opts;
-  const clave = CLAVE_DUPLICADO[entidad];
   const buenas: FilaRevisada[] = [];
   const rechazadas: { linea: number; motivo: string }[] = [];
   const vistas = new Set<string>();
@@ -109,11 +141,10 @@ export function revalidar(opts: {
     const permitidas = new Set(columnas.map((c) => c.key));
     for (const k of Object.keys(f.valores)) if (!permitidas.has(k)) motivos.push(`campo desconocido «${k}»`);
 
-    const dup = f.valores[clave.key];
-    if (typeof dup === "string" && dup.trim() !== "") {
-      const k = normalizar(dup);
-      if (vistas.has(k) || existentes.has(k)) motivos.push(`${clave.label} repetido`);
-      else vistas.add(k);
+    const h = huellaDe(entidad, f.valores);
+    if (h) {
+      if (vistas.has(h.k) || existentes.has(h.k)) motivos.push(`${h.que} repetido`);
+      else vistas.add(h.k);
     }
 
     if (motivos.length > 0) rechazadas.push({ linea: f.linea, motivo: motivos.join("; ") });

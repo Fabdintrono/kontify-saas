@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Plus, Users, UserCheck, Archive, UserPlus } from "lucide-react";
+import { Plus, Users, UserCheck, Archive, UserPlus, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { listClients, listClientTypes, clientsOverview, CLIENTS_SORT, type ClientStatus } from "@/lib/clientes/queries";
 import { resolveSort } from "@/lib/sorting";
@@ -29,10 +29,15 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
 
   return (
     <Page>
-      <ModuleHeader module="clientes" actions={
+      <ModuleHeader module="clientes" actions={<>
+        <Link href="/clientes/importar" className={buttonCls("secondary")}>
+          <Upload className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+          <span className="hidden sm:inline">Importar</span>
+        </Link>
         <Link href="/clientes/nuevo" className={buttonCls("primary")}>
           <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" /> Nuevo cliente
-        </Link>} />
+        </Link>
+      </>} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <KpiCard icon={UserCheck} label="Clientes activos" value={resumen.activos > 0 ? String(resumen.activos) : undefined} />
@@ -69,7 +74,9 @@ async function ClientsList({ sp }: { sp: Params }) {
         <EmptyState icon={Users} title="Aún no tienes clientes"
           hint="También puedes vender a Consumidor final sin crear uno."
           action={{ href: "/clientes/nuevo", label: "Nuevo cliente" }}
-          secondary={<ModuleGuide guide={GUIDES.clientes} />} />
+          secondary={<Link href="/clientes/importar" className={buttonCls("secondary")}>
+            <Upload className="h-4 w-4" strokeWidth={2} aria-hidden="true" /> Importar desde Excel
+          </Link>} />
       </div>
     );
   }

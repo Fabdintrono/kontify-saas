@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Plus, Package } from "lucide-react";
+import { Plus, Package, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { listProducts, listCategories, getTenantCurrency, PRODUCTS_SORT, type ProductStatus } from "@/lib/productos/queries";
 import { canManageProducts } from "@/lib/productos/permissions";
@@ -31,11 +31,15 @@ export default async function ProductosPage({ searchParams }: { searchParams: Pr
 
   return (
     <Page>
-      <ModuleHeader module="productos" actions={canManageProducts(role) ? (
+      <ModuleHeader module="productos" actions={canManageProducts(role) ? (<>
+        <Link href="/operaciones/productos/importar" className={buttonCls("secondary")}>
+          <Upload className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+          <span className="hidden sm:inline">Importar</span>
+        </Link>
         <Link href="/operaciones/productos/nuevo" className={buttonCls("primary")}>
           <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" /> Nuevo producto
         </Link>
-      ) : undefined} />
+      </>) : undefined} />
 
       <ProductsToolbar categories={categories} />
 
@@ -66,7 +70,11 @@ async function ProductsList({ sp, role }: { sp: Params; role: Role }) {
         <EmptyState icon={Package} title="Tu catálogo está vacío"
           hint="Crea bienes (con stock) o servicios (sin stock)."
           action={canManageProducts(role) ? { href: "/operaciones/productos/nuevo", label: "Nuevo producto" } : undefined}
-          secondary={<ModuleGuide guide={GUIDES.productos} />} />
+          secondary={canManageProducts(role)
+            ? <Link href="/operaciones/productos/importar" className={buttonCls("secondary")}>
+                <Upload className="h-4 w-4" strokeWidth={2} aria-hidden="true" /> Importar desde Excel
+              </Link>
+            : <ModuleGuide guide={GUIDES.productos} />} />
       </div>
     );
   }

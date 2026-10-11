@@ -142,3 +142,72 @@ enseñan a dónde va el producto.
 2. **Importar también el stock inicial**, hoy hay que cargarlo producto por producto.
 3. **Lector de código de barras** en la pantalla de venta.
 4. Sucursales y Usuarios reales.
+
+---
+
+# Ampliación: gastos (11-10-2026)
+
+El mismo importador, ahora también para gastos. El botón está en la cabecera de Gastos y
+en su estado vacío. Casi todo se reutilizó; lo nuevo fue el tipo **fecha** y una forma
+distinta de detectar repetidos.
+
+## Las fechas, que es lo que se tuerce
+
+`src/lib/import/fecha.ts` lee las tres formas que llegan de verdad:
+
+| Lo que viene | Por qué |
+|---|---|
+| `05/10/2026`, `5/10/26`, `05-10-2026`, `05.10.2026` | Día primero, que es como se escribe aquí |
+| `2026-10-05` | La que ya viene normalizada |
+| `46329` | El **número de serie de Excel**. El lector de .xlsx no interpreta estilos, así que una celda con formato de fecha llega como el número crudo de días desde el 30 de diciembre de 1899 |
+
+Detalles que tienen prueba: el año de dos cifras (00-69 es 2000-2069; 70-99 es 1970-1999),
+el 29 de febrero solo en bisiesto, el 31 de febrero rechazado, y la fecha que viene al
+revés (`10/25/2026`) enderezada **solo cuando es inequívoco**. Con las dos cifras por
+debajo de 13 manda la forma de aquí: `03/04/2026` es el 3 de abril.
+
+La vista previa muestra la fecha ya interpretada **en formato dd/mm/aaaa**, no en ISO:
+esa pantalla existe para confirmar que se entendió bien, y «2026-11-02» es justo lo que
+no se lee de un vistazo.
+
+## El repetido, sin clave única
+
+Productos y clientes tienen clave natural (SKU, documento). **Un gasto no**: dos carreras
+de taxi el mismo día por el mismo importe son dos gastos de verdad.
+
+Así que para gastos el repetido se mide por **huella compuesta**: mismo día, mismo
+concepto y mismo monto. Eso deja pasar los dos taxis con conceptos distintos y frena lo
+que importa, que es duplicar el mes entero al subir dos veces el mismo archivo. El mensaje
+dice la salida: «Ya hay un gasto igual ese día. Cambia el concepto si de verdad son dos».
+
+`CLAVE_DUPLICADO` admite ahora `null` y hay un mapa `HUELLA` aparte. La misma función
+(`huellaDe`) la usan la revisión del navegador y la revalidación del servidor, así que no
+pueden discrepar.
+
+## Verificación de punta a punta
+
+Con un archivo desordenado a propósito, con títulos propios, fechas en dos formatos
+distintos (texto y serie de Excel), montos con coma y punto de miles, una fila sin fecha,
+un monto escrito en letras, dos filas idénticas y una columna de más:
+
+```
+emparejado:  Fecha→fecha  Concepto→concepto  Importe→monto  Rubro→categoría
+             Proveedor→a quién  Forma de pago→cómo se pagó
+avisa:       No se usarán: Nro factura.
+lee bien:    46329 → 03/11/2026 · «72,30» → 72,3 · «1.200,00» → 1200
+detecta:     Igual que la fila 4 · Falta fecha · «doce con cincuenta» no es un número
+importa:     4 gastos, y creó la categoría Publicidad
+reimportar:  7 filas leídas · 0 listas · 7 con problemas
+```
+
+**501 pruebas** en verde. Nuevas: `src/lib/import/fecha.test.ts` (12), ocho de gastos en
+`analyze.test.ts` y cinco de integración en `tests/import.test.ts`, incluidas las de que
+un vendedor no puede importar gastos y las de aislamiento entre negocios.
+
+## Nota del entorno, para no repetirla
+
+`pkill -f "next-server"` **mata el propio shell que lo ejecuta**, porque el patrón coincide
+con la línea de comandos del envoltorio. Hay que usar `pkill -f "[n]ext-server"`. Eso
+explica varias muertes misteriosas del servidor durante esta sesión. Y después de cada
+compilación hay que dejar **un solo** `next start`: dos con compilaciones distintas sirven
+fragmentos cruzados y el navegador falla con «Failed to load chunk».

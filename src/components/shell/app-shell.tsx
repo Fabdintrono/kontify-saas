@@ -7,7 +7,6 @@ import { navForRole, configForRole } from "@/lib/nav";
 import { Rail } from "@/components/shell/rail";
 import { SubNav } from "@/components/shell/subnav";
 import { TopBar } from "@/components/shell/topbar";
-import { FabVender } from "@/components/shell/fab-vender";
 import { MobileBottomNav } from "@/components/shell/mobile-bottom-nav";
 import { Popover } from "@/components/ui/popover";
 import { CommandPalette } from "@/components/shell/command-palette";
@@ -73,7 +72,6 @@ export function AppShell({ user, children }: {
           </main>
         </div>
 
-        <FabVender />
         <MobileBottomNav user={user} />
       </div>
     </ToastProvider>

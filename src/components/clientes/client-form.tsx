@@ -70,10 +70,10 @@ export function ClientForm({ action, types, values = {}, submitLabel, cancelHref
               <input id="docId" name="docId" defaultValue={values.docId ?? ""}
                 placeholder="Ej. J-12345678-9" className={fieldCls()} />
             </div>
-            <div>
+            <FormWide>
               <FieldLabel htmlFor="typeId" help="tipoCliente">Tipo de cliente</FieldLabel>
               <div className="flex gap-2">
-                <select id="typeId" value={typeId} onChange={(e) => setTypeId(e.target.value)} className={fieldCls()}>
+                <select id="typeId" value={typeId} onChange={(e) => setTypeId(e.target.value)} className={fieldCls(false, "max-w-sm")}>
                   <option value="">Sin tipo</option>
                   {localTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
@@ -92,7 +92,7 @@ export function ClientForm({ action, types, values = {}, submitLabel, cancelHref
                 </div>
               )}
               {typeErr && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{typeErr}</p>}
-            </div>
+            </FormWide>
           </FormGrid>
         </FormSection>
 

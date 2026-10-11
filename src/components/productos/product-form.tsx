@@ -71,10 +71,15 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
             <div>
               <FieldLabel htmlFor="kind">Tipo</FieldLabel>
               <select id="kind" name="kind" value={kind} onChange={(e) => setKind(e.target.value as "good" | "service")}
-                className={fieldCls()}>
-                <option value="good">Bien (descuenta existencia)</option>
-                <option value="service">Servicio (no toca inventario)</option>
+                aria-describedby="kind-hint" className={fieldCls()}>
+                <option value="good">Bien</option>
+                <option value="service">Servicio</option>
               </select>
+              {/* La diferencia va debajo y cambia con la elección: dentro de la opción
+                  se cortaba, y es justo el dato que decide. */}
+              <p id="kind-hint" className="mt-1 text-xs text-[var(--text-soft)]">
+                {kind === "good" ? "Descuenta existencia al vender." : "No toca el inventario."}
+              </p>
             </div>
             <Field id="name" error={err("name")} label={<FieldLabel htmlFor="name">Nombre *</FieldLabel>}>
               {(p) => <input {...p} name="name" defaultValue={values.name ?? ""} autoFocus
@@ -90,10 +95,10 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
               <input id="unit" name="unit" defaultValue={values.unit ?? "unidad"}
                 placeholder="Ej. caja, kg, litro" className={fieldCls()} />
             </div>
-            <div>
+            <FormWide>
               <FieldLabel htmlFor="categoryId">Categoría</FieldLabel>
               <div className="flex gap-2">
-                <select id="categoryId" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={fieldCls()}>
+                <select id="categoryId" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={fieldCls(false, "max-w-sm")}>
                   <option value="">Sin categoría</option>
                   {localCats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
@@ -112,7 +117,7 @@ export function ProductForm({ action, categories, taxRates, values = {}, submitL
                 </div>
               )}
               {catErr && <p className={`mt-1 text-xs ${DANGER_TEXT}`}>{catErr}</p>}
-            </div>
+            </FormWide>
             <FormWide>
               <label htmlFor="description" className="mb-1 block text-xs font-medium text-[var(--text-soft)]">Descripción</label>
               <textarea id="description" name="description" defaultValue={values.description ?? ""} rows={2}

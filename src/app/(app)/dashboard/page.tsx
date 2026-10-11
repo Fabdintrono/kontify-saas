@@ -57,7 +57,6 @@ export default async function Dashboard() {
   const porCobrar = recv.total > 0 ? { value: formatMoney(recv.total, currency) } : {};
   const totalProductos = prodKpi.total > 0 ? { value: String(prodKpi.total) } : {};
   const dinero = (n: number) => formatMoney(n, currency);
-  const unidades = (n: number) => `${n}`;
   const totalClientes = kpi.total > 0
     ? { value: String(kpi.total), sub: `${kpi.newThisMonth} nuevos este mes` }
     : {};
@@ -95,8 +94,9 @@ export default async function Dashboard() {
         <KpiCard icon={DollarSign} label="Ventas del mes" value={ventasMes.value}
           trend={<TrendChip trend={trends.ventas} formato={dinero} />} />
         <KpiCard icon={TrendingUp} label="Utilidad del mes" value={utilidadMes.value} />
-        <KpiCard icon={Users} label="Total de clientes" value={totalClientes.value}
-          trend={<TrendChip trend={trends.clientes} formato={unidades} />} />
+        {/* Sin comparación aquí: el número grande es el total acumulado y el porcentaje
+            hablaría de las altas del mes. Comparar dos cosas distintas confunde más que ayuda. */}
+        <KpiCard icon={Users} label="Total de clientes" value={totalClientes.value} sub={totalClientes.sub} />
         <KpiCard icon={Boxes} label="Valor de inventario" value={valorInventario.value} />
         <KpiCard icon={ArrowDownCircle} label="Por cobrar" value={porCobrar.value} />
         <KpiCard icon={ArrowUpCircle} label="Por pagar" />

@@ -21,28 +21,24 @@ export function variacion(actual: number, previo: number): Trend {
   return { pct: Math.round(((actual - previo) / previo) * 1000) / 10, previo };
 }
 
-export type DashboardTrends = { ventas: Trend; ticket: Trend; clientes: Trend };
+export type DashboardTrends = { ventas: Trend; ticket: Trend };
 
 /** Comparación del mes en curso contra el mismo tramo del mes pasado.
  *
  *  Degrada a «sin comparación» ante cualquier error: una tarjeta sin flecha es
  *  correcta; una flecha calculada sobre datos a medias, no. */
 export async function dashboardTrends(sb: SupabaseClient, tz: string): Promise<DashboardTrends> {
-  const vacio: DashboardTrends = { ventas: SIN_BASE, ticket: SIN_BASE, clientes: SIN_BASE };
+  const vacio: DashboardTrends = { ventas: SIN_BASE, ticket: SIN_BASE };
   try {
     const hoy = localDateISO(new Date(), tz);
     const actual = rangeToInstants(monthRange(new Date(), tz), tz);
     const previo = rangeToInstants(sameSpanLastMonth(hoy), tz);
 
-    const [ventasAct, ventasPrev, cliAct, cliPrev] = await Promise.all([
+    const [ventasAct, ventasPrev] = await Promise.all([
       sb.from("sales").select("total").eq("status", "issued")
         .gte("issued_at", actual.fromInstant).lt("issued_at", actual.toInstant),
       sb.from("sales").select("total").eq("status", "issued")
         .gte("issued_at", previo.fromInstant).lt("issued_at", previo.toInstant),
-      sb.from("clients").select("id", { count: "exact", head: true })
-        .gte("created_at", actual.fromInstant).lt("created_at", actual.toInstant),
-      sb.from("clients").select("id", { count: "exact", head: true })
-        .gte("created_at", previo.fromInstant).lt("created_at", previo.toInstant),
     ]);
     if (ventasAct.error || ventasPrev.error) return vacio;
 
@@ -53,7 +49,6 @@ export async function dashboardTrends(sb: SupabaseClient, tz: string): Promise<D
     return {
       ventas: variacion(totalAct, totalPrev),
       ticket: variacion(nAct ? round2(totalAct / nAct) : 0, nPrev ? round2(totalPrev / nPrev) : 0),
-      clientes: cliAct.error || cliPrev.error ? SIN_BASE : variacion(cliAct.count ?? 0, cliPrev.count ?? 0),
     };
   } catch (e) {
     console.error("dashboardTrends", e);

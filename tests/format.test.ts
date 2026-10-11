@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatDate, formatDateOnly, weekdayShort } from "@/lib/format";
+import { formatMoney, formatDate, formatDateOnly, weekdayShort } from "@/lib/format";
 
 describe("fechas", () => {
   it("formatDate muestra un timestamptz en la zona de la empresa (dd/mm/aaaa)", () => {
@@ -38,5 +38,28 @@ describe("fechas", () => {
     expect(weekdayShort("basura")).toBe("—");
     expect(weekdayShort(null)).toBe("—");
     expect(weekdayShort("2026-10-12")).toBe("lun");
+  });
+});
+
+describe("formatMoney — negativos", () => {
+  // `Intl` separa la moneda del número con un espacio duro; se normaliza para que la
+  // prueba hable de lo que importa y no de qué espacio usa la librería.
+  const m = (n: number) => formatMoney(n, "USD").replace(/\u00a0/g, " ");
+
+  it("pone el signo delante, separado de la moneda", () => {
+    expect(m(-587.5)).toBe("-USD 587,50");
+  });
+
+  it("el positivo no cambia", () => {
+    expect(m(587.5)).toBe("USD 587,50");
+  });
+
+  it("el cero no lleva signo", () => {
+    expect(m(0)).toBe("USD 0,00");
+    expect(m(-0)).toBe("USD 0,00");
+  });
+
+  it("el signo nunca queda pegado a la moneda", () => {
+    expect(m(-1234.56)).not.toContain("USD-");
   });
 });

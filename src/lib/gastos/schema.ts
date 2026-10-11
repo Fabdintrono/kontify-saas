@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isDateISO } from "@/lib/tz";
+import { parseNumero } from "@/lib/numero";
 
 export const FRECUENCIAS = ["semanal", "quincenal", "mensual", "bimestral", "trimestral", "anual"] as const;
 export type Frecuencia = (typeof FRECUENCIAS)[number];
@@ -23,11 +24,15 @@ const optId =
 
 const fecha = z.string().refine(isDateISO, "Fecha inválida");
 
-// El monto llega del formulario como texto; `coerce` lo convierte y la cota lo valida.
-// Se exige mayor que cero: un gasto de cero no es un gasto, es un error de carga.
-const monto = z.coerce.number({ message: "Escribe un monto" })
-  .positive("El monto debe ser mayor que cero")
-  .max(99_999_999_999.99, "El monto es demasiado grande");
+// El monto llega como texto y se lee con las reglas de aquí: «65,50» y «1.234,56» valen.
+// Un `type="number"` del navegador rechazaría la coma y dejaría el campo vacío sin decir
+// por qué. Se exige mayor que cero: un gasto de cero no es un gasto, es un error de carga.
+const monto = z.preprocess(
+  (v) => (typeof v === "string" ? parseNumero(v) ?? v : v),
+  z.number({ message: "Escribe un monto, por ejemplo 65,50" })
+    .positive("El monto debe ser mayor que cero")
+    .max(99_999_999_999.99, "El monto es demasiado grande"),
+);
 
 export const expenseCreateSchema = z.object({
   description: z.string().trim().min(1, "Di en qué se gastó").max(200),

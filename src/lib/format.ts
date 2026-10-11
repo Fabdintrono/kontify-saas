@@ -2,11 +2,15 @@ import { isDateISO, DEFAULT_TZ } from "@/lib/tz";
 
 export function formatMoney(amount: number | null | undefined, currency = "USD"): string {
   if (amount === null || amount === undefined || Number.isNaN(Number(amount))) return "—";
-  try {
-    return new Intl.NumberFormat("es-VE", { style: "currency", currency, minimumFractionDigits: 2 }).format(Number(amount));
-  } catch {
-    return new Intl.NumberFormat("es-VE", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(Number(amount));
-  }
+  const n = Number(amount);
+  const fmt = (c: string) =>
+    new Intl.NumberFormat("es-VE", { style: "currency", currency: c, minimumFractionDigits: 2 }).format(Math.abs(n));
+  let texto: string;
+  try { texto = fmt(currency); } catch { texto = fmt("USD"); }
+  // El negativo va delante de todo. Formateado tal cual, es-VE devuelve «USD-587,50»,
+  // con el signo pegado a la moneda, que se lee fatal. Desde que hay gastos, la
+  // utilidad puede ser negativa y esto se ve.
+  return n < 0 ? `-${texto}` : texto;
 }
 
 function dateFormatter(tz: string): Intl.DateTimeFormat {

@@ -61,7 +61,7 @@ export function ExpenseForm({ action, categories, values = {}, submitLabel, canc
             </Field>
             <Field id="amount" error={err("amount")}
               label={<FieldLabel htmlFor="amount">Monto en {currency} *</FieldLabel>}>
-              {(p) => <input {...p} name="amount" type="number" inputMode="decimal" step="0.01" min="0.01"
+              {(p) => <input {...p} name="amount" type="text" inputMode="decimal" autoComplete="off"
                 defaultValue={values.amount ?? ""} placeholder="0,00" className={fieldCls(!!err("amount"))} />}
             </Field>
             <Field id="spentOn" error={err("spentOn")}

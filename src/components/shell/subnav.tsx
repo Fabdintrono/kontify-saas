@@ -24,7 +24,7 @@ export function SubNav({ sections, config, collapsed }: {
             return (
               <li key={child.href}>
                 <Link href={child.href}
-                  className={`relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition ${
+                  className={`relative flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition ${
                     on ? "bg-[#e6f7f4] font-semibold text-[#0e7490] dark:bg-[#0e7490]/15 dark:text-[#5eead4]"
                        : "text-[var(--text)] hover:bg-[var(--bg)]"}`}>
                   {on && <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r bg-[#0e7490] dark:bg-[#5eead4]" />}
@@ -32,7 +32,7 @@ export function SubNav({ sections, config, collapsed }: {
                   <span className="min-w-0 flex-1 truncate">{child.label}</span>
                   {/* La pantalla existe pero aún no hace nada: se dice aquí, no al llegar. */}
                   {child.pronto && (
-                    <span className="shrink-0 rounded-full bg-[var(--bg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-soft)]">
+                    <span className="shrink-0 rounded bg-[var(--bg)] px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-[var(--text-soft)]">
                       pronto
                     </span>
                   )}

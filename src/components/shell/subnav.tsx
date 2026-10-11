@@ -28,8 +28,14 @@ export function SubNav({ sections, config, collapsed }: {
                     on ? "bg-[#e6f7f4] font-semibold text-[#0e7490] dark:bg-[#0e7490]/15 dark:text-[#5eead4]"
                        : "text-[var(--text)] hover:bg-[var(--bg)]"}`}>
                   {on && <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r bg-[#0e7490] dark:bg-[#5eead4]" />}
-                  <Icon className="h-4 w-4" strokeWidth={2} />
-                  {child.label}
+                  <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+                  <span className="min-w-0 flex-1 truncate">{child.label}</span>
+                  {/* La pantalla existe pero aún no hace nada: se dice aquí, no al llegar. */}
+                  {child.pronto && (
+                    <span className="shrink-0 rounded-full bg-[var(--bg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-soft)]">
+                      pronto
+                    </span>
+                  )}
                 </Link>
               </li>
             );

@@ -5,14 +5,19 @@ import {
 import { canAccess, type Role, type Resource } from "@/lib/auth/roles";
 import { MODULE_ICON } from "@/lib/module-icons";
 
-export type NavLeaf = { label: string; href: string; icon: LucideIcon; resource?: Resource };
+export type NavLeaf = {
+  label: string; href: string; icon: LucideIcon; resource?: Resource;
+  /** La pantalla existe pero todavía no hace nada. Se marca en el menú para que
+   *  nadie gaste un clic en averiguarlo. */
+  pronto?: boolean;
+};
 export type NavSection = { id: string; label: string; icon: LucideIcon; resource: Resource; children: NavLeaf[] };
 
 export const NAV: NavSection[] = [
   { id: "inicio", label: "Inicio", icon: Home, resource: "operaciones", children: [
     { label: "Dashboard", href: "/dashboard", icon: MODULE_ICON.dashboard },
-    { label: "Notificaciones", href: "/notificaciones", icon: MODULE_ICON.notificaciones },
-    { label: "Actividad", href: "/actividad", icon: MODULE_ICON.actividad },
+    { label: "Notificaciones", href: "/notificaciones", icon: MODULE_ICON.notificaciones, pronto: true },
+    { label: "Actividad", href: "/actividad", icon: MODULE_ICON.actividad, pronto: true },
   ]},
   { id: "clientes", label: "Clientes", icon: Users, resource: "clientes", children: [
     { label: "Todos los clientes", href: "/clientes", icon: MODULE_ICON.clientes },
@@ -29,11 +34,11 @@ export const NAV: NavSection[] = [
     { label: "Ventas", href: "/reportes/ventas", icon: MODULE_ICON.reportes_ventas },
   ]},
   { id: "finanzas", label: "Finanzas", icon: Wallet, resource: "finanzas", children: [
-    { label: "Cuentas por pagar", href: "/finanzas/cuentas-por-pagar", icon: MODULE_ICON.cuentas_por_pagar },
+    { label: "Cuentas por pagar", href: "/finanzas/cuentas-por-pagar", icon: MODULE_ICON.cuentas_por_pagar, pronto: true },
     { label: "Cuentas por cobrar", href: "/finanzas/cuentas-por-cobrar", icon: MODULE_ICON.cuentas_por_cobrar },
-    { label: "Comisiones", href: "/finanzas/comisiones", icon: Percent },
-    { label: "Bancos", href: "/finanzas/bancos", icon: Landmark },
-    { label: "Gastos", href: "/finanzas/gastos", icon: Receipt },
+    { label: "Comisiones", href: "/finanzas/comisiones", icon: Percent, pronto: true },
+    { label: "Bancos", href: "/finanzas/bancos", icon: Landmark, pronto: true },
+    { label: "Gastos", href: "/finanzas/gastos", icon: Receipt, pronto: true },
   ]},
 ];
 
@@ -44,8 +49,8 @@ export const CONFIG_SECTION: NavSection = {
     { label: "Tipos de cliente", href: "/configuracion/tipos-de-cliente", icon: Tags, resource: "billing" },
     { label: "Categorías de producto", href: "/configuracion/categorias-de-producto", icon: Tags, resource: "billing" },
     { label: "Tasas de impuesto", href: "/configuracion/tasas-de-impuesto", icon: Percent, resource: "billing" },
-    { label: "Sucursales", href: "/configuracion/sucursales", icon: Building2, resource: "billing" },
-    { label: "Usuarios y roles", href: "/configuracion/usuarios", icon: ShieldCheck, resource: "billing" },
+    { label: "Sucursales", href: "/configuracion/sucursales", icon: Building2, resource: "billing", pronto: true },
+    { label: "Usuarios y roles", href: "/configuracion/usuarios", icon: ShieldCheck, resource: "billing", pronto: true },
     { label: "Preferencias", href: "/configuracion/preferencias", icon: SlidersHorizontal },
   ],
 };

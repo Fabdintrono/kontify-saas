@@ -41,8 +41,9 @@ export function CommandPalette({ role, open, onOpenChange }: {
     const config = configForRole(role);
     const secciones = [...navForRole(role), ...(config ? [config] : [])];
     const pantallas = secciones.flatMap((s) => s.children.map((c) => ({
-      id: `nav-${c.href}`, title: c.label, subtitle: s.label, href: c.href,
-      group: "Ir a", icon: c.icon,
+      id: `nav-${c.href}`, title: c.label,
+      subtitle: c.pronto ? `${s.label} · llega pronto` : s.label,
+      href: c.href, group: "Ir a", icon: c.icon,
     })));
     return [...acciones, ...pantallas];
   }, [role]);

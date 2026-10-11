@@ -34,11 +34,21 @@ describe("el menú y las rutas van de la mano", () => {
     expect(huerfanas).toEqual([]);
   });
 
-  it("cada pantalla accesoria tiene su lista en el menú", () => {
+  it("cada pantalla accesoria cuelga de alguna del menú", () => {
     const enMenu = new Set(HOJAS.map((h) => h.href));
+    // Se sube por la ruta hasta dar con una entrada del menú: «/finanzas/gastos/fijos/nuevo»
+    // cuelga de «/finanzas/gastos», aunque «/fijos» sea solo una pestaña y no una ruta.
+    const tieneAncestro = (r: string) => {
+      let p = r;
+      while (p.includes("/")) {
+        p = p.slice(0, p.lastIndexOf("/"));
+        if (enMenu.has(p)) return true;
+      }
+      return false;
+    };
     const sinPadre = ESTATICAS
       .filter((r) => /\/(nuevo|nueva|editar|importar)$/.test(r))
-      .filter((r) => !enMenu.has(r.slice(0, r.lastIndexOf("/"))));
+      .filter((r) => !tieneAncestro(r));
     expect(sinPadre).toEqual([]);
   });
 

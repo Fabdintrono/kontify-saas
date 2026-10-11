@@ -1,10 +1,11 @@
 import type { LucideIcon } from "lucide-react";
-import { ShoppingCart, Package, Users, Boxes, FileText, ArrowDownCircle } from "lucide-react";
+import { ShoppingCart, Package, Users, Boxes, FileText, ArrowDownCircle, Receipt } from "lucide-react";
 import { canAccess, type Role } from "@/lib/auth/roles";
 import { canSell } from "@/lib/ventas/permissions";
 import { canManageProducts } from "@/lib/productos/permissions";
 import { canManageStock } from "@/lib/inventario/permissions";
 import { canRegisterPayment } from "@/lib/cobros/permissions";
+import { canManageExpenses } from "@/lib/gastos/permissions";
 
 export type QuickAction = {
   key: string;
@@ -45,6 +46,11 @@ export const QUICK_ACTIONS: QuickAction[] = [
     key: "cobrar", label: "Cobrar", hint: "Registra un abono de un cliente",
     href: "/finanzas/cuentas-por-cobrar", icon: ArrowDownCircle, shortcut: "B",
     allowed: canRegisterPayment,
+  },
+  {
+    key: "gasto", label: "Registrar gasto", hint: "Lo que sale, para saber tu utilidad real",
+    href: "/finanzas/gastos/nuevo", icon: Receipt, shortcut: "G",
+    allowed: canManageExpenses,
   },
   {
     key: "presupuesto", label: "Nuevo presupuesto", hint: "Cotiza sin tocar inventario",

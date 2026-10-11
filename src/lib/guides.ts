@@ -3,8 +3,8 @@
 
 export const MODULE_IDS = [
   "dashboard", "clientes", "productos", "inventario", "ventas", "presupuestos",
-  "cuentas_por_cobrar", "reportes_ventas", "reportes_inventario",
-  "config_tipos_cliente", "config_categorias", "config_tasas", "config_preferencias",
+  "cuentas_por_cobrar", "gastos", "reportes_ventas", "reportes_inventario",
+  "config_tipos_cliente", "config_categorias", "config_categorias_gasto", "config_tasas", "config_preferencias",
 ] as const;
 export type ModuleId = (typeof MODULE_IDS)[number];
 
@@ -95,6 +95,21 @@ export const GUIDES: Record<ModuleId, Guide> = {
       "Anular un abono devuelve el saldo a la venta.",
     ],
   },
+  gastos: {
+    title: "Gastos",
+    subtitle: "Todo lo que sale del negocio. Sin esto la utilidad que ves en el inicio es bruta y no dice si de verdad estás ganando.",
+    steps: [
+      "Registra cada salida con «Nuevo gasto»: en qué se gastó, cuánto y cuándo. La categoría ayuda después a ver en qué se te va el dinero.",
+      "Lo que pagas todos los meses va en «Fijos»: alquiler, nómina, internet. Pones cada cuánto se paga y la próxima fecha.",
+      "Cuando llegue la fecha, pulsa «Registrar pago»: nace el gasto del mes y el fijo avanza solo a la siguiente fecha.",
+      "El inicio resta los gastos del mes a la utilidad bruta y te muestra la utilidad neta, que es la que importa.",
+    ],
+    notDoes: [
+      "No paga nada ni se conecta con tu banco: es un registro de lo que ya pagaste.",
+      "El costo de la mercancía que vendes ya está en la utilidad bruta. Si también lo cargas aquí, lo restarías dos veces.",
+      "Vendedores y cajeros no ven los gastos.",
+    ],
+  },
   reportes_ventas: {
     title: "Reporte de ventas",
     subtitle: "Ventas, ingresos y utilidad por período. La utilidad usa el costo que tenía cada producto al venderse.",
@@ -132,6 +147,17 @@ export const GUIDES: Record<ModuleId, Guide> = {
       "Luego filtras el catálogo por categoría y la ves desglosada en el inicio.",
     ],
     notDoes: ["Una categoría no anida dentro de otra: la lista es plana."],
+  },
+  config_categorias_gasto: {
+    title: "Categorías de gasto",
+    subtitle: "Agrupan las salidas para saber en qué se va el dinero. Las inactivas no aparecen al cargar un gasto, pero se conservan en los que ya las tienen.",
+    steps: [
+      "Escribe el nombre arriba y pulsa «Añadir» para crear una categoría.",
+      "Cambia el nombre en su fila y pulsa «Guardar».",
+      "«Desactivar» la saca del formulario de gastos sin tocar a los que ya la tienen.",
+      "El desglose por categoría aparece en la pantalla de Gastos.",
+    ],
+    notDoes: ["No son cuentas contables: son etiquetas para entender tus salidas."],
   },
   config_tasas: {
     title: "Tasas de impuesto",

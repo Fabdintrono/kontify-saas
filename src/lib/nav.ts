@@ -38,7 +38,7 @@ export const NAV: NavSection[] = [
     { label: "Cuentas por cobrar", href: "/finanzas/cuentas-por-cobrar", icon: MODULE_ICON.cuentas_por_cobrar },
     { label: "Comisiones", href: "/finanzas/comisiones", icon: Percent, pronto: true },
     { label: "Bancos", href: "/finanzas/bancos", icon: Landmark, pronto: true },
-    { label: "Gastos", href: "/finanzas/gastos", icon: Receipt, pronto: true },
+    { label: "Gastos", href: "/finanzas/gastos", icon: Receipt },
   ]},
 ];
 
@@ -48,6 +48,7 @@ export const CONFIG_SECTION: NavSection = {
   id: "config", label: "Configuración", icon: Settings, resource: "operaciones", children: [
     { label: "Tipos de cliente", href: "/configuracion/tipos-de-cliente", icon: Tags, resource: "billing" },
     { label: "Categorías de producto", href: "/configuracion/categorias-de-producto", icon: Tags, resource: "billing" },
+    { label: "Categorías de gasto", href: "/configuracion/categorias-de-gasto", icon: Tags, resource: "billing" },
     { label: "Tasas de impuesto", href: "/configuracion/tasas-de-impuesto", icon: Percent, resource: "billing" },
     { label: "Sucursales", href: "/configuracion/sucursales", icon: Building2, resource: "billing", pronto: true },
     { label: "Usuarios y roles", href: "/configuracion/usuarios", icon: ShieldCheck, resource: "billing", pronto: true },

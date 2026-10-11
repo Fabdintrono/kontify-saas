@@ -13,14 +13,20 @@ export function useFilterParams() {
   const sp = useSearchParams();
   const [pending, start] = useTransition();
 
-  function setParam(key: string, value: string) {
+  /** Cambia varios criterios a la vez. Un período son dos parámetros y tienen que
+   *  viajar juntos: medio rango daría un filtro que nadie pidió. */
+  function setParams(cambios: Record<string, string>) {
     const next = new URLSearchParams(sp.toString());
-    if (value) next.set(key, value); else next.delete(key);
+    for (const [key, value] of Object.entries(cambios)) {
+      if (value) next.set(key, value); else next.delete(key);
+    }
     next.delete("page");
     start(() => router.push(`${pathname}?${next.toString()}`));
   }
 
-  return { sp, pending, setParam };
+  const setParam = (key: string, value: string) => setParams({ [key]: value });
+
+  return { sp, pending, setParam, setParams };
 }
 
 /** Envoltura de la barra. Mientras navega marca `aria-busy` y baja la opacidad:

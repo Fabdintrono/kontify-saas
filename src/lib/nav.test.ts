@@ -23,8 +23,11 @@ describe("navForRole", () => {
 });
 
 describe("configForRole", () => {
-  it("owner ve las 6 opciones de Configuración", () => {
-    expect(configForRole("owner")!.children).toHaveLength(6);
+  it("owner ve todas las opciones de Configuración", () => {
+    expect(configForRole("owner")!.children.map((c) => c.label)).toEqual([
+      "Tipos de cliente", "Categorías de producto", "Categorías de gasto",
+      "Tasas de impuesto", "Sucursales", "Usuarios y roles", "Preferencias",
+    ]);
   });
   it("cajero solo ve Preferencias dentro de Configuración", () => {
     expect(configForRole("cajero")!.children.map((c) => c.label)).toEqual(["Preferencias"]);

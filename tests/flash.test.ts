@@ -19,3 +19,18 @@ describe("flash", () => {
     expect(flashFor("venta-emitida", 12).title).toBe("Venta #12 emitida");
   });
 });
+
+describe("flash — el argumento de los gastos fijos", () => {
+  it("acepta una fecha y la muestra como la lee la gente", () => {
+    expect(flashMessage("fijo-pagado", "2026-11-05")?.description).toBe("El próximo vence el 05/11/2026.");
+  });
+
+  it("sigue aceptando un número de documento", () => {
+    expect(flashMessage("venta-emitida", "7")?.title).toBe("Venta #7 emitida");
+  });
+
+  it("descarta cualquier otra cosa en vez de pintarla", () => {
+    expect(flashMessage("fijo-pagado", "<script>")?.description).toBe("El gasto fijo avanzó a su próxima fecha.");
+    expect(flashMessage("venta-emitida", "7; drop")?.title).toBe("Venta emitida");
+  });
+});
